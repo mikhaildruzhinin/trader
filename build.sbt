@@ -1,0 +1,21 @@
+ThisBuild / scalaVersion     := "2.13.10"
+ThisBuild / version          := "0.1.0-SNAPSHOT"
+ThisBuild / organization     := "com.github.mikhaildruzhinin"
+ThisBuild / organizationName := "mikhaildruzhinin"
+
+resolvers += "Secured Central Repository" at "https://repo.maven.apache.org/maven2"
+
+externalResolvers := Resolver.combineDefaultResolvers(resolvers.value.toVector, mavenCentral = false)
+
+lazy val root = (project in file("."))
+  .settings(
+    name := "trader"
+  )
+
+libraryDependencies ++= Seq(
+  "ch.qos.logback" % "logback-classic" % "1.4.6",
+  "com.github.pureconfig" %% "pureconfig" % "0.17.2",
+  "com.typesafe" % "config" % "1.4.2",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
+  "ru.tinkoff.piapi" % "java-sdk-core" % "1.3"
+)
