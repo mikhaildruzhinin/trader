@@ -38,21 +38,32 @@ case class ShareWrapper(figi: String,
   lazy val uptrendPct: Option[BigDecimal] = {
     (openPrice, closePrice) match {
       case (Some(openPriceValue), Some(closePriceValue)) =>
-        val close = quotationToBigDecimal(closePriceValue)
-        val open = quotationToBigDecimal(openPriceValue)
         Some(
-          ((close - open) / open * 100)
-            .setScale(config.pctScale, RoundingMode.HALF_UP)
+          (
+            (quotationToBigDecimal(closePriceValue) - quotationToBigDecimal(openPriceValue))
+              / quotationToBigDecimal(openPriceValue) * 100
+          ).setScale(config.pctScale, RoundingMode.HALF_UP)
+        )
+      case _ => None
+    }
+  }
+
+  lazy val uptrendAbsNoTax: Option[BigDecimal] = {
+    (openPrice, uptrendPct) match {
+      case (Some(openPriceValue), Some(uptrendPctValue)) =>
+        Some(
+          (quotationToBigDecimal(openPriceValue) * lot * uptrendPctValue / 100)
+            .setScale(config.priceScale, RoundingMode.HALF_UP)
         )
       case _ => None
     }
   }
 
   lazy val uptrendAbs: Option[BigDecimal] = {
-    (openPrice, uptrendPct) match {
-      case (Some(openPriceValue), Some(uptrendPct)) =>
+    uptrendAbsNoTax match {
+      case Some(uptrendAbsNoTaxValue) =>
         Some(
-          (quotationToBigDecimal(openPriceValue) * lot * uptrendPct / 100)
+          (uptrendAbsNoTaxValue * (100 - config.incomeTaxPct) / 100)
             .setScale(config.priceScale, RoundingMode.HALF_UP)
         )
       case _ => None

@@ -5,4 +5,5 @@ case class Config(tinkoffInvestApiToken: String,
                   pctScale: Int,
                   priceScale: Int,
                   uptrendThresholdPct: Int,
-                  numUptrendShares: Int)
+                  numUptrendShares: Int,
+                  incomeTaxPct: Int)
