@@ -10,11 +10,14 @@ import ru.tinkoff.piapi.core.utils.MapperUtils.quotationToBigDecimal
 import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
 import java.time.temporal.ChronoUnit
 import scala.jdk.CollectionConverters._
-import scala.math.BigDecimal.javaBigDecimal2bigDecimal
+import scala.math.BigDecimal.{RoundingMode, javaBigDecimal2bigDecimal}
 
 object Main extends App {
   case class AppConfig(tinkoffInvestApiToken: String,
                        exchange: String,
+                       pctScale: Int,
+                       priceScale: Int,
+                       uptrendThresholdPct: Int,
                        numUptrendShares: Int)
 
   case class ShareWrapper(figi: String,
@@ -24,36 +27,47 @@ object Main extends App {
                           exchange: String,
                           openPrice: Option[Quotation] = None,
                           closePrice: Option[Quotation] = None) {
-    def this(share: Share) = {
-      this(
-        share.getFigi,
-        share.getLot,
-        share.getCurrency,
-        share.getName,
-        share.getExchange
-      )
-    }
+
+    def this(share: Share) = this(
+      share.getFigi,
+      share.getLot,
+      share.getCurrency,
+      share.getName,
+      share.getExchange
+    )
 
     def this(shareWrapper: ShareWrapper,
              openPrice: Option[Quotation],
-             closePrice: Option[Quotation]) = {
-      this(
-        shareWrapper.figi,
-        shareWrapper.lot,
-        shareWrapper.currency,
-        shareWrapper.name,
-        shareWrapper.exchange,
-        openPrice,
-        closePrice
-      )
-    }
+             closePrice: Option[Quotation]) = this(
+      shareWrapper.figi,
+      shareWrapper.lot,
+      shareWrapper.currency,
+      shareWrapper.name,
+      shareWrapper.exchange,
+      openPrice,
+      closePrice
+    )
 
     lazy val uptrendPct: Option[BigDecimal] = {
       (openPrice, closePrice) match {
         case (Some(openPriceValue), Some(closePriceValue)) =>
           val close = quotationToBigDecimal(closePriceValue)
           val open = quotationToBigDecimal(openPriceValue)
-          Some((close - open) / open * 100)
+          Some(
+            ((close - open) / open * 100)
+              .setScale(appConfig.pctScale, RoundingMode.HALF_UP)
+          )
+        case _ => None
+      }
+    }
+
+    lazy val uptrendAbs: Option[BigDecimal] = {
+      (openPrice, uptrendPct) match {
+        case (Some(openPriceValue), Some(uptrendPct)) =>
+          Some(
+            (quotationToBigDecimal(openPriceValue) * lot * uptrendPct / 100)
+              .setScale(appConfig.priceScale, RoundingMode.HALF_UP)
+          )
         case _ => None
       }
     }
@@ -65,7 +79,7 @@ object Main extends App {
       }
     }
 
-    override def toString: String = s"$name, ${uptrendPct.getOrElse(-1)}, ${closePriceAbs.getOrElse(-1)}"
+    override def toString: String = s"$name, ${uptrendPct.getOrElse(-1)}, ${uptrendAbs.getOrElse(-1)}"
   }
 
   object ShareWrapper {
@@ -90,7 +104,7 @@ object Main extends App {
       .toList
   }
 
-  val log = Logger(getClass.getName)
+  val log: Logger = Logger(getClass.getName.stripSuffix("$"))
 
   val appConfig: AppConfig = ConfigSource.default.loadOrThrow[AppConfig]
   val token: String = appConfig.tinkoffInvestApiToken
@@ -134,6 +148,7 @@ object Main extends App {
           case Some(candle) => Some(candle.getOpen)
           case None => None
         }
+
         ShareWrapper(shareWrapper, openPrice, None)
       }
     )
@@ -143,8 +158,8 @@ object Main extends App {
       s => {
         val closePrice: Option[Quotation] = getCandles(
           shareWrapper = s,
-          from = startDayInstant.plus(9, ChronoUnit.HOURS),
-          to = startDayInstant.plus(10, ChronoUnit.HOURS),
+          from = startDayInstant.plus(7 + 2, ChronoUnit.HOURS),
+          to = startDayInstant.plus(7 + 2 + 1, ChronoUnit.HOURS),
           interval = CandleInterval.CANDLE_INTERVAL_5_MIN
         ).headOption match {
           case Some(candle) => Some(candle.getClose)
@@ -153,13 +168,11 @@ object Main extends App {
         ShareWrapper(s, s.openPrice, closePrice)
       }
     )
-    .filter(_.uptrendPct > Some(3))
+    .filter(_.uptrendPct > Some(appConfig.uptrendThresholdPct))
     .toList
-    .sortBy(_.closePriceAbs)
+    .sortBy(_.uptrendAbs)
     .reverse
     .take(appConfig.numUptrendShares)
 
   wrappedSharesUptrend.foreach(s => log.info(s.toString))
-//    log.info("{}, {}, {}", s.name, s.uptrendPct.getOrElse(-1), s.closePriceAbs.getOrElse(-1)))
-
 }
