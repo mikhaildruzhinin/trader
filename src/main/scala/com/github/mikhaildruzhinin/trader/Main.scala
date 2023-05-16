@@ -13,13 +13,6 @@ import scala.jdk.CollectionConverters._
 import scala.math.BigDecimal.{RoundingMode, javaBigDecimal2bigDecimal}
 
 object Main extends App {
-  case class AppConfig(tinkoffInvestApiToken: String,
-                       exchange: String,
-                       pctScale: Int,
-                       priceScale: Int,
-                       uptrendThresholdPct: Int,
-                       numUptrendShares: Int)
-
   case class ShareWrapper(figi: String,
                           lot: Int,
                           currency: String,
@@ -55,7 +48,7 @@ object Main extends App {
           val open = quotationToBigDecimal(openPriceValue)
           Some(
             ((close - open) / open * 100)
-              .setScale(appConfig.pctScale, RoundingMode.HALF_UP)
+              .setScale(config.pctScale, RoundingMode.HALF_UP)
           )
         case _ => None
       }
@@ -66,7 +59,7 @@ object Main extends App {
         case (Some(openPriceValue), Some(uptrendPct)) =>
           Some(
             (quotationToBigDecimal(openPriceValue) * lot * uptrendPct / 100)
-              .setScale(appConfig.priceScale, RoundingMode.HALF_UP)
+              .setScale(config.priceScale, RoundingMode.HALF_UP)
           )
         case _ => None
       }
@@ -106,8 +99,8 @@ object Main extends App {
 
   val log: Logger = Logger(getClass.getName.stripSuffix("$"))
 
-  val appConfig: AppConfig = ConfigSource.default.loadOrThrow[AppConfig]
-  val token: String = appConfig.tinkoffInvestApiToken
+  val config: Config = ConfigSource.default.loadOrThrow[Config]
+  val token: String = config.tinkoffInvestApiToken
   val api: InvestApi = InvestApi.createSandbox(token)
   val instrumentService: InstrumentsService = api.getInstrumentsService
   val marketDataService: MarketDataService = api.getMarketDataService
@@ -120,7 +113,7 @@ object Main extends App {
     .asScala
     .iterator
     .filter(
-      s => s.getExchange == appConfig.exchange
+      s => s.getExchange == config.exchange
         && s.getApiTradeAvailableFlag
     )
 
@@ -168,11 +161,11 @@ object Main extends App {
         ShareWrapper(s, s.openPrice, closePrice)
       }
     )
-    .filter(_.uptrendPct > Some(appConfig.uptrendThresholdPct))
+    .filter(_.uptrendPct > Some(config.uptrendThresholdPct))
     .toList
     .sortBy(_.uptrendAbs)
     .reverse
-    .take(appConfig.numUptrendShares)
+    .take(config.numUptrendShares)
 
   wrappedSharesUptrend.foreach(s => log.info(s.toString))
 }
