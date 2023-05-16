@@ -14,7 +14,7 @@ case class ShareWrapper(figi: String,
                         closePrice: Option[Quotation] = None)
                        (implicit config: Config) {
 
-  def this(share: Share) = this(
+  def this(share: Share)(implicit config: Config) = this(
     share.getFigi,
     share.getLot,
     share.getCurrency,
@@ -24,7 +24,8 @@ case class ShareWrapper(figi: String,
 
   def this(shareWrapper: ShareWrapper,
            openPrice: Option[Quotation],
-           closePrice: Option[Quotation]) = this(
+           closePrice: Option[Quotation])
+          (implicit config: Config) = this(
     shareWrapper.figi,
     shareWrapper.lot,
     shareWrapper.currency,
@@ -69,13 +70,15 @@ case class ShareWrapper(figi: String,
 }
 
 object ShareWrapper {
-  def apply(share: Share): ShareWrapper = {
+  def apply(share: Share)
+           (implicit config: Config): ShareWrapper = {
     new ShareWrapper(share)
   }
 
   def apply(shareWrapper: ShareWrapper,
             openPrice: Option[Quotation],
-            closePrice: Option[Quotation]): ShareWrapper = {
+            closePrice: Option[Quotation])
+           (implicit config: Config): ShareWrapper = {
     new ShareWrapper(shareWrapper, openPrice, closePrice)
   }
 }

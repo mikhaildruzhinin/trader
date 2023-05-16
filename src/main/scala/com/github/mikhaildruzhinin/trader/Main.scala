@@ -1,33 +1,24 @@
 package com.github.mikhaildruzhinin.trader
 
+import com.github.mikhaildruzhinin.trader.util.getCandles
 import com.typesafe.scalalogging.Logger
 import pureconfig.ConfigSource
 import pureconfig.generic.auto.exportReader
-import ru.tinkoff.piapi.contract.v1.{CandleInterval, HistoricCandle, InstrumentStatus, Quotation, Share}
+import ru.tinkoff.piapi.contract.v1.{CandleInterval, InstrumentStatus, Quotation, Share}
 import ru.tinkoff.piapi.core.{InstrumentsService, InvestApi, MarketDataService}
 
-import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
 import java.time.temporal.ChronoUnit
+import java.time.{DayOfWeek, Instant, LocalDate, ZoneOffset}
 import scala.jdk.CollectionConverters._
 
 object Main extends App {
-  def getCandles(shareWrapper: ShareWrapper,
-                 from: Instant,
-                 to: Instant,
-                 interval: CandleInterval): List[HistoricCandle] = {
-    marketDataService
-      .getCandlesSync(shareWrapper.figi, from, to, interval)
-      .asScala
-      .toList
-  }
-
   val log: Logger = Logger(getClass.getName.stripSuffix("$"))
 
   implicit lazy val config: Config = ConfigSource.default.loadOrThrow[Config]
   val token: String = config.tinkoffInvestApiToken
   val api: InvestApi = InvestApi.createSandbox(token)
   val instrumentService: InstrumentsService = api.getInstrumentsService
-  val marketDataService: MarketDataService = api.getMarketDataService
+  implicit val marketDataService: MarketDataService = api.getMarketDataService
 
   val currentDayOfWeek: DayOfWeek = LocalDate.now.getDayOfWeek
   val startDayInstant: Instant = LocalDate.now.atStartOfDay.toInstant(ZoneOffset.UTC)
