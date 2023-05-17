@@ -15,7 +15,7 @@ object Main extends App {
   val log: Logger = Logger(getClass.getName.stripSuffix("$"))
 
   implicit lazy val config: Config = ConfigSource.default.loadOrThrow[Config]
-  val token: String = config.tinkoffInvestApiToken
+  val token: String = config.tinkoffInvestApi.token
   val api: InvestApi = InvestApi.createSandbox(token)
   val instrumentService: InstrumentsService = api.getInstrumentsService
   implicit val marketDataService: MarketDataService = api.getMarketDataService
