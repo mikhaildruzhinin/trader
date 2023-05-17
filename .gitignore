@@ -41,6 +41,4 @@ bin/
 *.class
 
 # project-specific
-metastore_db/
-spark-warehouse/
-derby.log
+application.conf

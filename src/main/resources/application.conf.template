@@ -1,5 +1,5 @@
 tinkoff-invest-api {
-  token: ""
+  token:
   rate-limit-pause-millis: 60000
 }
 exchange: MOEX
