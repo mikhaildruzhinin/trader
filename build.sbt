@@ -16,9 +16,11 @@ enablePlugins(JettyPlugin)
 
 libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.4.6",
+  "com.github.kagkarlsson" % "db-scheduler" % "12.1.0",
   "com.github.pureconfig" %% "pureconfig" % "0.17.2",
   "com.typesafe" % "config" % "1.4.2",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
   "javax.servlet" % "javax.servlet-api" % "4.0.1" % "provided",
+  "org.postgresql" % "postgresql" % "42.6.0",
   "ru.tinkoff.piapi" % "java-sdk-core" % "1.3"
 )

@@ -2,6 +2,13 @@ tinkoff-invest-api {
   token:
   rate-limit-pause-millis: 60000
 }
+postgres {
+  host:
+  port:
+  db:
+  user:
+  password:
+}
 exchange: MOEX
 pct-scale: 3
 price-scale: 2

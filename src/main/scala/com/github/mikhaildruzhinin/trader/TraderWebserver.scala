@@ -6,7 +6,7 @@ import javax.servlet.annotation.WebServlet
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 
 @WebServlet(urlPatterns = Array("/"))
-class Servlet extends HttpServlet {
+class TraderWebserver extends HttpServlet {
   val log: Logger = Logger(getClass.getName.stripSuffix("$"))
 
   override protected def doGet(req: HttpServletRequest, res: HttpServletResponse): Unit = {
