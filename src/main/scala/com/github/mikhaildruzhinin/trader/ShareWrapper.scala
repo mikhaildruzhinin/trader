@@ -1,10 +1,13 @@
 package com.github.mikhaildruzhinin.trader
 
 import com.google.protobuf.Timestamp
-import ru.tinkoff.piapi.contract.v1.{Quotation, Share}
+import ru.tinkoff.piapi.contract.v1.{CandleInterval, Quotation, Share}
+import ru.tinkoff.piapi.core.{InstrumentsService, MarketDataService}
 import ru.tinkoff.piapi.core.utils.DateUtils.timestampToString
 import ru.tinkoff.piapi.core.utils.MapperUtils.quotationToBigDecimal
 
+import java.time.temporal.ChronoUnit
+import java.time.{Instant, LocalDate, ZoneOffset}
 import scala.math.BigDecimal.{RoundingMode, javaBigDecimal2bigDecimal}
 
 case class ShareWrapper(figi: String,
@@ -12,8 +15,8 @@ case class ShareWrapper(figi: String,
                         currency: String,
                         name: String,
                         exchange: String,
-                        openPrice: Option[Quotation] = None,
-                        closePrice: Option[Quotation] = None,
+                        startingPrice: Option[Quotation] = None,
+                        currentPrice: Option[Quotation] = None,
                         updateTime: Option[Timestamp] = None)
                        (implicit config: Config) {
 
@@ -26,8 +29,8 @@ case class ShareWrapper(figi: String,
   )
 
   def this(shareWrapper: ShareWrapper,
-           openPrice: Option[Quotation],
-           closePrice: Option[Quotation],
+           startingPrice: Option[Quotation],
+           currentPrice: Option[Quotation],
            updateTime: Option[Timestamp])
           (implicit config: Config) = this(
     shareWrapper.figi,
@@ -35,18 +38,18 @@ case class ShareWrapper(figi: String,
     shareWrapper.currency,
     shareWrapper.name,
     shareWrapper.exchange,
-    openPrice,
-    closePrice,
+    startingPrice,
+    currentPrice,
     updateTime
   )
 
   lazy val uptrendPct: Option[BigDecimal] = {
-    (openPrice, closePrice) match {
-      case (Some(openPriceValue), Some(closePriceValue)) =>
+    (startingPrice, currentPrice) match {
+      case (Some(startingPriceValue), Some(currentPriceValue)) =>
         Some(
           (
-            (quotationToBigDecimal(closePriceValue) - quotationToBigDecimal(openPriceValue))
-              / quotationToBigDecimal(openPriceValue) * 100
+            (quotationToBigDecimal(currentPriceValue) - quotationToBigDecimal(startingPriceValue))
+              / quotationToBigDecimal(startingPriceValue) * 100
           ).setScale(config.pctScale, RoundingMode.HALF_UP)
         )
       case _ => None
@@ -54,10 +57,10 @@ case class ShareWrapper(figi: String,
   }
 
   lazy val uptrendAbsNoTax: Option[BigDecimal] = {
-    (openPrice, uptrendPct) match {
-      case (Some(openPriceValue), Some(uptrendPctValue)) =>
+    (startingPrice, uptrendPct) match {
+      case (Some(startingPriceValue), Some(uptrendPctValue)) =>
         Some(
-          (quotationToBigDecimal(openPriceValue) * lot * uptrendPctValue / 100)
+          (quotationToBigDecimal(startingPriceValue) * lot * uptrendPctValue / 100)
             .setScale(config.priceScale, RoundingMode.HALF_UP)
         )
       case _ => None
@@ -76,7 +79,7 @@ case class ShareWrapper(figi: String,
   }
 
   lazy val closePriceAbs: Option[BigDecimal] = {
-    closePrice match {
+    currentPrice match {
       case Some(close) => Some(quotationToBigDecimal(close) * lot)
       case _ => None
     }
@@ -98,10 +101,83 @@ object ShareWrapper {
   }
 
   def apply(shareWrapper: ShareWrapper,
-            openPrice: Option[Quotation],
-            closePrice: Option[Quotation],
+            startingPrice: Option[Quotation],
+            currentPrice: Option[Quotation],
             updateTime: Option[Timestamp])
            (implicit config: Config): ShareWrapper = {
-    new ShareWrapper(shareWrapper, openPrice, closePrice, updateTime)
+    new ShareWrapper(shareWrapper, startingPrice, currentPrice, updateTime)
+  }
+
+  def getShares(implicit config: Config,
+                instrumentService: InstrumentsService,
+                marketDataService: MarketDataService,
+                investApiClient: InvestApiClient.type): Iterator[ShareWrapper] = {
+
+    investApiClient
+      .getShares
+      .map(
+        s => {
+          val shareWrapper = ShareWrapper(s)
+          val startDayInstant: Instant = LocalDate
+            .now
+            .atStartOfDay
+            .toInstant(ZoneOffset.UTC)
+
+          val (startingPrice: Option[Quotation], updateTime: Option[Timestamp]) = investApiClient
+            .getCandles(
+              shareWrapper = shareWrapper,
+              from = startDayInstant.plus(
+                config.exchange.startTimeHours,
+                ChronoUnit.HOURS
+              ),
+              to = startDayInstant.plus(
+                config.exchange.startTimeHours
+                  + config.exchange.candleTimedeltaHours,
+                ChronoUnit.HOURS
+              ),
+              interval = CandleInterval.CANDLE_INTERVAL_5_MIN
+            ).headOption match {
+            case Some(candle) => (Some(candle.getOpen), Some(candle.getTime))
+            case None => (None, None)
+          }
+
+          ShareWrapper(shareWrapper, startingPrice, None, updateTime)
+        }
+      )
+  }
+
+  def getUptrendShares(wrappedShares: Iterator[ShareWrapper])
+                      (implicit config: Config,
+                       marketDataService: MarketDataService,
+                       investApiClient: InvestApiClient.type): Iterator[ShareWrapper] = {
+
+    val startDayInstant: Instant = LocalDate.now.atStartOfDay.toInstant(ZoneOffset.UTC)
+
+    wrappedShares
+      .map(
+        s => {
+          val (currentPrice: Option[Quotation], updateTime: Option[Timestamp]) = investApiClient
+            .getCandles(
+              shareWrapper = s,
+              from = startDayInstant.plus(
+                config.exchange.startTimeHours
+                  + config.exchange.uptrendCheckTimedeltaHours,
+                ChronoUnit.HOURS
+              ),
+              to = startDayInstant.plus(
+                config.exchange.startTimeHours
+                  + config.exchange.uptrendCheckTimedeltaHours
+                  + config.exchange.candleTimedeltaHours,
+                ChronoUnit.HOURS
+              ),
+              interval = CandleInterval.CANDLE_INTERVAL_5_MIN
+            ).headOption match {
+            case Some(candle) => (Some(candle.getClose), Some(candle.getTime))
+            case None => (None, None)
+          }
+
+          ShareWrapper(s, s.startingPrice, currentPrice, updateTime)
+        }
+      )
   }
 }
