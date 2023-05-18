@@ -2,7 +2,7 @@ package com.github.mikhaildruzhinin.trader
 
 case class Config(tinkoffInvestApi: TinkoffInvestApiConfig,
                   postgres: PostgresConfig,
-                  exchange: String,
+                  exchange: ExchangeConfig,
                   pctScale: Int,
                   priceScale: Int,
                   uptrendThresholdPct: Int,
@@ -17,3 +17,8 @@ case class TinkoffInvestApiConfig(token: String,
                             db: String,
                             user: String,
                             password: String)
+
+case class ExchangeConfig(name: String,
+                         startTimeHours: Int,
+                         uptrendCheckTimedeltaHours: Int,
+                         candleTimedeltaHours: Int)

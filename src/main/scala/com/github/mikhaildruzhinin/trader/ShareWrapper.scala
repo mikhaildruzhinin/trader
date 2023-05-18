@@ -1,6 +1,8 @@
 package com.github.mikhaildruzhinin.trader
 
+import com.google.protobuf.Timestamp
 import ru.tinkoff.piapi.contract.v1.{Quotation, Share}
+import ru.tinkoff.piapi.core.utils.DateUtils.timestampToString
 import ru.tinkoff.piapi.core.utils.MapperUtils.quotationToBigDecimal
 
 import scala.math.BigDecimal.{RoundingMode, javaBigDecimal2bigDecimal}
@@ -11,7 +13,8 @@ case class ShareWrapper(figi: String,
                         name: String,
                         exchange: String,
                         openPrice: Option[Quotation] = None,
-                        closePrice: Option[Quotation] = None)
+                        closePrice: Option[Quotation] = None,
+                        updateTime: Option[Timestamp] = None)
                        (implicit config: Config) {
 
   def this(share: Share)(implicit config: Config) = this(
@@ -24,7 +27,8 @@ case class ShareWrapper(figi: String,
 
   def this(shareWrapper: ShareWrapper,
            openPrice: Option[Quotation],
-           closePrice: Option[Quotation])
+           closePrice: Option[Quotation],
+           updateTime: Option[Timestamp])
           (implicit config: Config) = this(
     shareWrapper.figi,
     shareWrapper.lot,
@@ -32,7 +36,8 @@ case class ShareWrapper(figi: String,
     shareWrapper.name,
     shareWrapper.exchange,
     openPrice,
-    closePrice
+    closePrice,
+    updateTime
   )
 
   lazy val uptrendPct: Option[BigDecimal] = {
@@ -77,7 +82,13 @@ case class ShareWrapper(figi: String,
     }
   }
 
-  override def toString: String = s"$name, ${uptrendPct.getOrElse(-1)}, ${uptrendAbs.getOrElse(-1)}"
+  override def toString: String = {
+    new StringBuilder(s"$name, ")
+      .append(s"${uptrendPct.getOrElse(-1)}%, ")
+      .append(s"${uptrendAbs.getOrElse(-1)} руб., ")
+      .append(s"${timestampToString(updateTime.getOrElse(Timestamp.newBuilder.build))}")
+      .toString
+  }
 }
 
 object ShareWrapper {
@@ -88,8 +99,9 @@ object ShareWrapper {
 
   def apply(shareWrapper: ShareWrapper,
             openPrice: Option[Quotation],
-            closePrice: Option[Quotation])
+            closePrice: Option[Quotation],
+            updateTime: Option[Timestamp])
            (implicit config: Config): ShareWrapper = {
-    new ShareWrapper(shareWrapper, openPrice, closePrice)
+    new ShareWrapper(shareWrapper, openPrice, closePrice, updateTime)
   }
 }

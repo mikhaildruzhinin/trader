@@ -9,7 +9,12 @@ postgres {
   user:
   password:
 }
-exchange: MOEX
+exchange {
+  name: MOEX
+  start-time-hours: 7
+  uptrend-check-timedelta-hours: 2
+  candle-timedelta-hours: 1
+}
 pct-scale: 3
 price-scale: 2
 uptrend-threshold-pct: 3

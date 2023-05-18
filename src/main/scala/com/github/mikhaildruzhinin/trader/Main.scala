@@ -1,6 +1,7 @@
 package com.github.mikhaildruzhinin.trader
 
 import com.github.mikhaildruzhinin.trader.util.getCandles
+import com.google.protobuf.Timestamp
 import com.typesafe.scalalogging.Logger
 import pureconfig.ConfigSource
 import pureconfig.generic.auto.exportReader
@@ -28,7 +29,7 @@ object Main extends App {
     .asScala
     .iterator
     .filter(
-      s => s.getExchange == config.exchange
+      s => s.getExchange == config.exchange.name
         && s.getApiTradeAvailableFlag
     )
 
@@ -47,33 +48,49 @@ object Main extends App {
           .atStartOfDay
           .toInstant(ZoneOffset.UTC)
 
-        val openPrice: Option[Quotation] = getCandles(
+        val (openPrice: Option[Quotation], updateTime: Option[Timestamp]) = getCandles(
           shareWrapper = shareWrapper,
-          from = startDayInstant.plus(7, ChronoUnit.HOURS),
-          to = startDayInstant.plus(7 + 1, ChronoUnit.HOURS),
+          from = startDayInstant.plus(
+            config.exchange.startTimeHours,
+            ChronoUnit.HOURS
+          ),
+          to = startDayInstant.plus(
+            config.exchange.startTimeHours
+              + config.exchange.candleTimedeltaHours,
+            ChronoUnit.HOURS
+          ),
           interval = CandleInterval.CANDLE_INTERVAL_5_MIN
         ).headOption match {
-          case Some(candle) => Some(candle.getOpen)
-          case None => None
+          case Some(candle) => (Some(candle.getClose), Some(candle.getTime))
+          case None => (None, None)
         }
 
-        ShareWrapper(shareWrapper, openPrice, None)
+        ShareWrapper(shareWrapper, openPrice, None, updateTime)
       }
     )
 
   val wrappedSharesUptrend: List[ShareWrapper] = wrappedShares
     .map(
       s => {
-        val closePrice: Option[Quotation] = getCandles(
+        val (closePrice: Option[Quotation], updateTime: Option[Timestamp]) = getCandles(
           shareWrapper = s,
-          from = startDayInstant.plus(7 + 2, ChronoUnit.HOURS),
-          to = startDayInstant.plus(7 + 2 + 1, ChronoUnit.HOURS),
+          from = startDayInstant.plus(
+            config.exchange.startTimeHours
+              + config.exchange.uptrendCheckTimedeltaHours,
+            ChronoUnit.HOURS
+          ),
+          to = startDayInstant.plus(
+            config.exchange.startTimeHours
+              + config.exchange.uptrendCheckTimedeltaHours
+              + config.exchange.candleTimedeltaHours,
+            ChronoUnit.HOURS
+          ),
           interval = CandleInterval.CANDLE_INTERVAL_5_MIN
         ).headOption match {
-          case Some(candle) => Some(candle.getClose)
-          case None => None
+          case Some(candle) => (Some(candle.getClose), Some(candle.getTime))
+          case None => (None, None)
         }
-        ShareWrapper(s, s.openPrice, closePrice)
+        ShareWrapper(s, s.openPrice, closePrice, updateTime)
       }
     )
     .filter(_.uptrendPct > Some(config.uptrendThresholdPct))
