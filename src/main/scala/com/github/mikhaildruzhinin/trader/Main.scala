@@ -22,7 +22,10 @@ object Main extends App {
   val wrappedShares: Iterator[ShareWrapper] = shareWrapper.getShares
 
   val wrappedSharesUptrend: List[ShareWrapper] = shareWrapper
-    .getUptrendShares(wrappedShares)
+    .getUptrendShares(
+      wrappedShares,
+      config.exchange.uptrendCheckTimedeltaHours
+    )
     .filter(_.uptrendPct > Some(config.uptrendThresholdPct))
     .toList
     .sortBy(_.uptrendAbs)

@@ -1,5 +1,7 @@
 package com.github.mikhaildruzhinin.trader
 
+import org.postgresql.ds.PGSimpleDataSource
+
 case class Config(tinkoffInvestApi: TinkoffInvestApiConfig,
                   postgres: PostgresConfig,
                   exchange: ExchangeConfig,
@@ -7,7 +9,15 @@ case class Config(tinkoffInvestApi: TinkoffInvestApiConfig,
                   priceScale: Int,
                   uptrendThresholdPct: Int,
                   numUptrendShares: Int,
-                  incomeTaxPct: Int)
+                  incomeTaxPct: Int) {
+
+  val dataSource: PGSimpleDataSource = new PGSimpleDataSource()
+  dataSource.setServerNames(Array(postgres.host))
+  dataSource.setPortNumbers(Array(postgres.port))
+  dataSource.setDatabaseName(postgres.db)
+  dataSource.setUser(postgres.user)
+  dataSource.setPassword(postgres.password)
+}
 
 case class TinkoffInvestApiConfig(token: String,
                                   rateLimitPauseMillis: Long)

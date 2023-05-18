@@ -95,6 +95,11 @@ case class ShareWrapper(figi: String,
 }
 
 object ShareWrapper {
+  private val startDayInstant: Instant = LocalDate
+    .now
+    .atStartOfDay
+    .toInstant(ZoneOffset.UTC)
+
   def apply(share: Share)
            (implicit config: Config): ShareWrapper = {
     new ShareWrapper(share)
@@ -118,10 +123,6 @@ object ShareWrapper {
       .map(
         s => {
           val shareWrapper = ShareWrapper(s)
-          val startDayInstant: Instant = LocalDate
-            .now
-            .atStartOfDay
-            .toInstant(ZoneOffset.UTC)
 
           val (startingPrice: Option[Quotation], updateTime: Option[Timestamp]) = investApiClient
             .getCandles(
@@ -146,12 +147,11 @@ object ShareWrapper {
       )
   }
 
-  def getUptrendShares(wrappedShares: Iterator[ShareWrapper])
+  def getUptrendShares(wrappedShares: Iterator[ShareWrapper],
+                       checkTimedeltaHours: Int)
                       (implicit config: Config,
                        marketDataService: MarketDataService,
                        investApiClient: InvestApiClient.type): Iterator[ShareWrapper] = {
-
-    val startDayInstant: Instant = LocalDate.now.atStartOfDay.toInstant(ZoneOffset.UTC)
 
     wrappedShares
       .map(
@@ -161,12 +161,12 @@ object ShareWrapper {
               shareWrapper = s,
               from = startDayInstant.plus(
                 config.exchange.startTimeHours
-                  + config.exchange.uptrendCheckTimedeltaHours,
+                  + checkTimedeltaHours,
                 ChronoUnit.HOURS
               ),
               to = startDayInstant.plus(
                 config.exchange.startTimeHours
-                  + config.exchange.uptrendCheckTimedeltaHours
+                  + checkTimedeltaHours
                   + config.exchange.candleTimedeltaHours,
                 ChronoUnit.HOURS
               ),
