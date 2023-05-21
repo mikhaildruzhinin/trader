@@ -1,5 +1,6 @@
 tinkoff-invest-api {
   token:
+  invest-api-mode: sandbox
   rate-limit-pause-millis: 60000
 }
 postgres {

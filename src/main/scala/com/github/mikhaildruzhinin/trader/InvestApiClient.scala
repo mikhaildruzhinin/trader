@@ -2,12 +2,11 @@ package com.github.mikhaildruzhinin.trader
 
 import com.typesafe.scalalogging.Logger
 import ru.tinkoff.piapi.contract.v1.{CandleInterval, HistoricCandle, InstrumentStatus, Share}
-import ru.tinkoff.piapi.core.{InstrumentsService, MarketDataService}
 import ru.tinkoff.piapi.core.exception.ApiRuntimeException
 
 import java.time.{DayOfWeek, Instant, LocalDate}
 import scala.annotation.tailrec
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 object InvestApiClient {
@@ -18,11 +17,10 @@ object InvestApiClient {
                  from: Instant,
                  to: Instant,
                  interval: CandleInterval)
-                (implicit config: Config,
-                 marketDataService: MarketDataService): List[HistoricCandle] = {
+                (implicit config: Config): List[HistoricCandle] = {
 
     Try {
-      marketDataService
+      config.tinkoffInvestApi.marketDataService
         .getCandlesSync(shareWrapper.figi, from, to, interval)
         .asScala
         .toList
@@ -38,11 +36,10 @@ object InvestApiClient {
     }
   }
 
-  def getShares(implicit config: Config,
-                instrumentService: InstrumentsService): Iterator[Share] = {
+  def getShares(implicit config: Config): Iterator[Share] = {
     val currentDayOfWeek: DayOfWeek = LocalDate.now.getDayOfWeek
 
-    val shares: Iterator[Share] = instrumentService
+    val shares: Iterator[Share] = config.tinkoffInvestApi.instrumentService
       .getSharesSync(InstrumentStatus.INSTRUMENT_STATUS_BASE)
       .asScala
       .iterator

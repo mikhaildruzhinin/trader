@@ -2,7 +2,6 @@ package com.github.mikhaildruzhinin.trader
 
 import com.google.protobuf.Timestamp
 import ru.tinkoff.piapi.contract.v1.{CandleInterval, Quotation, Share}
-import ru.tinkoff.piapi.core.{InstrumentsService, MarketDataService}
 import ru.tinkoff.piapi.core.utils.DateUtils.timestampToString
 import ru.tinkoff.piapi.core.utils.MapperUtils.quotationToBigDecimal
 
@@ -114,8 +113,6 @@ object ShareWrapper {
   }
 
   def getShares(implicit config: Config,
-                instrumentService: InstrumentsService,
-                marketDataService: MarketDataService,
                 investApiClient: InvestApiClient.type): Iterator[ShareWrapper] = {
 
     investApiClient
@@ -150,7 +147,6 @@ object ShareWrapper {
   def getUptrendShares(wrappedShares: Iterator[ShareWrapper],
                        checkTimedeltaHours: Int)
                       (implicit config: Config,
-                       marketDataService: MarketDataService,
                        investApiClient: InvestApiClient.type): Iterator[ShareWrapper] = {
 
     wrappedShares
