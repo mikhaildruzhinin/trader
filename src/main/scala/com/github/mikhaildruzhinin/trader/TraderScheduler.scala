@@ -20,19 +20,7 @@ object TraderScheduler extends App {
       "uptrend-shares",
       Schedules.cron("*/30 * * * * *") // "0 0 7 * * *"
     )
-    .execute((_, _) => {
-      shareWrapper
-        .getUptrendShares(
-          shareWrapper.getShares,
-          config.exchange.uptrendCheckTimedeltaHours
-        )
-        .filter(_.uptrendPct > Some(config.uptrendThresholdPct))
-        .toList
-        .sortBy(_.uptrendAbs)
-        .reverse
-        .take(config.numUptrendShares)
-        .foreach(s => log.info(s.toString))
-    })
+    .execute((_, _) => log.info("Hello World!"))
 
   val scheduler: Scheduler = Scheduler
     .create(config.postgres.dataSource)

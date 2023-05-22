@@ -1,10 +1,10 @@
 package com.github.mikhaildruzhinin.trader
 
 import com.typesafe.scalalogging.Logger
-import ru.tinkoff.piapi.contract.v1.{CandleInterval, HistoricCandle, InstrumentStatus, Share}
+import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.exception.ApiRuntimeException
 
-import java.time.{DayOfWeek, Instant, LocalDate}
+import java.time.Instant
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
@@ -36,22 +36,48 @@ object InvestApiClient {
     }
   }
 
+  @tailrec
   def getShares(implicit config: Config): Iterator[Share] = {
-    val currentDayOfWeek: DayOfWeek = LocalDate.now.getDayOfWeek
 
-    val shares: Iterator[Share] = config.tinkoffInvestApi.instrumentService
-      .getSharesSync(InstrumentStatus.INSTRUMENT_STATUS_BASE)
-      .asScala
-      .iterator
-      .filter(
-        s => s.getExchange == config.exchange.name
-          && s.getApiTradeAvailableFlag
-      )
+    Try {
+      config.tinkoffInvestApi.instrumentService
+        .getSharesSync(InstrumentStatus.INSTRUMENT_STATUS_BASE)
+        .asScala
+        .iterator
+        .filter(
+          s => s.getExchange == config.exchange.name
+            && s.getApiTradeAvailableFlag
+        )
+    } match {
+      case Success(shares) => shares
+      case Failure(exception: ApiRuntimeException) =>
+        log.error(exception.toString)
+        Thread.sleep(config.tinkoffInvestApi.rateLimitPauseMillis)
+        getShares
+      case Failure(exception) =>
+        log.error(exception.toString)
+        throw exception
+    }
+  }
 
-    currentDayOfWeek match {
-      case DayOfWeek.SATURDAY => shares.filter(s => s.getWeekendFlag)
-      case DayOfWeek.SUNDAY => shares.filter(s => s.getWeekendFlag)
-      case _ => shares
+  @tailrec
+  def getLastPrices(figi: List[String])
+                   (implicit config: Config): Iterator[LastPrice] = {
+
+    Try {
+      config.tinkoffInvestApi.marketDataService
+        .getLastPricesSync(figi.asJava)
+        .asScala
+        .iterator
+    } match {
+      case Success(lastPrices) => lastPrices
+      case Failure(exception: ApiRuntimeException) =>
+        log.error(exception.toString)
+        Thread.sleep(config.tinkoffInvestApi.rateLimitPauseMillis)
+        getLastPrices(figi)
+      case Failure(exception) =>
+        log.error(exception.toString)
+        throw exception
     }
   }
 }
