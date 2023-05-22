@@ -143,10 +143,18 @@ object ShareWrapper {
   private def getFilteredShares(implicit appConfig: AppConfig,
                                 investApiClient: InvestApiClient.type): List[Share] = {
 
+    val shares: List[Share] = investApiClient
+      .getShares
+      .filter(
+        s =>
+          appConfig.exchange.names.contains(s.getExchange)
+            && s.getApiTradeAvailableFlag
+      )
+
     LocalDate.now.getDayOfWeek match {
-      case DayOfWeek.SATURDAY => investApiClient.getShares.filter(_.getWeekendFlag)
-      case DayOfWeek.SUNDAY => investApiClient.getShares.filter(_.getWeekendFlag)
-      case _ => investApiClient.getShares
+      case DayOfWeek.SATURDAY => shares.filter(_.getWeekendFlag)
+      case DayOfWeek.SUNDAY => shares.filter(_.getWeekendFlag)
+      case _ => shares
     }
   }
 

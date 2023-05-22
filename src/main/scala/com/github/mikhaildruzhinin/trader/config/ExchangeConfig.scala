@@ -3,7 +3,7 @@ package com.github.mikhaildruzhinin.trader.config
 import java.time.{Instant, LocalDate, ZoneOffset}
 import java.time.temporal.ChronoUnit
 
-case class ExchangeConfig(name: String,
+case class ExchangeConfig(names: List[String],
                           startTimeHours: Int,
                           uptrendCheckTimedeltaHours: Int,
                           candleTimedeltaHours: Int) {

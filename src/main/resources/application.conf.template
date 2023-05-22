@@ -1,7 +1,7 @@
 tinkoff-invest-api {
   token:
-  invest-api-mode: sandbox
-  rate-limit-pause-millis: 60000
+  mode: sandbox
+  rate-limit-pause-millis: 90000
 }
 postgres {
   host:
@@ -11,7 +11,7 @@ postgres {
   password:
 }
 exchange {
-  name: MOEX
+  names: [MOEX, MOEX_PLUS, MOEX_EVENING_WEEKEND, MOEX_WEEKEND]
   start-time-hours: 7
   uptrend-check-timedelta-hours: 2
   candle-timedelta-hours: 1

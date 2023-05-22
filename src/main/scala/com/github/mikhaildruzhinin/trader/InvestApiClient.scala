@@ -45,10 +45,6 @@ object InvestApiClient {
         .getSharesSync(InstrumentStatus.INSTRUMENT_STATUS_BASE)
         .asScala
         .toList
-        .filter(
-          s => s.getExchange == appConfig.exchange.name
-            && s.getApiTradeAvailableFlag
-        )
     } match {
       case Success(shares) => shares
       case Failure(exception: ApiRuntimeException) =>

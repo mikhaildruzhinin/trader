@@ -24,6 +24,7 @@ object Main extends App {
     .take(appConfig.numUptrendShares)
 
   wrappedSharesUptrend.foreach(s => log.info(s.toString))
+  log.info(wrappedSharesUptrend.length.toString)
 
   // buy wrappedSharesUptrend
   val purchasedShares: List[ShareWrapper] = wrappedSharesUptrend
@@ -43,9 +44,9 @@ object Main extends App {
     .map(x => ShareWrapper(x._2, x._1))
     .partition(_.isCheaperThanPurchasePrice)
 
-  log.info("sell:")
+  log.info(s"sell: ${sharesToSell.length}")
   sharesToSell.foreach(s => log.info(s.toString))
 
-  log.info("keep:")
+  log.info(s"keep: ${sharesToKeep.length}")
   sharesToKeep.foreach(s => log.info(s.toString))
 }
