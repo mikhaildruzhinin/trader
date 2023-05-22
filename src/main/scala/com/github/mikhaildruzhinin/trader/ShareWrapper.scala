@@ -2,7 +2,7 @@ package com.github.mikhaildruzhinin.trader
 
 import com.github.mikhaildruzhinin.trader.config.Config
 import com.google.protobuf.Timestamp
-import ru.tinkoff.piapi.contract.v1.{CandleInterval, Quotation, Share}
+import ru.tinkoff.piapi.contract.v1.{CandleInterval, LastPrice, Quotation, Share}
 import ru.tinkoff.piapi.core.utils.DateUtils.timestampToString
 import ru.tinkoff.piapi.core.utils.MapperUtils.quotationToBigDecimal
 
@@ -43,6 +43,20 @@ case class ShareWrapper(figi: String,
     purchasePrice,
     currentPrice,
     updateTime
+  )
+
+  def this(shareWrapper: ShareWrapper,
+           lastPrice: LastPrice)
+          (implicit config: Config) = this(
+    shareWrapper.figi,
+    shareWrapper.lot,
+    shareWrapper.currency,
+    shareWrapper.name,
+    shareWrapper.exchange,
+    shareWrapper.startingPrice,
+    shareWrapper.purchasePrice,
+    Some(lastPrice.getPrice),
+    Some(lastPrice.getTime)
   )
 
   lazy val uptrendPct: Option[BigDecimal] = {
@@ -106,8 +120,19 @@ case class ShareWrapper(figi: String,
     )
   }
 
+  def isCheaperThanPurchasePrice: Boolean = {
+    quotationToBigDecimal(
+      currentPrice.getOrElse(Quotation.newBuilder.build)
+    ) < quotationToBigDecimal(
+      purchasePrice.getOrElse(Quotation.newBuilder.build)
+    )
+  }
+
   override def toString: String = {
     new StringBuilder(s"$name, ")
+      .append(s"${quotationToBigDecimal(purchasePrice.getOrElse(Quotation.newBuilder.build))} руб., ")
+      .append(s"${quotationToBigDecimal(currentPrice.getOrElse(Quotation.newBuilder.build))} руб., ")
+      .append(s"${uptrendPct.getOrElse(-1)}%, ")
       .append(s"${uptrendPct.getOrElse(-1)}%, ")
       .append(s"${uptrendAbs.getOrElse(-1)} руб., ")
       .append(s"${timestampToString(updateTime.getOrElse(Timestamp.newBuilder.build))}")
@@ -128,8 +153,13 @@ object ShareWrapper {
     new ShareWrapper(shareWrapper, startingPrice, purchasePrice, currentPrice, updateTime)
   }
 
+  def apply(shareWrapper: ShareWrapper, lastPrice: LastPrice)
+           (implicit config: Config): ShareWrapper = {
+    new ShareWrapper(shareWrapper, lastPrice)
+  }
+
   private def getFilteredShares(implicit config: Config,
-                                investApiClient: InvestApiClient.type): Iterator[Share] = {
+                                investApiClient: InvestApiClient.type): List[Share] = {
 
     LocalDate.now.getDayOfWeek match {
       case DayOfWeek.SATURDAY => investApiClient.getShares.filter(_.getWeekendFlag)
@@ -154,7 +184,7 @@ object ShareWrapper {
   }
 
   def getAvailableShares(implicit config: Config,
-                         investApiClient: InvestApiClient.type): Iterator[ShareWrapper] = {
+                         investApiClient: InvestApiClient.type): List[ShareWrapper] = {
 
     getFilteredShares
       .map(

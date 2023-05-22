@@ -38,13 +38,13 @@ object InvestApiClient {
   }
 
   @tailrec
-  def getShares(implicit config: Config): Iterator[Share] = {
+  def getShares(implicit config: Config): List[Share] = {
 
     Try {
       config.tinkoffInvestApi.instrumentService
         .getSharesSync(InstrumentStatus.INSTRUMENT_STATUS_BASE)
         .asScala
-        .iterator
+        .toList
         .filter(
           s => s.getExchange == config.exchange.name
             && s.getApiTradeAvailableFlag
@@ -63,13 +63,13 @@ object InvestApiClient {
 
   @tailrec
   def getLastPrices(figi: List[String])
-                   (implicit config: Config): Iterator[LastPrice] = {
+                   (implicit config: Config): List[LastPrice] = {
 
     Try {
       config.tinkoffInvestApi.marketDataService
         .getLastPricesSync(figi.asJava)
         .asScala
-        .iterator
+        .toList
     } match {
       case Success(lastPrices) => lastPrices
       case Failure(exception: ApiRuntimeException) =>
