@@ -27,9 +27,9 @@ object TraderScheduler extends App {
 
   val scheduler: Scheduler = Scheduler
     .create(appConfig.postgres.dataSource)
-    .tableName("scheduled_tasks")
+    .tableName(appConfig.scheduler.tableName)
     .startTasks(uptrendSharesTask)
-    .threads(5)
+    .threads(appConfig.scheduler.numThreads)
     .registerShutdownHook()
     .build()
 

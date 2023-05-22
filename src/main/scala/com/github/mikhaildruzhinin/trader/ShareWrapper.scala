@@ -72,31 +72,16 @@ case class ShareWrapper(figi: String,
     }
   }
 
-  lazy val uptrendAbsNoTax: Option[BigDecimal] = {
-    (startingPrice, uptrendPct) match {
-      case (Some(startingPriceValue), Some(uptrendPctValue)) =>
-        Some(
-          (quotationToBigDecimal(startingPriceValue) * lot * uptrendPctValue / 100)
-            .setScale(appConfig.priceScale, RoundingMode.HALF_UP)
-        )
-      case _ => None
-    }
-  }
-
   lazy val uptrendAbs: Option[BigDecimal] = {
-    uptrendAbsNoTax match {
-      case Some(uptrendAbsNoTaxValue) =>
+    (startingPrice, currentPrice) match {
+      case (Some(startingPriceValue), Some(currentPriceValue)) =>
         Some(
-          (uptrendAbsNoTaxValue * (100 - appConfig.incomeTaxPct) / 100)
-            .setScale(appConfig.priceScale, RoundingMode.HALF_UP)
+          (
+            (quotationToBigDecimal(currentPriceValue)
+              - quotationToBigDecimal(startingPriceValue))
+              * lot * (100 - appConfig.incomeTaxPct) / 100
+          ).setScale(appConfig.priceScale, RoundingMode.HALF_UP)
         )
-      case _ => None
-    }
-  }
-
-  lazy val closePriceAbs: Option[BigDecimal] = {
-    currentPrice match {
-      case Some(close) => Some(quotationToBigDecimal(close) * lot)
       case _ => None
     }
   }
@@ -130,9 +115,6 @@ case class ShareWrapper(figi: String,
 
   override def toString: String = {
     new StringBuilder(s"$name, ")
-      .append(s"${quotationToBigDecimal(purchasePrice.getOrElse(Quotation.newBuilder.build))} руб., ")
-      .append(s"${quotationToBigDecimal(currentPrice.getOrElse(Quotation.newBuilder.build))} руб., ")
-      .append(s"${uptrendPct.getOrElse(-1)}%, ")
       .append(s"${uptrendPct.getOrElse(-1)}%, ")
       .append(s"${uptrendAbs.getOrElse(-1)} руб., ")
       .append(s"${timestampToString(updateTime.getOrElse(Timestamp.newBuilder.build))}")
