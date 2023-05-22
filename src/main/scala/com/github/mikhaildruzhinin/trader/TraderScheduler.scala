@@ -3,6 +3,7 @@ package com.github.mikhaildruzhinin.trader
 import com.github.kagkarlsson.scheduler.Scheduler
 import com.github.kagkarlsson.scheduler.task.helper.{RecurringTask, Tasks}
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules
+import com.github.mikhaildruzhinin.trader.config.Config
 import com.typesafe.scalalogging.Logger
 import pureconfig.ConfigSource
 import pureconfig.generic.auto.exportReader

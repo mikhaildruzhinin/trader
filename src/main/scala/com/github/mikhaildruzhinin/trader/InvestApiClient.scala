@@ -1,5 +1,6 @@
 package com.github.mikhaildruzhinin.trader
 
+import com.github.mikhaildruzhinin.trader.config.Config
 import com.typesafe.scalalogging.Logger
 import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.exception.ApiRuntimeException

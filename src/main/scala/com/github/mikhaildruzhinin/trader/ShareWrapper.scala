@@ -1,5 +1,6 @@
 package com.github.mikhaildruzhinin.trader
 
+import com.github.mikhaildruzhinin.trader.config.Config
 import com.google.protobuf.Timestamp
 import ru.tinkoff.piapi.contract.v1.{CandleInterval, Quotation, Share}
 import ru.tinkoff.piapi.core.utils.DateUtils.timestampToString

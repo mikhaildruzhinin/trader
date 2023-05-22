@@ -1,5 +1,6 @@
 package com.github.mikhaildruzhinin.trader
 
+import com.github.mikhaildruzhinin.trader.config.{Config, InvestApiMode}
 import com.typesafe.scalalogging.Logger
 import pureconfig.generic.auto.exportReader
 import pureconfig.generic.semiauto.deriveEnumerationReader
