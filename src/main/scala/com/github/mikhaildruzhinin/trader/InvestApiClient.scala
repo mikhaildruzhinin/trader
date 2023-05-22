@@ -1,6 +1,6 @@
 package com.github.mikhaildruzhinin.trader
 
-import com.github.mikhaildruzhinin.trader.config.Config
+import com.github.mikhaildruzhinin.trader.config.AppConfig
 import com.typesafe.scalalogging.Logger
 import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.exception.ApiRuntimeException
@@ -18,10 +18,10 @@ object InvestApiClient {
                  from: Instant,
                  to: Instant,
                  interval: CandleInterval)
-                (implicit config: Config): List[HistoricCandle] = {
+                (implicit appConfig: AppConfig): List[HistoricCandle] = {
 
     Try {
-      config.tinkoffInvestApi.marketDataService
+      appConfig.tinkoffInvestApi.marketDataService
         .getCandlesSync(figi, from, to, interval)
         .asScala
         .toList
@@ -29,7 +29,7 @@ object InvestApiClient {
       case Success(candles) => candles
       case Failure(exception: ApiRuntimeException) =>
         log.error(exception.toString)
-        Thread.sleep(config.tinkoffInvestApi.rateLimitPauseMillis)
+        Thread.sleep(appConfig.tinkoffInvestApi.rateLimitPauseMillis)
         getCandles(figi, from, to, interval)
       case Failure(exception) =>
         log.error(exception.toString)
@@ -38,22 +38,22 @@ object InvestApiClient {
   }
 
   @tailrec
-  def getShares(implicit config: Config): List[Share] = {
+  def getShares(implicit appConfig: AppConfig): List[Share] = {
 
     Try {
-      config.tinkoffInvestApi.instrumentService
+      appConfig.tinkoffInvestApi.instrumentService
         .getSharesSync(InstrumentStatus.INSTRUMENT_STATUS_BASE)
         .asScala
         .toList
         .filter(
-          s => s.getExchange == config.exchange.name
+          s => s.getExchange == appConfig.exchange.name
             && s.getApiTradeAvailableFlag
         )
     } match {
       case Success(shares) => shares
       case Failure(exception: ApiRuntimeException) =>
         log.error(exception.toString)
-        Thread.sleep(config.tinkoffInvestApi.rateLimitPauseMillis)
+        Thread.sleep(appConfig.tinkoffInvestApi.rateLimitPauseMillis)
         getShares
       case Failure(exception) =>
         log.error(exception.toString)
@@ -63,10 +63,10 @@ object InvestApiClient {
 
   @tailrec
   def getLastPrices(figi: List[String])
-                   (implicit config: Config): List[LastPrice] = {
+                   (implicit appConfig: AppConfig): List[LastPrice] = {
 
     Try {
-      config.tinkoffInvestApi.marketDataService
+      appConfig.tinkoffInvestApi.marketDataService
         .getLastPricesSync(figi.asJava)
         .asScala
         .toList
@@ -74,7 +74,7 @@ object InvestApiClient {
       case Success(lastPrices) => lastPrices
       case Failure(exception: ApiRuntimeException) =>
         log.error(exception.toString)
-        Thread.sleep(config.tinkoffInvestApi.rateLimitPauseMillis)
+        Thread.sleep(appConfig.tinkoffInvestApi.rateLimitPauseMillis)
         getLastPrices(figi)
       case Failure(exception) =>
         log.error(exception.toString)

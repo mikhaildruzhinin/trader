@@ -1,6 +1,6 @@
 package com.github.mikhaildruzhinin.trader
 
-import com.github.mikhaildruzhinin.trader.config.{Config, InvestApiMode}
+import com.github.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
 import com.typesafe.scalalogging.Logger
 import pureconfig.generic.auto.exportReader
 import pureconfig.generic.semiauto.deriveEnumerationReader
@@ -11,17 +11,17 @@ object Main extends App {
 
   log.info("start")
   implicit val investApiModeConvert: ConfigReader[InvestApiMode] = deriveEnumerationReader[InvestApiMode]
-  implicit val config: Config = ConfigSource.default.loadOrThrow[Config]
+  implicit val appConfig: AppConfig = ConfigSource.default.loadOrThrow[AppConfig]
 
   implicit val investApiClient: InvestApiClient.type = InvestApiClient
 
   val wrappedSharesUptrend: List[ShareWrapper] = ShareWrapper
     .getAvailableShares
     .map(_.updateShare)
-    .filter(_.uptrendPct > Some(config.uptrendThresholdPct))
+    .filter(_.uptrendPct > Some(appConfig.uptrendThresholdPct))
     .sortBy(_.uptrendAbs)
     .reverse
-    .take(config.numUptrendShares)
+    .take(appConfig.numUptrendShares)
 
   wrappedSharesUptrend.foreach(s => log.info(s.toString))
 

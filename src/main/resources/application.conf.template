@@ -16,6 +16,10 @@ exchange {
   uptrend-check-timedelta-hours: 2
   candle-timedelta-hours: 1
 }
+scheduler {
+  table-name: scheduled_tasks
+  num-threads: 5
+}
 pct-scale: 3
 price-scale: 2
 uptrend-threshold-pct: 3

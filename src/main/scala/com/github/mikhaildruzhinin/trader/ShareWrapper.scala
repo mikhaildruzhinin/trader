@@ -1,6 +1,6 @@
 package com.github.mikhaildruzhinin.trader
 
-import com.github.mikhaildruzhinin.trader.config.Config
+import com.github.mikhaildruzhinin.trader.config.AppConfig
 import com.google.protobuf.Timestamp
 import ru.tinkoff.piapi.contract.v1.{CandleInterval, LastPrice, Quotation, Share}
 import ru.tinkoff.piapi.core.utils.DateUtils.timestampToString
@@ -18,9 +18,9 @@ case class ShareWrapper(figi: String,
                         purchasePrice: Option[Quotation] = None,
                         currentPrice: Option[Quotation] = None,
                         updateTime: Option[Timestamp] = None)
-                       (implicit config: Config) {
+                       (implicit appConfig: AppConfig) {
 
-  def this(share: Share)(implicit config: Config) = this(
+  def this(share: Share)(implicit appConfig: AppConfig) = this(
     share.getFigi,
     share.getLot,
     share.getCurrency,
@@ -33,7 +33,7 @@ case class ShareWrapper(figi: String,
            purchasePrice: Option[Quotation],
            currentPrice: Option[Quotation],
            updateTime: Option[Timestamp])
-          (implicit config: Config) = this(
+          (implicit appConfig: AppConfig) = this(
     shareWrapper.figi,
     shareWrapper.lot,
     shareWrapper.currency,
@@ -47,7 +47,7 @@ case class ShareWrapper(figi: String,
 
   def this(shareWrapper: ShareWrapper,
            lastPrice: LastPrice)
-          (implicit config: Config) = this(
+          (implicit appConfig: AppConfig) = this(
     shareWrapper.figi,
     shareWrapper.lot,
     shareWrapper.currency,
@@ -66,7 +66,7 @@ case class ShareWrapper(figi: String,
           (
             (quotationToBigDecimal(currentPriceValue) - quotationToBigDecimal(startingPriceValue))
               / quotationToBigDecimal(startingPriceValue) * 100
-          ).setScale(config.pctScale, RoundingMode.HALF_UP)
+          ).setScale(appConfig.pctScale, RoundingMode.HALF_UP)
         )
       case _ => None
     }
@@ -77,7 +77,7 @@ case class ShareWrapper(figi: String,
       case (Some(startingPriceValue), Some(uptrendPctValue)) =>
         Some(
           (quotationToBigDecimal(startingPriceValue) * lot * uptrendPctValue / 100)
-            .setScale(config.priceScale, RoundingMode.HALF_UP)
+            .setScale(appConfig.priceScale, RoundingMode.HALF_UP)
         )
       case _ => None
     }
@@ -87,8 +87,8 @@ case class ShareWrapper(figi: String,
     uptrendAbsNoTax match {
       case Some(uptrendAbsNoTaxValue) =>
         Some(
-          (uptrendAbsNoTaxValue * (100 - config.incomeTaxPct) / 100)
-            .setScale(config.priceScale, RoundingMode.HALF_UP)
+          (uptrendAbsNoTaxValue * (100 - appConfig.incomeTaxPct) / 100)
+            .setScale(appConfig.priceScale, RoundingMode.HALF_UP)
         )
       case _ => None
     }
@@ -101,13 +101,13 @@ case class ShareWrapper(figi: String,
     }
   }
 
-  def updateShare(implicit config: Config,
+  def updateShare(implicit appConfig: AppConfig,
                   investApiClient: InvestApiClient.type): ShareWrapper = {
 
     val (_: Option[Quotation], currentPrice: Option[Quotation], updateTime: Option[Timestamp]) = ShareWrapper.getUpdatedCandlePrices(
       shareWrapper = this,
-      from = config.exchange.updateInstantFrom,
-      to = config.exchange.updateInstantTo,
+      from = appConfig.exchange.updateInstantFrom,
+      to = appConfig.exchange.updateInstantTo,
       interval = CandleInterval.CANDLE_INTERVAL_5_MIN
     )
 
@@ -142,23 +142,23 @@ case class ShareWrapper(figi: String,
 
 object ShareWrapper {
   def apply(share: Share)
-           (implicit config: Config): ShareWrapper = new ShareWrapper(share)
+           (implicit appConfig: AppConfig): ShareWrapper = new ShareWrapper(share)
 
   def apply(shareWrapper: ShareWrapper,
             startingPrice: Option[Quotation],
             purchasePrice: Option[Quotation],
             currentPrice: Option[Quotation],
             updateTime: Option[Timestamp])
-           (implicit config: Config): ShareWrapper = {
+           (implicit appConfig: AppConfig): ShareWrapper = {
     new ShareWrapper(shareWrapper, startingPrice, purchasePrice, currentPrice, updateTime)
   }
 
   def apply(shareWrapper: ShareWrapper, lastPrice: LastPrice)
-           (implicit config: Config): ShareWrapper = {
+           (implicit appConfig: AppConfig): ShareWrapper = {
     new ShareWrapper(shareWrapper, lastPrice)
   }
 
-  private def getFilteredShares(implicit config: Config,
+  private def getFilteredShares(implicit appConfig: AppConfig,
                                 investApiClient: InvestApiClient.type): List[Share] = {
 
     LocalDate.now.getDayOfWeek match {
@@ -172,7 +172,7 @@ object ShareWrapper {
                                      from: Instant,
                                      to: Instant,
                                      interval: CandleInterval)
-                                    (implicit config: Config,
+                                    (implicit appConfig: AppConfig,
                                      investApiClient: InvestApiClient.type): (Option[Quotation], Option[Quotation], Option[Timestamp]) = {
 
     investApiClient
@@ -183,7 +183,7 @@ object ShareWrapper {
       }
   }
 
-  def getAvailableShares(implicit config: Config,
+  def getAvailableShares(implicit appConfig: AppConfig,
                          investApiClient: InvestApiClient.type): List[ShareWrapper] = {
 
     getFilteredShares
@@ -193,8 +193,8 @@ object ShareWrapper {
 
           val (startingPrice: Option[Quotation], _: Option[Quotation], updateTime: Option[Timestamp]) = getUpdatedCandlePrices(
               shareWrapper = shareWrapper,
-              from = config.exchange.startInstantFrom,
-              to = config.exchange.startInstantTo,
+              from = appConfig.exchange.startInstantFrom,
+              to = appConfig.exchange.startInstantTo,
               interval = CandleInterval.CANDLE_INTERVAL_5_MIN
             )
 
