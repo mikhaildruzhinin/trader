@@ -14,7 +14,7 @@ object InvestApiClient {
   val log: Logger = Logger(getClass.getName.stripSuffix("$"))
 
   @tailrec
-  def getCandles(shareWrapper: ShareWrapper,
+  def getCandles(figi: String,
                  from: Instant,
                  to: Instant,
                  interval: CandleInterval)
@@ -22,7 +22,7 @@ object InvestApiClient {
 
     Try {
       config.tinkoffInvestApi.marketDataService
-        .getCandlesSync(shareWrapper.figi, from, to, interval)
+        .getCandlesSync(figi, from, to, interval)
         .asScala
         .toList
     } match {
@@ -30,7 +30,7 @@ object InvestApiClient {
       case Failure(exception: ApiRuntimeException) =>
         log.error(exception.toString)
         Thread.sleep(config.tinkoffInvestApi.rateLimitPauseMillis)
-        getCandles(shareWrapper, from, to, interval)
+        getCandles(figi, from, to, interval)
       case Failure(exception) =>
         log.error(exception.toString)
         throw exception

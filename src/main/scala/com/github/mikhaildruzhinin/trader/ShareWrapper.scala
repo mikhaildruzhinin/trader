@@ -146,7 +146,7 @@ object ShareWrapper {
                                      investApiClient: InvestApiClient.type): (Option[Quotation], Option[Quotation], Option[Timestamp]) = {
 
     investApiClient
-      .getCandles(shareWrapper, from, to, interval)
+      .getCandles(shareWrapper.figi, from, to, interval)
       .headOption match {
         case Some(candle) => (Some(candle.getOpen), Some(candle.getClose), Some(candle.getTime))
         case None => (None, None, None)
