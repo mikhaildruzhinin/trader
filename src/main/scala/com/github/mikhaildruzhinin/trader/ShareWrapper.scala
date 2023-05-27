@@ -59,10 +59,6 @@ case class ShareWrapper(figi: String,
     Some(lastPrice.getTime)
   )
 
-  private def applyTaxes(noTaxValue: BigDecimal): BigDecimal = {
-    noTaxValue * (100 - appConfig.incomeTaxPct) / 100
-  }
-
   lazy val uptrendPct: Option[BigDecimal] = {
     val uptrendPctNoTax: Option[BigDecimal] = (startingPrice, currentPrice) match {
       case (Some(startingPriceValue), Some(currentPriceValue)) =>
@@ -110,6 +106,18 @@ case class ShareWrapper(figi: String,
     }
   }
 
+  lazy val isCheaperThanPurchasePrice: Boolean = {
+    quotationToBigDecimal(
+      currentPrice.getOrElse(Quotation.newBuilder.build)
+    ) < quotationToBigDecimal(
+      purchasePrice.getOrElse(Quotation.newBuilder.build)
+    )
+  }
+
+  private def applyTaxes(noTaxValue: BigDecimal): BigDecimal = {
+    noTaxValue * (100 - appConfig.incomeTaxPct) / 100
+  }
+
   def updateShare(implicit appConfig: AppConfig,
                   investApiClient: InvestApiClient.type): ShareWrapper = {
 
@@ -129,13 +137,48 @@ case class ShareWrapper(figi: String,
     )
   }
 
-  lazy val isCheaperThanPurchasePrice: Boolean = {
-    quotationToBigDecimal(
-      currentPrice.getOrElse(Quotation.newBuilder.build)
-    ) < quotationToBigDecimal(
-      purchasePrice.getOrElse(Quotation.newBuilder.build)
-    )
-  }
+  def getShareTuple(typeCd: String): (
+    String,
+    String,
+    Int,
+    String,
+    String,
+    String,
+    Option[BigDecimal],
+    Option[BigDecimal],
+    Option[BigDecimal],
+    Option[Instant]
+  ) = (
+    typeCd,
+    figi,
+    lot,
+    currency,
+    name,
+    exchange,
+    startingPrice match {
+      case Some(s) =>
+        Some(quotationToBigDecimal(s)
+          .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
+      case _ => None
+    },
+    purchasePrice match {
+      case Some(p) =>
+        Some(quotationToBigDecimal(p)
+          .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
+      case _ => None
+    },
+    currentPrice match {
+      case Some(p) =>
+        Some(quotationToBigDecimal(p)
+          .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
+      case _ => None
+    },
+    updateTime match {
+      case Some(t) =>
+        Some(Instant.parse(timestampToString(t)))
+      case _ => None
+    }
+  )
 
   override def toString: String = {
     val a: BigDecimal = roi.getOrElse(BigDecimal(0))
@@ -214,7 +257,7 @@ object ShareWrapper {
   }
 
   def getAvailableShares(implicit appConfig: AppConfig,
-                         investApiClient: InvestApiClient.type): List[ShareWrapper] = {
+                         investApiClient: InvestApiClient.type): Seq[ShareWrapper] = {
 
     getFilteredShares
       .map(

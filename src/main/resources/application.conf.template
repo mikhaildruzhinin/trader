@@ -1,27 +1,32 @@
-tinkoff-invest-api {
+tinkoffInvestApi {
   token:
   mode: sandbox
-  rate-limit-pause-millis: 90000
+  rateLimitPauseMillis: 90000
 }
 postgres {
-  host:
-  port:
-  db:
-  user:
-  password:
+  connectionPool: HikariCP
+  dataSourceClass: org.postgresql.ds.PGSimpleDataSource
+  properties {
+    serverName:
+    portNumber:
+    databaseName:
+    user:
+    password:
+  }
+  numThreads: 10
 }
 exchange {
   names: [MOEX, MOEX_PLUS, MOEX_EVENING_WEEKEND, MOEX_WEEKEND]
-  start-time-hours: 7
-  uptrend-check-timedelta-hours: 2
-  candle-timedelta-hours: 1
+  startTimeHours: 7
+  uptrendCheckTimedeltaHours: 2
+  candleTimedeltaHours: 1
 }
 scheduler {
-  table-name: scheduled_tasks
-  num-threads: 5
+  tableName: trader.scheduled_tasks
+  numThreads: 5
 }
-pct-scale: 3
-price-scale: 2
-uptrend-threshold-pct: 3
-num-uptrend-shares: 10
-income-tax-pct: 13
+pctScale: 3
+priceScale: 2
+uptrendThresholdPct: 3
+numUptrendShares: 10
+incomeTaxPct: 13

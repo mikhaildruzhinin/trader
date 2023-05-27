@@ -20,6 +20,8 @@ libraryDependencies ++= Seq(
   "com.github.pureconfig" %% "pureconfig" % "0.17.2",
   "com.typesafe" % "config" % "1.4.2",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
+  "com.typesafe.slick" %% "slick" % "3.4.1",
+  "com.typesafe.slick" %% "slick-hikaricp" % "3.4.1",
   "javax.servlet" % "javax.servlet-api" % "4.0.1" % "provided",
   "org.postgresql" % "postgresql" % "42.6.0",
   "ru.tinkoff.piapi" % "java-sdk-core" % "1.3"

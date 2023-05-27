@@ -58,8 +58,8 @@ object InvestApiClient {
   }
 
   @tailrec
-  def getLastPrices(figi: List[String])
-                   (implicit appConfig: AppConfig): List[LastPrice] = {
+  def getLastPrices(figi: Seq[String])
+                   (implicit appConfig: AppConfig): Seq[LastPrice] = {
 
     Try {
       appConfig.tinkoffInvestApi.marketDataService
