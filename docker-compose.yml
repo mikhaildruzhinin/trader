@@ -1,18 +1,13 @@
-version: '3.5'
-
+version: '3.8'
 services:
-  postgres:
-    container_name: pg_container
-    image: postgres
+  db:
+    image: postgres:14.1-alpine
+    restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      PGDATA: /data/postgres
-    volumes:
-      - postgres:/data/postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
     ports:
-      - "5432:5432"
-    restart: unless-stopped
-
-volumes:
-  postgres:
+      - '5432:5432'
+    volumes:
+      - ./db:/var/lib/postgresql14/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/scripts.sql

@@ -42,3 +42,4 @@ bin/
 
 # project-specific
 application.conf
+db/
