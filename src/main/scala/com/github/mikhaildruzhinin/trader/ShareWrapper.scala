@@ -59,29 +59,53 @@ case class ShareWrapper(figi: String,
     Some(lastPrice.getTime)
   )
 
+  private def applyTaxes(noTaxValue: BigDecimal): BigDecimal = {
+    noTaxValue * (100 - appConfig.incomeTaxPct) / 100
+  }
+
   lazy val uptrendPct: Option[BigDecimal] = {
-    (startingPrice, currentPrice) match {
+    val uptrendPctNoTax: Option[BigDecimal] = (startingPrice, currentPrice) match {
       case (Some(startingPriceValue), Some(currentPriceValue)) =>
         Some(
           (
-            (quotationToBigDecimal(currentPriceValue) - quotationToBigDecimal(startingPriceValue))
-              / quotationToBigDecimal(startingPriceValue) * 100
-          ).setScale(appConfig.pctScale, RoundingMode.HALF_UP)
+            quotationToBigDecimal(currentPriceValue)
+              - quotationToBigDecimal(startingPriceValue)
+          )
+            / quotationToBigDecimal(startingPriceValue)
+            * 100
+            * (100 - appConfig.incomeTaxPct) / 100
         )
+      case _ => None
+    }
+
+    uptrendPctNoTax match {
+      case Some(x) if x > 0 => Some(applyTaxes(x))
+      case Some(x) if x <= 0 => Some(x)
       case _ => None
     }
   }
 
   lazy val uptrendAbs: Option[BigDecimal] = {
-    (startingPrice, currentPrice) match {
-      case (Some(startingPriceValue), Some(currentPriceValue)) =>
+    (uptrendPct, startingPrice) match {
+      case (Some(uptrendPctValue), Some(startingPriceValue)) =>
+        Some(uptrendPctValue * quotationToBigDecimal(startingPriceValue) * lot / 100)
+      case _ => None
+    }
+  }
+
+  lazy val roi: Option[BigDecimal] = {
+    val roiNoTax = (purchasePrice, currentPrice) match {
+      case (Some(purchasePriceValue), Some(currentPriceValue)) =>
         Some(
-          (
-            (quotationToBigDecimal(currentPriceValue)
-              - quotationToBigDecimal(startingPriceValue))
-              * lot * (100 - appConfig.incomeTaxPct) / 100
-          ).setScale(appConfig.priceScale, RoundingMode.HALF_UP)
+          (quotationToBigDecimal(currentPriceValue) - quotationToBigDecimal(purchasePriceValue))
+            / quotationToBigDecimal(purchasePriceValue) * 100
         )
+      case _ => None
+    }
+
+    roiNoTax match {
+      case Some(x) if x > 0 => Some(applyTaxes(x))
+      case Some(x) if x <= 0 => Some(x)
       case _ => None
     }
   }
@@ -105,7 +129,7 @@ case class ShareWrapper(figi: String,
     )
   }
 
-  def isCheaperThanPurchasePrice: Boolean = {
+  lazy val isCheaperThanPurchasePrice: Boolean = {
     quotationToBigDecimal(
       currentPrice.getOrElse(Quotation.newBuilder.build)
     ) < quotationToBigDecimal(
@@ -114,10 +138,26 @@ case class ShareWrapper(figi: String,
   }
 
   override def toString: String = {
+    val a: BigDecimal = roi.getOrElse(BigDecimal(0))
+
     new StringBuilder(s"$name, ")
-      .append(s"${uptrendPct.getOrElse(-1)}%, ")
-      .append(s"${uptrendAbs.getOrElse(-1)} руб., ")
-      .append(s"${timestampToString(updateTime.getOrElse(Timestamp.newBuilder.build))}")
+      .append(roi
+        .getOrElse(BigDecimal(0))
+        .setScale(appConfig.pctScale, RoundingMode.HALF_UP))
+      .append("%, ")
+      .append(quotationToBigDecimal(currentPrice.getOrElse(Quotation.newBuilder.build))
+        .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
+      .append(" руб., ")
+      .append(uptrendPct
+        .getOrElse(BigDecimal(-1))
+        .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
+      .append("%, ")
+      .append(uptrendAbs
+        .getOrElse(BigDecimal(-1))
+        .setScale(appConfig.pctScale, RoundingMode.HALF_UP)
+      )
+      .append(" руб., ")
+      .append(timestampToString(updateTime.getOrElse(Timestamp.newBuilder.build)))
       .toString
   }
 }

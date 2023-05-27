@@ -15,16 +15,21 @@ object Main extends App {
 
   implicit val investApiClient: InvestApiClient.type = InvestApiClient
 
-  val wrappedSharesUptrend: List[ShareWrapper] = ShareWrapper
+  val wrappedShares: List[ShareWrapper] = ShareWrapper
     .getAvailableShares
+
+  log.info(s"total: ${wrappedShares.length}")
+//  wrappedShares.foreach(s => log.info(s.toString))
+
+  val wrappedSharesUptrend: List[ShareWrapper] = wrappedShares
     .map(_.updateShare)
     .filter(_.uptrendPct > Some(appConfig.uptrendThresholdPct))
     .sortBy(_.uptrendAbs)
     .reverse
     .take(appConfig.numUptrendShares)
 
-  wrappedSharesUptrend.foreach(s => log.info(s.toString))
-  log.info(wrappedSharesUptrend.length.toString)
+  log.info(s"best uptrend: ${wrappedSharesUptrend.length}")
+//  wrappedSharesUptrend.foreach(s => log.info(s.toString))
 
   // buy wrappedSharesUptrend
   val purchasedShares: List[ShareWrapper] = wrappedSharesUptrend
