@@ -2,7 +2,7 @@ package com.github.mikhaildruzhinin.trader.database
 
 import com.github.mikhaildruzhinin.trader.config.AppConfig
 import com.github.mikhaildruzhinin.trader.database.Models.{Share, ShareType}
-import slick.jdbc.PostgresProfile.api._
+import com.github.mikhaildruzhinin.trader.database.Connection.databaseConfig.profile.api._
 import slick.lifted.ProvenShape
 
 import java.time.temporal.ChronoUnit
@@ -70,11 +70,13 @@ class SharesTable(tag: Tag) extends Table[Share](tag, Some("trader"), "shares") 
 }
 
 object SharesTable {
+  import Connection.databaseConfig.profile.api._
+
   lazy val sharesTable = TableQuery[SharesTable]
 
-  def createIfNotExists: Future[Unit] = Connection.db.run(sharesTable.schema.createIfNotExists)
+  def createIfNotExists: Future[Unit] = Connection.databaseConfig.db.run(sharesTable.schema.createIfNotExists)
 
-  def selectAll: Future[Seq[Share]] = Connection.db.run(sharesTable.result)
+  def selectAll: Future[Seq[Share]] = Connection.databaseConfig.db.run(sharesTable.result)
 
   def filterByTypeCd(typeCd: Int)
                     (implicit appConfig: AppConfig): Future[Seq[Share]] = {
@@ -101,7 +103,7 @@ object SharesTable {
           s.typeCd === typeCd
       )
 
-    Connection.db.run(
+    Connection.databaseConfig.db.run(
       filteredShares
         .join(
           filteredShares.map(s => (s.id, rowNumCol))
@@ -115,7 +117,7 @@ object SharesTable {
   }
 
     def insert(shares: Seq[ShareType]): Future[Option[Int]] = {
-      Connection.db.run(
+      Connection.databaseConfig.db.run(
         sharesTable
           .map(
             s => (

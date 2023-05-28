@@ -1,7 +1,7 @@
 package com.github.mikhaildruzhinin.trader.config
 
 case class AppConfig(tinkoffInvestApi: TinkoffInvestApiConfig,
-                     postgres: PostgresConfig,
+                     slick: SlickConfig,
                      exchange: ExchangeConfig,
                      scheduler: SchedulerConfig,
                      pctScale: Int,

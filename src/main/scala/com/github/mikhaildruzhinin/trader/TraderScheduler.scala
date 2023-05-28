@@ -26,7 +26,7 @@ object TraderScheduler extends App {
     .execute((_, _) => log.info("Hello World!"))
 
   val scheduler: Scheduler = Scheduler
-    .create(appConfig.postgres.properties.dataSource)
+    .create(appConfig.slick.db.properties.dataSource)
     .tableName(appConfig.scheduler.tableName)
     .startTasks(uptrendSharesTask)
     .threads(appConfig.scheduler.numThreads)

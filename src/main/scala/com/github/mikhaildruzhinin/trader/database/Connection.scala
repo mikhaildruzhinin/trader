@@ -1,7 +1,8 @@
 package com.github.mikhaildruzhinin.trader.database
 
-import slick.jdbc.PostgresProfile.api._
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 
 object Connection {
-  lazy val db = Database.forConfig("postgres")
+  lazy val databaseConfig = DatabaseConfig.forConfig[JdbcProfile]("slick")
 }

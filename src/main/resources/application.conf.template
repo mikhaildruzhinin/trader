@@ -3,17 +3,20 @@ tinkoffInvestApi {
   mode: sandbox
   rateLimitPauseMillis: 90000
 }
-postgres {
-  connectionPool: HikariCP
-  dataSourceClass: org.postgresql.ds.PGSimpleDataSource
-  properties {
-    serverName:
-    portNumber:
-    databaseName:
-    user:
-    password:
+slick {
+  profile: "slick.jdbc.PostgresProfile$"
+  db {
+    connectionPool: HikariCP
+    dataSourceClass: org.postgresql.ds.PGSimpleDataSource
+    properties {
+      serverName:
+      portNumber:
+      databaseName:
+      user:
+      password:
+    }
+    numThreads: 10
   }
-  numThreads: 10
 }
 exchange {
   names: [MOEX, MOEX_PLUS, MOEX_EVENING_WEEKEND, MOEX_WEEKEND]
