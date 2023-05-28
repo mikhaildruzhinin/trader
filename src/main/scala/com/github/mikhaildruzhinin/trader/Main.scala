@@ -1,12 +1,8 @@
 package com.github.mikhaildruzhinin.trader
 
-import com.github.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
+import com.github.mikhaildruzhinin.trader.config.{AppConfig, ConfigReader}
 import com.github.mikhaildruzhinin.trader.database.{Connection, Models}
 import com.typesafe.scalalogging.Logger
-import pureconfig.generic.ProductHint
-import pureconfig.generic.auto.exportReader
-import pureconfig.generic.semiauto.deriveEnumerationReader
-import pureconfig.{CamelCase, ConfigFieldMapping, ConfigReader, ConfigSource}
 import slick.jdbc.PostgresProfile.api._
 
 import java.util.concurrent.TimeUnit
@@ -14,8 +10,6 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 object Main extends App {
-  implicit def hint[A]: ProductHint[A] = ProductHint[A](ConfigFieldMapping(CamelCase, CamelCase))
-
   val log: Logger = Logger(getClass.getName.stripSuffix("$"))
 
   log.info("start")
@@ -24,8 +18,7 @@ object Main extends App {
     Duration(5, TimeUnit.MINUTES)
   )
 
-  implicit val investApiModeConvert: ConfigReader[InvestApiMode] = deriveEnumerationReader[InvestApiMode]
-  implicit val appConfig: AppConfig = ConfigSource.default.loadOrThrow[AppConfig]
+  implicit val appConfig: AppConfig = ConfigReader.appConfig
 
   implicit val investApiClient: InvestApiClient.type = InvestApiClient
 
