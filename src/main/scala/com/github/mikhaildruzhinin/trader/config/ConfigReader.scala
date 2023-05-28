@@ -1,6 +1,6 @@
 package com.github.mikhaildruzhinin.trader.config
 
-import pureconfig.{CamelCase, ConfigFieldMapping, ConfigReader, ConfigSource}
+import pureconfig._
 import pureconfig.generic.ProductHint
 import pureconfig.generic.auto.exportReader
 import pureconfig.generic.semiauto.deriveEnumerationReader

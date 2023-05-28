@@ -30,3 +30,4 @@ priceScale: 2
 uptrendThresholdPct: 3
 numUptrendShares: 10
 incomeTaxPct: 13
+testFlg:

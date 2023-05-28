@@ -8,4 +8,5 @@ case class AppConfig(tinkoffInvestApi: TinkoffInvestApiConfig,
                      priceScale: Int,
                      uptrendThresholdPct: Int,
                      numUptrendShares: Int,
-                     incomeTaxPct: Int)
+                     incomeTaxPct: Int,
+                     testFlg: Boolean)

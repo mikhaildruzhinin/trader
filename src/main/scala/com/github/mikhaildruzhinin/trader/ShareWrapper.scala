@@ -1,6 +1,7 @@
 package com.github.mikhaildruzhinin.trader
 
 import com.github.mikhaildruzhinin.trader.config.AppConfig
+import com.github.mikhaildruzhinin.trader.database.Models.ShareType
 import com.google.protobuf.Timestamp
 import ru.tinkoff.piapi.contract.v1.{CandleInterval, LastPrice, Quotation, Share}
 import ru.tinkoff.piapi.core.utils.DateUtils.timestampToString
@@ -137,18 +138,7 @@ case class ShareWrapper(figi: String,
     )
   }
 
-  def getShareTuple(typeCd: String): (
-    String,
-    String,
-    Int,
-    String,
-    String,
-    String,
-    Option[BigDecimal],
-    Option[BigDecimal],
-    Option[BigDecimal],
-    Option[Instant]
-  ) = (
+  def getShareTuple(typeCd: Int): ShareType = (
     typeCd,
     figi,
     lot,
@@ -177,7 +167,8 @@ case class ShareWrapper(figi: String,
       case Some(t) =>
         Some(Instant.parse(timestampToString(t)))
       case _ => None
-    }
+    },
+    appConfig.testFlg
   )
 
   override def toString: String = {

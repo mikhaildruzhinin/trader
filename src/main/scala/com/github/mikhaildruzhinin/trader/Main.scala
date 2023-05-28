@@ -1,9 +1,8 @@
 package com.github.mikhaildruzhinin.trader
 
 import com.github.mikhaildruzhinin.trader.config.{AppConfig, ConfigReader}
-import com.github.mikhaildruzhinin.trader.database.{Connection, Models}
+import com.github.mikhaildruzhinin.trader.database.SharesTable
 import com.typesafe.scalalogging.Logger
-import slick.jdbc.PostgresProfile.api._
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
@@ -12,28 +11,32 @@ import scala.concurrent.duration.Duration
 object Main extends App {
   val log: Logger = Logger(getClass.getName.stripSuffix("$"))
 
+  implicit val appConfig: AppConfig = ConfigReader.appConfig
+
   log.info("start")
   Await.ready(
-    Connection.db.run(Models.ddl.createIfNotExists),
-    Duration(5, TimeUnit.MINUTES)
+    SharesTable.createIfNotExists,
+    Duration(1, TimeUnit.MINUTES)
   )
 
-  implicit val appConfig: AppConfig = ConfigReader.appConfig
+  Await.result(
+    SharesTable.filterByTypeCd(1),
+    Duration(1, TimeUnit.MINUTES)
+  ).foreach(println)
 
   implicit val investApiClient: InvestApiClient.type = InvestApiClient
 
-  val wrappedShares: Seq[ShareWrapper] = ShareWrapper
+  val shares: Seq[ShareWrapper] = ShareWrapper
     .getAvailableShares
 
   val sharesNum: Option[Int] = Await.result(
-    Connection.db.run(Models.insertShares(wrappedShares, "tst")),
-    Duration(5, TimeUnit.MINUTES)
+    SharesTable.insert(shares.map(_.getShareTuple(1))),
+    Duration(1, TimeUnit.MINUTES)
   )
-
   log.info(s"total: ${sharesNum.getOrElse(-1).toString}")
 //  wrappedShares.foreach(s => log.info(s.toString))
 
-  val wrappedSharesUptrend: Seq[ShareWrapper] = wrappedShares
+  val uptrendShares: Seq[ShareWrapper] = shares
     .map(_.updateShare)
     .filter(_.uptrendPct > Some(appConfig.uptrendThresholdPct))
     .sortBy(_.uptrendAbs)
@@ -41,15 +44,14 @@ object Main extends App {
     .take(appConfig.numUptrendShares)
 
   val uptrendSharesNum: Option[Int] = Await.result(
-    Connection.db.run(Models.insertShares(wrappedSharesUptrend, "tst")),
-    Duration(5, TimeUnit.MINUTES)
+    SharesTable.insert(uptrendShares.map(_.getShareTuple(2))),
+    Duration(1, TimeUnit.MINUTES)
   )
-
   log.info(s"best uptrend: ${uptrendSharesNum.getOrElse(-1).toString}")
 //  wrappedSharesUptrend.foreach(s => log.info(s.toString))
 
-  // buy wrappedSharesUptrend
-  val purchasedShares: Seq[ShareWrapper] = wrappedSharesUptrend
+  // buy uptrendShares
+  val purchasedShares: Seq[ShareWrapper] = uptrendShares
     .map(
       s => ShareWrapper(
         shareWrapper = s,
@@ -61,10 +63,9 @@ object Main extends App {
     )
 
   val purchasedSharesNum: Option[Int] = Await.result(
-    Connection.db.run(Models.insertShares(purchasedShares, "tst")),
-    Duration(5, TimeUnit.MINUTES)
+    SharesTable.insert(purchasedShares.map(_.getShareTuple(3))),
+    Duration(1, TimeUnit.MINUTES)
   )
-
   log.info(s"purchased: ${purchasedSharesNum.getOrElse(-1).toString}")
 
   val (sharesToSell: List[ShareWrapper], sharesToKeep: Seq[ShareWrapper]) = investApiClient
@@ -74,18 +75,16 @@ object Main extends App {
     .partition(_.isCheaperThanPurchasePrice)
 
   val sellSharesNum: Option[Int] = Await.result(
-    Connection.db.run(Models.insertShares(sharesToSell, "tst")),
-    Duration(5, TimeUnit.MINUTES)
+    SharesTable.insert(sharesToSell.map(_.getShareTuple(4))),
+    Duration(1, TimeUnit.MINUTES)
   )
-
   log.info(s"sell: ${sellSharesNum.getOrElse(-1).toString}")
   sharesToSell.foreach(s => log.info(s.toString))
 
   val keepSharesNum: Option[Int] = Await.result(
-    Connection.db.run(Models.insertShares(sharesToKeep, "tst")),
-    Duration(5, TimeUnit.MINUTES)
+    SharesTable.insert(sharesToKeep.map(_.getShareTuple(5))),
+    Duration(1, TimeUnit.MINUTES)
   )
-
   log.info(s"keep: ${keepSharesNum.getOrElse(-1).toString}")
   sharesToKeep.foreach(s => log.info(s.toString))
 }
