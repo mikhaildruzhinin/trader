@@ -1,11 +1,12 @@
 package com.github.mikhaildruzhinin.trader
 
 import com.github.mikhaildruzhinin.trader.config.AppConfig
+import com.github.mikhaildruzhinin.trader.database.Models
 import com.github.mikhaildruzhinin.trader.database.Models.ShareType
 import com.google.protobuf.Timestamp
 import ru.tinkoff.piapi.contract.v1.{CandleInterval, LastPrice, Quotation, Share}
-import ru.tinkoff.piapi.core.utils.DateUtils.timestampToString
-import ru.tinkoff.piapi.core.utils.MapperUtils.quotationToBigDecimal
+import ru.tinkoff.piapi.core.utils.DateUtils.{instantToTimestamp, timestampToInstant, timestampToString}
+import ru.tinkoff.piapi.core.utils.MapperUtils.{bigDecimalToQuotation, quotationToBigDecimal}
 
 import java.time.{DayOfWeek, Instant, LocalDate}
 import scala.math.BigDecimal.{RoundingMode, javaBigDecimal2bigDecimal}
@@ -58,6 +59,31 @@ case class ShareWrapper(figi: String,
     shareWrapper.purchasePrice,
     Some(lastPrice.getPrice),
     Some(lastPrice.getTime)
+  )
+
+  def this(share: Models.Share)
+          (implicit appConfig: AppConfig) = this(
+    share.figi,
+    share.lot,
+    share.currency,
+    share.name,
+    share.exchange,
+    share.startingPrice match {
+      case Some(s) => Some(bigDecimalToQuotation(s.bigDecimal))
+      case _ => None
+    },
+    share.purchasePrice match {
+      case Some(p) => Some(bigDecimalToQuotation(p.bigDecimal))
+      case _ => None
+    },
+    share.currentPrice match {
+      case Some(p) => Some(bigDecimalToQuotation(p.bigDecimal))
+      case _ => None
+    },
+    share.updateDttm match {
+      case Some(t) => Some(instantToTimestamp(t))
+      case _ => None
+    }
   )
 
   lazy val uptrendPct: Option[BigDecimal] = {
@@ -165,7 +191,7 @@ case class ShareWrapper(figi: String,
     },
     updateTime match {
       case Some(t) =>
-        Some(Instant.parse(timestampToString(t)))
+        Some(timestampToInstant(t))
       case _ => None
     },
     appConfig.testFlg
@@ -175,11 +201,13 @@ case class ShareWrapper(figi: String,
     val a: BigDecimal = roi.getOrElse(BigDecimal(0))
 
     new StringBuilder(s"$name, ")
+      .append(lot)
+      .append("шт., ")
       .append(roi
         .getOrElse(BigDecimal(0))
         .setScale(appConfig.pctScale, RoundingMode.HALF_UP))
       .append("%, ")
-      .append(quotationToBigDecimal(currentPrice.getOrElse(Quotation.newBuilder.build))
+      .append((quotationToBigDecimal(currentPrice.getOrElse(Quotation.newBuilder.build)) * lot)
         .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
       .append(" руб., ")
       .append(uptrendPct
@@ -206,13 +234,16 @@ object ShareWrapper {
             currentPrice: Option[Quotation],
             updateTime: Option[Timestamp])
            (implicit appConfig: AppConfig): ShareWrapper = {
+
     new ShareWrapper(shareWrapper, startingPrice, purchasePrice, currentPrice, updateTime)
   }
 
-  def apply(shareWrapper: ShareWrapper, lastPrice: LastPrice)
-           (implicit appConfig: AppConfig): ShareWrapper = {
-    new ShareWrapper(shareWrapper, lastPrice)
-  }
+  def apply(shareWrapper: ShareWrapper,
+            lastPrice: LastPrice)
+           (implicit appConfig: AppConfig): ShareWrapper = new ShareWrapper(shareWrapper, lastPrice)
+
+  def apply(share: Models.Share)
+           (implicit appConfig: AppConfig): ShareWrapper = new ShareWrapper(share)
 
   private def getFilteredShares(implicit appConfig: AppConfig,
                                 investApiClient: InvestApiClient.type): List[Share] = {

@@ -9,20 +9,23 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 object Main extends App {
+
+  def getShares(typeCd: Int): Seq[ShareWrapper] = {
+    Await.result(
+      SharesTable.filterByTypeCd(typeCd),
+      Duration(1, TimeUnit.MINUTES)
+    ).map(s => ShareWrapper(s))
+  }
+
   val log: Logger = Logger(getClass.getName.stripSuffix("$"))
+  log.info("start")
 
   implicit val appConfig: AppConfig = ConfigReader.appConfig
 
-  log.info("start")
   Await.ready(
     SharesTable.createIfNotExists,
     Duration(1, TimeUnit.MINUTES)
   )
-
-  Await.result(
-    SharesTable.filterByTypeCd(1),
-    Duration(1, TimeUnit.MINUTES)
-  ).foreach(println)
 
   implicit val investApiClient: InvestApiClient.type = InvestApiClient
 
@@ -36,7 +39,7 @@ object Main extends App {
   log.info(s"total: ${sharesNum.getOrElse(-1).toString}")
 //  wrappedShares.foreach(s => log.info(s.toString))
 
-  val uptrendShares: Seq[ShareWrapper] = shares
+  val uptrendShares: Seq[ShareWrapper] = getShares(1)
     .map(_.updateShare)
     .filter(_.uptrendPct > Some(appConfig.uptrendThresholdPct))
     .sortBy(_.uptrendAbs)
@@ -51,7 +54,7 @@ object Main extends App {
 //  wrappedSharesUptrend.foreach(s => log.info(s.toString))
 
   // buy uptrendShares
-  val purchasedShares: Seq[ShareWrapper] = uptrendShares
+  val purchasedShares: Seq[ShareWrapper] = getShares(2)
     .map(
       s => ShareWrapper(
         shareWrapper = s,
@@ -69,8 +72,8 @@ object Main extends App {
   log.info(s"purchased: ${purchasedSharesNum.getOrElse(-1).toString}")
 
   val (sharesToSell: List[ShareWrapper], sharesToKeep: Seq[ShareWrapper]) = investApiClient
-    .getLastPrices(purchasedShares.map(_.figi))
-    .zip(purchasedShares)
+    .getLastPrices(getShares(3).map(_.figi))
+    .zip(getShares(3))
     .map(x => ShareWrapper(x._2, x._1))
     .partition(_.isCheaperThanPurchasePrice)
 
