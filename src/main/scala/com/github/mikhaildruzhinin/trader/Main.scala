@@ -75,7 +75,7 @@ object Main extends App {
     .getLastPrices(getShares(3).map(_.figi))
     .zip(getShares(3))
     .map(x => ShareWrapper(x._2, x._1))
-    .partition(_.isCheaperThanPurchasePrice)
+    .partition(_.roi <= Some(BigDecimal(0)))
 
   val sellSharesNum: Option[Int] = Await.result(
     SharesTable.insert(sharesToSell.map(_.getShareTuple(4))),

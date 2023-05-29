@@ -133,12 +133,12 @@ case class ShareWrapper(figi: String,
     }
   }
 
-  lazy val isCheaperThanPurchasePrice: Boolean = {
-    quotationToBigDecimal(
-      currentPrice.getOrElse(Quotation.newBuilder.build)
-    ) < quotationToBigDecimal(
-      purchasePrice.getOrElse(Quotation.newBuilder.build)
-    )
+  lazy val profit: Option[BigDecimal] = {
+    (roi, purchasePrice) match {
+      case (Some(r), Some(p)) =>
+        Some(r * quotationToBigDecimal(p) * lot / 100)
+      case _ => None
+    }
   }
 
   private def applyTaxes(noTaxValue: BigDecimal): BigDecimal = {
@@ -148,7 +148,11 @@ case class ShareWrapper(figi: String,
   def updateShare(implicit appConfig: AppConfig,
                   investApiClient: InvestApiClient.type): ShareWrapper = {
 
-    val (_: Option[Quotation], currentPrice: Option[Quotation], updateTime: Option[Timestamp]) = ShareWrapper.getUpdatedCandlePrices(
+    val (
+      _: Option[Quotation],
+      currentPrice: Option[Quotation],
+      updateTime: Option[Timestamp]
+    ) = ShareWrapper.getUpdatedCandlePrices(
       shareWrapper = this,
       from = appConfig.exchange.updateInstantFrom,
       to = appConfig.exchange.updateInstantTo,
@@ -198,26 +202,20 @@ case class ShareWrapper(figi: String,
   )
 
   override def toString: String = {
-    val a: BigDecimal = roi.getOrElse(BigDecimal(0))
 
     new StringBuilder(s"$name, ")
-      .append(lot)
-      .append("шт., ")
       .append(roi
         .getOrElse(BigDecimal(0))
         .setScale(appConfig.pctScale, RoundingMode.HALF_UP))
       .append("%, ")
+      .append((quotationToBigDecimal(purchasePrice.getOrElse(Quotation.newBuilder.build)) * lot)
+        .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
+      .append(" руб., ")
       .append((quotationToBigDecimal(currentPrice.getOrElse(Quotation.newBuilder.build)) * lot)
         .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
       .append(" руб., ")
-      .append(uptrendPct
-        .getOrElse(BigDecimal(-1))
+      .append(profit.getOrElse(BigDecimal(0))
         .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
-      .append("%, ")
-      .append(uptrendAbs
-        .getOrElse(BigDecimal(-1))
-        .setScale(appConfig.pctScale, RoundingMode.HALF_UP)
-      )
       .append(" руб., ")
       .append(timestampToString(updateTime.getOrElse(Timestamp.newBuilder.build)))
       .toString
@@ -268,12 +266,20 @@ object ShareWrapper {
                                      to: Instant,
                                      interval: CandleInterval)
                                     (implicit appConfig: AppConfig,
-                                     investApiClient: InvestApiClient.type): (Option[Quotation], Option[Quotation], Option[Timestamp]) = {
+                                     investApiClient: InvestApiClient.type): (
+    Option[Quotation],
+      Option[Quotation],
+      Option[Timestamp]
+    ) = {
 
     investApiClient
       .getCandles(shareWrapper.figi, from, to, interval)
       .headOption match {
-        case Some(candle) => (Some(candle.getOpen), Some(candle.getClose), Some(candle.getTime))
+        case Some(candle) => (
+          Some(candle.getOpen),
+          Some(candle.getClose),
+          Some(candle.getTime)
+        )
         case None => (None, None, None)
       }
   }
@@ -286,12 +292,16 @@ object ShareWrapper {
         s => {
           val shareWrapper = ShareWrapper(s)
 
-          val (startingPrice: Option[Quotation], _: Option[Quotation], updateTime: Option[Timestamp]) = getUpdatedCandlePrices(
-              shareWrapper = shareWrapper,
-              from = appConfig.exchange.startInstantFrom,
-              to = appConfig.exchange.startInstantTo,
-              interval = CandleInterval.CANDLE_INTERVAL_5_MIN
-            )
+          val (
+            startingPrice: Option[Quotation],
+            _: Option[Quotation],
+            updateTime: Option[Timestamp]
+          ) = getUpdatedCandlePrices(
+            shareWrapper = shareWrapper,
+            from = appConfig.exchange.startInstantFrom,
+            to = appConfig.exchange.startInstantTo,
+            interval = CandleInterval.CANDLE_INTERVAL_5_MIN
+          )
 
           ShareWrapper(shareWrapper, startingPrice, None, None, updateTime)
         }
