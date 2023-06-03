@@ -70,13 +70,11 @@ class SharesTable(tag: Tag) extends Table[Share](tag, Some("trader"), "shares") 
 }
 
 object SharesTable {
-  import Connection.databaseConfig.profile.api._
-
   lazy val sharesTable = TableQuery[SharesTable]
 
-  def createIfNotExists: Future[Unit] = Connection.databaseConfig.db.run(sharesTable.schema.createIfNotExists)
+  def createIfNotExists: Future[Unit] = Connection.db.run(sharesTable.schema.createIfNotExists)
 
-  def selectAll: Future[Seq[Share]] = Connection.databaseConfig.db.run(sharesTable.result)
+  def selectAll: Future[Seq[Share]] = Connection.db.run(sharesTable.result)
 
   def filterByTypeCd(typeCd: Int)
                     (implicit appConfig: AppConfig): Future[Seq[Share]] = {
@@ -103,7 +101,7 @@ object SharesTable {
           s.typeCd === typeCd
       )
 
-    Connection.databaseConfig.db.run(
+    Connection.db.run(
       filteredShares
         .join(
           filteredShares.map(s => (s.id, rowNumCol))
@@ -117,7 +115,7 @@ object SharesTable {
   }
 
     def insert(shares: Seq[ShareType]): Future[Option[Int]] = {
-      Connection.databaseConfig.db.run(
+      Connection.db.run(
         sharesTable
           .map(
             s => (
