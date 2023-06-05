@@ -17,6 +17,10 @@ slick {
     }
     numThreads: 10
   }
+  await {
+    length: 10
+    timeUnit: SECONDS
+  }
 }
 exchange {
   names: [MOEX, MOEX_PLUS, MOEX_EVENING_WEEKEND, MOEX_WEEKEND]

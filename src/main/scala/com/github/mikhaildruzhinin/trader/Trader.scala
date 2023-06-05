@@ -3,16 +3,14 @@ package com.github.mikhaildruzhinin.trader
 import com.github.kagkarlsson.scheduler.Scheduler
 import com.github.kagkarlsson.scheduler.task.helper.Tasks
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules
-import com.github.mikhaildruzhinin.trader.Util.getShares
 import com.github.mikhaildruzhinin.trader.client._
 import com.github.mikhaildruzhinin.trader.config.{AppConfig, ConfigReader}
+import com.github.mikhaildruzhinin.trader.core.ShareWrapper
 import com.github.mikhaildruzhinin.trader.database.SharesTable
 import com.typesafe.scalalogging.Logger
 
 import java.time.{Instant, ZoneId}
-import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 
 object Trader extends App {
   val log: Logger = Logger(getClass.getName.stripSuffix("$"))
@@ -25,7 +23,7 @@ object Trader extends App {
     ).execute((_,_) => {
       Await.ready(
         SharesTable.createIfNotExists,
-        Duration(1, TimeUnit.MINUTES)
+        appConfig.slick.await.duration
       )
     })
 
@@ -41,11 +39,12 @@ object Trader extends App {
 
     val sharesNum: Option[Int] = Await.result(
       SharesTable.insert(shares.map(_.getShareTuple(1))),
-      Duration(1, TimeUnit.MINUTES)
+      appConfig.slick.await.duration
     )
     log.info(s"total: ${sharesNum.getOrElse(-1).toString}")
 
-    val uptrendShares: Seq[ShareWrapper] = getShares(1)
+    val uptrendShares: Seq[ShareWrapper] = ShareWrapper
+      .getPersistedShares(1)
       .map(_.updateShare)
       .filter(_.uptrendPct >= Some(appConfig.uptrendThresholdPct))
       .sortBy(_.uptrendAbs)
@@ -54,14 +53,15 @@ object Trader extends App {
 
     val uptrendSharesNum: Option[Int] = Await.result(
       SharesTable.insert(uptrendShares.map(_.getShareTuple(2))),
-      Duration(1, TimeUnit.MINUTES)
+      appConfig.slick.await.duration
     )
     log.info(s"best uptrend: ${uptrendSharesNum.getOrElse(-1).toString}")
 
     // buy uptrendShares
-    val purchasedShares: Seq[ShareWrapper] = getShares(2)
+    val purchasedShares: Seq[ShareWrapper] = ShareWrapper
+      .getPersistedShares(2)
       .map(
-        s => ShareWrapper(
+        s => core.ShareWrapper(
           shareWrapper = s,
           startingPrice = s.startingPrice,
           purchasePrice = s.currentPrice,
@@ -72,7 +72,7 @@ object Trader extends App {
 
     val purchasedSharesNum: Option[Int] = Await.result(
       SharesTable.insert(purchasedShares.map(_.getShareTuple(3))),
-      Duration(1, TimeUnit.MINUTES)
+      appConfig.slick.await.duration
     )
     log.info(s"purchased: ${purchasedSharesNum.getOrElse(-1).toString}")
   })
@@ -85,20 +85,20 @@ object Trader extends App {
     )
   ).execute((_, _) => {
     val (sharesToSell: List[ShareWrapper], sharesToKeep: Seq[ShareWrapper]) = investApiClient
-      .getLastPrices(getShares(3).map(_.figi))
-      .zip(getShares(3))
-      .map(x => ShareWrapper(x._2, x._1))
+      .getLastPrices(ShareWrapper.getPersistedShares(3).map(_.figi))
+      .zip(ShareWrapper.getPersistedShares(3))
+      .map(x => core.ShareWrapper(x._2, x._1))
       .partition(_.roi <= Some(BigDecimal(0)))
 
     val sellSharesNum: Option[Int] = Await.result(
       SharesTable.insert(sharesToSell.map(_.getShareTuple(4))),
-      Duration(1, TimeUnit.MINUTES)
+      appConfig.slick.await.duration
     )
     log.info(s"sell: ${sellSharesNum.getOrElse(-1).toString}")
 
     val keepSharesNum: Option[Int] = Await.result(
       SharesTable.insert(sharesToKeep.map(_.getShareTuple(5))),
-      Duration(1, TimeUnit.MINUTES)
+      appConfig.slick.await.duration
     )
     log.info(s"keep: ${keepSharesNum.getOrElse(-1).toString}")
   })
@@ -110,9 +110,10 @@ object Trader extends App {
       ZoneId.of("UTC")
     )
   ).execute((_, _) => {
-    val soldShares: Seq[ShareWrapper] = getShares(5)
+    val soldShares: Seq[ShareWrapper] = ShareWrapper
+      .getPersistedShares(5)
       .map(
-        s => ShareWrapper(
+        s => core.ShareWrapper(
           shareWrapper = s,
           startingPrice = s.startingPrice,
           purchasePrice = s.currentPrice,
@@ -123,7 +124,7 @@ object Trader extends App {
 
     val soldSharesNum: Option[Int] = Await.result(
       SharesTable.insert(soldShares.map(_.getShareTuple(4))),
-      Duration(1, TimeUnit.MINUTES)
+      appConfig.slick.await.duration
     )
     log.info(s"sell: ${soldSharesNum.getOrElse(-1).toString}")
     soldShares.foreach(s => log.info(s.toString))

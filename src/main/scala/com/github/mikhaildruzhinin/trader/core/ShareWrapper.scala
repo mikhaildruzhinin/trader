@@ -1,8 +1,8 @@
-package com.github.mikhaildruzhinin.trader
+package com.github.mikhaildruzhinin.trader.core
 
 import com.github.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import com.github.mikhaildruzhinin.trader.config.AppConfig
-import com.github.mikhaildruzhinin.trader.database.Models
+import com.github.mikhaildruzhinin.trader.database.{Models, SharesTable}
 import com.github.mikhaildruzhinin.trader.database.Models.ShareType
 import com.google.protobuf.Timestamp
 import ru.tinkoff.piapi.contract.v1._
@@ -10,6 +10,7 @@ import ru.tinkoff.piapi.core.utils.DateUtils._
 import ru.tinkoff.piapi.core.utils.MapperUtils._
 
 import java.time.{DayOfWeek, Instant, LocalDate}
+import scala.concurrent.Await
 import scala.math.BigDecimal.{RoundingMode, javaBigDecimal2bigDecimal}
 
 case class ShareWrapper(figi: String,
@@ -309,5 +310,14 @@ object ShareWrapper {
           ShareWrapper(shareWrapper, startingPrice, None, None, updateTime)
         }
       )
+  }
+
+  def getPersistedShares(typeCd: Int)
+                        (implicit appConfig: AppConfig): Seq[ShareWrapper] = {
+
+    Await.result(
+      SharesTable.filterByTypeCd(typeCd),
+      appConfig.slick.await.duration
+    ).map(s => ShareWrapper(s))
   }
 }
