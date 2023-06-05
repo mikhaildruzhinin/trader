@@ -1,4 +1,4 @@
-package com.github.mikhaildruzhinin.trader
+package com.github.mikhaildruzhinin.trader.client
 
 import com.github.mikhaildruzhinin.trader.config.AppConfig
 import com.typesafe.scalalogging.Logger
@@ -10,11 +10,11 @@ import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
-object InvestApiClient {
+object SyncInvestApiClient extends BaseInvestApiClient {
   val log: Logger = Logger(getClass.getName.stripSuffix("$"))
 
   @tailrec
-  def getCandles(figi: String,
+  override def getCandles(figi: String,
                  from: Instant,
                  to: Instant,
                  interval: CandleInterval)
@@ -38,7 +38,7 @@ object InvestApiClient {
   }
 
   @tailrec
-  def getShares(implicit appConfig: AppConfig): List[Share] = {
+  override def getShares(implicit appConfig: AppConfig): List[Share] = {
 
     Try {
       appConfig.tinkoffInvestApi.instrumentService
@@ -58,7 +58,7 @@ object InvestApiClient {
   }
 
   @tailrec
-  def getLastPrices(figi: Seq[String])
+  override def getLastPrices(figi: Seq[String])
                    (implicit appConfig: AppConfig): Seq[LastPrice] = {
 
     Try {

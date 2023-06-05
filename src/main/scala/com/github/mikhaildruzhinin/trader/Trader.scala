@@ -4,6 +4,7 @@ import com.github.kagkarlsson.scheduler.Scheduler
 import com.github.kagkarlsson.scheduler.task.helper.Tasks
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules
 import com.github.mikhaildruzhinin.trader.Util.getShares
+import com.github.mikhaildruzhinin.trader.client._
 import com.github.mikhaildruzhinin.trader.config.{AppConfig, ConfigReader}
 import com.github.mikhaildruzhinin.trader.database.SharesTable
 import com.typesafe.scalalogging.Logger
@@ -17,8 +18,7 @@ object Trader extends App {
   val log: Logger = Logger(getClass.getName.stripSuffix("$"))
 
   implicit val appConfig: AppConfig = ConfigReader.appConfig
-  implicit val investApiClient: InvestApiClient.type = InvestApiClient
-  implicit val shareWrapper: ShareWrapper.type = ShareWrapper
+  implicit val investApiClient: BaseInvestApiClient = SyncInvestApiClient
 
     val startUpTask = Tasks.oneTime(
       "start-up"
@@ -104,7 +104,7 @@ object Trader extends App {
   })
 
   val sellTask = Tasks.recurring(
-    "monitor",
+    "sell",
     Schedules.cron(
       "0 0 13 * * *",
       ZoneId.of("UTC")

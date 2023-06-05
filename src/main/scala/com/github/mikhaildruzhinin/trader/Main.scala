@@ -1,6 +1,7 @@
 package com.github.mikhaildruzhinin.trader
 
 import com.github.mikhaildruzhinin.trader.Util.getShares
+import com.github.mikhaildruzhinin.trader.client._
 import com.github.mikhaildruzhinin.trader.config.{AppConfig, ConfigReader}
 import com.github.mikhaildruzhinin.trader.database.SharesTable
 import com.typesafe.scalalogging.Logger
@@ -18,17 +19,17 @@ object Main extends App {
 
   Await.ready(
     SharesTable.createIfNotExists,
-    Duration(1, TimeUnit.MINUTES)
+    Duration(10, TimeUnit.SECONDS)
   )
 
-  implicit val investApiClient: InvestApiClient.type = InvestApiClient
+  implicit val investApiClient: BaseInvestApiClient = SyncInvestApiClient
 
   val shares: Seq[ShareWrapper] = ShareWrapper
     .getAvailableShares
 
   val sharesNum: Option[Int] = Await.result(
     SharesTable.insert(shares.map(_.getShareTuple(1))),
-    Duration(1, TimeUnit.MINUTES)
+    Duration(10, TimeUnit.SECONDS)
   )
   log.info(s"total: ${sharesNum.getOrElse(-1).toString}")
 //  wrappedShares.foreach(s => log.info(s.toString))
@@ -42,7 +43,7 @@ object Main extends App {
 
   val uptrendSharesNum: Option[Int] = Await.result(
     SharesTable.insert(uptrendShares.map(_.getShareTuple(2))),
-    Duration(1, TimeUnit.MINUTES)
+    Duration(10, TimeUnit.SECONDS)
   )
   log.info(s"best uptrend: ${uptrendSharesNum.getOrElse(-1).toString}")
 //  wrappedSharesUptrend.foreach(s => log.info(s.toString))
@@ -61,7 +62,7 @@ object Main extends App {
 
   val purchasedSharesNum: Option[Int] = Await.result(
     SharesTable.insert(purchasedShares.map(_.getShareTuple(3))),
-    Duration(1, TimeUnit.MINUTES)
+    Duration(10, TimeUnit.SECONDS)
   )
   log.info(s"purchased: ${purchasedSharesNum.getOrElse(-1).toString}")
 
@@ -73,14 +74,14 @@ object Main extends App {
 
   val sellSharesNum: Option[Int] = Await.result(
     SharesTable.insert(sharesToSell.map(_.getShareTuple(4))),
-    Duration(1, TimeUnit.MINUTES)
+    Duration(10, TimeUnit.SECONDS)
   )
   log.info(s"sell: ${sellSharesNum.getOrElse(-1).toString}")
   sharesToSell.foreach(s => log.info(s.toString))
 
   val keepSharesNum: Option[Int] = Await.result(
     SharesTable.insert(sharesToKeep.map(_.getShareTuple(5))),
-    Duration(1, TimeUnit.MINUTES)
+    Duration(10, TimeUnit.SECONDS)
   )
   log.info(s"keep: ${keepSharesNum.getOrElse(-1).toString}")
   sharesToKeep.foreach(s => log.info(s.toString))

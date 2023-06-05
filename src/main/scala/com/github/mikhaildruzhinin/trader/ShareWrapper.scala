@@ -1,12 +1,13 @@
 package com.github.mikhaildruzhinin.trader
 
+import com.github.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import com.github.mikhaildruzhinin.trader.config.AppConfig
 import com.github.mikhaildruzhinin.trader.database.Models
 import com.github.mikhaildruzhinin.trader.database.Models.ShareType
 import com.google.protobuf.Timestamp
-import ru.tinkoff.piapi.contract.v1.{CandleInterval, LastPrice, Quotation, Share}
-import ru.tinkoff.piapi.core.utils.DateUtils.{instantToTimestamp, timestampToInstant, timestampToString}
-import ru.tinkoff.piapi.core.utils.MapperUtils.{bigDecimalToQuotation, quotationToBigDecimal}
+import ru.tinkoff.piapi.contract.v1._
+import ru.tinkoff.piapi.core.utils.DateUtils._
+import ru.tinkoff.piapi.core.utils.MapperUtils._
 
 import java.time.{DayOfWeek, Instant, LocalDate}
 import scala.math.BigDecimal.{RoundingMode, javaBigDecimal2bigDecimal}
@@ -16,10 +17,10 @@ case class ShareWrapper(figi: String,
                         currency: String,
                         name: String,
                         exchange: String,
-                        startingPrice: Option[Quotation] = None,
-                        purchasePrice: Option[Quotation] = None,
-                        currentPrice: Option[Quotation] = None,
-                        updateTime: Option[Timestamp] = None)
+                        startingPrice: scala.Option[Quotation] = None,
+                        purchasePrice: scala.Option[Quotation] = None,
+                        currentPrice: scala.Option[Quotation] = None,
+                        updateTime: scala.Option[Timestamp] = None)
                        (implicit appConfig: AppConfig) {
 
   def this(share: Share)(implicit appConfig: AppConfig) = this(
@@ -31,10 +32,10 @@ case class ShareWrapper(figi: String,
   )
 
   def this(shareWrapper: ShareWrapper,
-           startingPrice: Option[Quotation],
-           purchasePrice: Option[Quotation],
-           currentPrice: Option[Quotation],
-           updateTime: Option[Timestamp])
+           startingPrice: scala.Option[Quotation],
+           purchasePrice: scala.Option[Quotation],
+           currentPrice: scala.Option[Quotation],
+           updateTime: scala.Option[Timestamp])
           (implicit appConfig: AppConfig) = this(
     shareWrapper.figi,
     shareWrapper.lot,
@@ -86,8 +87,8 @@ case class ShareWrapper(figi: String,
     }
   )
 
-  lazy val uptrendPct: Option[BigDecimal] = {
-    val uptrendPctNoTax: Option[BigDecimal] = (startingPrice, currentPrice) match {
+  lazy val uptrendPct: scala.Option[BigDecimal] = {
+    val uptrendPctNoTax: scala.Option[BigDecimal] = (startingPrice, currentPrice) match {
       case (Some(startingPriceValue), Some(currentPriceValue)) =>
         Some(
           (
@@ -108,7 +109,7 @@ case class ShareWrapper(figi: String,
     }
   }
 
-  lazy val uptrendAbs: Option[BigDecimal] = {
+  lazy val uptrendAbs: scala.Option[BigDecimal] = {
     (uptrendPct, startingPrice) match {
       case (Some(uptrendPctValue), Some(startingPriceValue)) =>
         Some(uptrendPctValue * quotationToBigDecimal(startingPriceValue) * lot / 100)
@@ -116,7 +117,7 @@ case class ShareWrapper(figi: String,
     }
   }
 
-  lazy val roi: Option[BigDecimal] = {
+  lazy val roi: scala.Option[BigDecimal] = {
     val roiNoTax = (purchasePrice, currentPrice) match {
       case (Some(purchasePriceValue), Some(currentPriceValue)) =>
         Some(
@@ -133,7 +134,7 @@ case class ShareWrapper(figi: String,
     }
   }
 
-  lazy val profit: Option[BigDecimal] = {
+  lazy val profit: scala.Option[BigDecimal] = {
     (roi, purchasePrice) match {
       case (Some(r), Some(p)) =>
         Some(r * quotationToBigDecimal(p) * lot / 100)
@@ -146,12 +147,12 @@ case class ShareWrapper(figi: String,
   }
 
   def updateShare(implicit appConfig: AppConfig,
-                  investApiClient: InvestApiClient.type): ShareWrapper = {
+                  investApiClient: BaseInvestApiClient): ShareWrapper = {
 
     val (
-      _: Option[Quotation],
-      currentPrice: Option[Quotation],
-      updateTime: Option[Timestamp]
+      _: scala.Option[Quotation],
+      currentPrice: scala.Option[Quotation],
+      updateTime: scala.Option[Timestamp]
     ) = ShareWrapper.getUpdatedCandlePrices(
       shareWrapper = this,
       from = appConfig.exchange.updateInstantFrom,
@@ -227,10 +228,10 @@ object ShareWrapper {
            (implicit appConfig: AppConfig): ShareWrapper = new ShareWrapper(share)
 
   def apply(shareWrapper: ShareWrapper,
-            startingPrice: Option[Quotation],
-            purchasePrice: Option[Quotation],
-            currentPrice: Option[Quotation],
-            updateTime: Option[Timestamp])
+            startingPrice: scala.Option[Quotation],
+            purchasePrice: scala.Option[Quotation],
+            currentPrice: scala.Option[Quotation],
+            updateTime: scala.Option[Timestamp])
            (implicit appConfig: AppConfig): ShareWrapper = {
 
     new ShareWrapper(shareWrapper, startingPrice, purchasePrice, currentPrice, updateTime)
@@ -244,7 +245,7 @@ object ShareWrapper {
            (implicit appConfig: AppConfig): ShareWrapper = new ShareWrapper(share)
 
   private def getFilteredShares(implicit appConfig: AppConfig,
-                                investApiClient: InvestApiClient.type): List[Share] = {
+                                investApiClient: BaseInvestApiClient): List[Share] = {
 
     val shares: List[Share] = investApiClient
       .getShares
@@ -268,10 +269,10 @@ object ShareWrapper {
                                      to: Instant,
                                      interval: CandleInterval)
                                     (implicit appConfig: AppConfig,
-                                     investApiClient: InvestApiClient.type): (
-    Option[Quotation],
-      Option[Quotation],
-      Option[Timestamp]
+                                     investApiClient: BaseInvestApiClient): (
+    scala.Option[Quotation],
+      scala.Option[Quotation],
+      scala.Option[Timestamp]
     ) = {
 
     investApiClient
@@ -287,7 +288,7 @@ object ShareWrapper {
   }
 
   def getAvailableShares(implicit appConfig: AppConfig,
-                         investApiClient: InvestApiClient.type): Seq[ShareWrapper] = {
+                         investApiClient: BaseInvestApiClient): Seq[ShareWrapper] = {
 
     getFilteredShares
       .map(
@@ -295,9 +296,9 @@ object ShareWrapper {
           val shareWrapper = ShareWrapper(s)
 
           val (
-            startingPrice: Option[Quotation],
-            _: Option[Quotation],
-            updateTime: Option[Timestamp]
+            startingPrice: scala.Option[Quotation],
+            _: scala.Option[Quotation],
+            updateTime: scala.Option[Timestamp]
           ) = getUpdatedCandlePrices(
             shareWrapper = shareWrapper,
             from = appConfig.exchange.startInstantFrom,
