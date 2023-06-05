@@ -1,5 +1,6 @@
 package com.github.mikhaildruzhinin.trader
 
+import com.github.mikhaildruzhinin.trader.Util.getShares
 import com.github.mikhaildruzhinin.trader.config.{AppConfig, ConfigReader}
 import com.github.mikhaildruzhinin.trader.database.SharesTable
 import com.typesafe.scalalogging.Logger
@@ -9,13 +10,6 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 object Main extends App {
-
-  def getShares(typeCd: Int): Seq[ShareWrapper] = {
-    Await.result(
-      SharesTable.filterByTypeCd(typeCd),
-      Duration(1, TimeUnit.MINUTES)
-    ).map(s => ShareWrapper(s))
-  }
 
   val log: Logger = Logger(getClass.getName.stripSuffix("$"))
   log.info("start")
@@ -41,7 +35,7 @@ object Main extends App {
 
   val uptrendShares: Seq[ShareWrapper] = getShares(1)
     .map(_.updateShare)
-    .filter(_.uptrendPct > Some(appConfig.uptrendThresholdPct))
+    .filter(_.uptrendPct >= Some(appConfig.uptrendThresholdPct))
     .sortBy(_.uptrendAbs)
     .reverse
     .take(appConfig.numUptrendShares)

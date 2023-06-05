@@ -16,7 +16,7 @@ enablePlugins(JettyPlugin)
 
 libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.4.6",
-  "com.github.kagkarlsson" % "db-scheduler" % "12.1.0",
+  "com.github.kagkarlsson" % "db-scheduler" % "12.2.0",
   "com.github.pureconfig" %% "pureconfig" % "0.17.2",
   "com.typesafe" % "config" % "1.4.2",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
@@ -25,4 +25,23 @@ libraryDependencies ++= Seq(
   "javax.servlet" % "javax.servlet-api" % "4.0.1" % "provided",
   "org.postgresql" % "postgresql" % "42.6.0",
   "ru.tinkoff.piapi" % "java-sdk-core" % "1.3"
+)
+
+assembly / artifact := {
+  val art = (assembly / artifact).value
+  art.withClassifier(Some("assembly"))
+}
+
+addArtifact(assembly / artifact, assembly)
+
+assembly / assemblyMergeStrategy := {
+  case path if path.contains("META-INF/services") => MergeStrategy.concat
+  case PathList("META-INF", _*) => MergeStrategy.discard
+  case _ => MergeStrategy.first
+}
+
+assembly / assemblyShadeRules := Seq(
+  ShadeRule
+    .rename("shapeless.**" -> "new_shapeless.@1")
+    .inAll
 )

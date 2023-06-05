@@ -250,8 +250,10 @@ object ShareWrapper {
       .getShares
       .filter(
         s =>
-          appConfig.exchange.names.contains(s.getExchange)
-            && s.getApiTradeAvailableFlag
+          appConfig.exchange.names.contains(s.getExchange) &&
+            s.getApiTradeAvailableFlag &&
+            s.getBuyAvailableFlag &&
+            s.getSellAvailableFlag
       )
 
     LocalDate.now.getDayOfWeek match {
