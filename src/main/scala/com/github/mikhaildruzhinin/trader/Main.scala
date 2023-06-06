@@ -2,7 +2,7 @@ package com.github.mikhaildruzhinin.trader
 
 import com.github.mikhaildruzhinin.trader.client._
 import com.github.mikhaildruzhinin.trader.config.{AppConfig, ConfigReader}
-import com.github.mikhaildruzhinin.trader.core.ShareWrapper
+import com.github.mikhaildruzhinin.trader.core.{ShareWrapper, TypeCode}
 import com.github.mikhaildruzhinin.trader.database.SharesTable
 import com.typesafe.scalalogging.Logger
 
@@ -26,14 +26,14 @@ object Main extends App {
     .getAvailableShares
 
   val sharesNum: Option[Int] = Await.result(
-    SharesTable.insert(shares.map(_.getShareTuple(1))),
+    SharesTable.insert(shares.map(_.getShareTuple(TypeCode.Available))),
     appConfig.slick.await.duration
   )
   log.info(s"total: ${sharesNum.getOrElse(-1).toString}")
 //  wrappedShares.foreach(s => log.info(s.toString))
 
   val uptrendShares: Seq[ShareWrapper] = ShareWrapper
-    .getPersistedShares(1)
+    .getPersistedShares(TypeCode.Available)
     .map(_.updateShare)
     .filter(_.uptrendPct >= Some(appConfig.uptrendThresholdPct))
     .sortBy(_.uptrendAbs)
@@ -41,7 +41,7 @@ object Main extends App {
     .take(appConfig.numUptrendShares)
 
   val uptrendSharesNum: Option[Int] = Await.result(
-    SharesTable.insert(uptrendShares.map(_.getShareTuple(2))),
+    SharesTable.insert(uptrendShares.map(_.getShareTuple(TypeCode.Uptrend))),
     appConfig.slick.await.duration
   )
   log.info(s"best uptrend: ${uptrendSharesNum.getOrElse(-1).toString}")
@@ -49,7 +49,7 @@ object Main extends App {
 
   // buy uptrendShares
   val purchasedShares: Seq[ShareWrapper] = ShareWrapper
-    .getPersistedShares(2)
+    .getPersistedShares(TypeCode.Uptrend)
     .map(
       s => core.ShareWrapper(
         shareWrapper = s,
@@ -61,26 +61,26 @@ object Main extends App {
     )
 
   val purchasedSharesNum: Option[Int] = Await.result(
-    SharesTable.insert(purchasedShares.map(_.getShareTuple(3))),
+    SharesTable.insert(purchasedShares.map(_.getShareTuple(TypeCode.Purchased))),
     appConfig.slick.await.duration
   )
   log.info(s"purchased: ${purchasedSharesNum.getOrElse(-1).toString}")
 
   val (sharesToSell: List[ShareWrapper], sharesToKeep: Seq[ShareWrapper]) = investApiClient
-    .getLastPrices(ShareWrapper.getPersistedShares(3).map(_.figi))
-    .zip(ShareWrapper.getPersistedShares(3))
+    .getLastPrices(ShareWrapper.getPersistedShares(TypeCode.Purchased).map(_.figi))
+    .zip(ShareWrapper.getPersistedShares(TypeCode.Purchased))
     .map(x => core.ShareWrapper(x._2, x._1))
     .partition(_.roi <= Some(BigDecimal(0)))
 
   val sellSharesNum: Option[Int] = Await.result(
-    SharesTable.insert(sharesToSell.map(_.getShareTuple(4))),
+    SharesTable.insert(sharesToSell.map(_.getShareTuple(TypeCode.Sold))),
     appConfig.slick.await.duration
   )
   log.info(s"sell: ${sellSharesNum.getOrElse(-1).toString}")
   sharesToSell.foreach(s => log.info(s.toString))
 
   val keepSharesNum: Option[Int] = Await.result(
-    SharesTable.insert(sharesToKeep.map(_.getShareTuple(5))),
+    SharesTable.insert(sharesToKeep.map(_.getShareTuple(TypeCode.Kept))),
     appConfig.slick.await.duration
   )
   log.info(s"keep: ${keepSharesNum.getOrElse(-1).toString}")

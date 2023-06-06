@@ -1,7 +1,7 @@
-package com.github.mikhaildruzhinin.trader.config
+package com.github.mikhaildruzhinin.trader.config.exchange
 
-import java.time.{Instant, LocalDate, ZoneOffset}
 import java.time.temporal.ChronoUnit
+import java.time.{Instant, LocalDate, ZoneOffset}
 
 case class ExchangeConfig(names: List[String],
                           startTimeHours: Int,

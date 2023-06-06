@@ -1,9 +1,8 @@
 package com.github.mikhaildruzhinin.trader.core.handlers
 
 import com.github.kagkarlsson.scheduler.task.{ExecutionContext, TaskInstance, VoidExecutionHandler}
-import com.github.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import com.github.mikhaildruzhinin.trader.config.AppConfig
-import com.github.mikhaildruzhinin.trader.core.ShareWrapper
+import com.github.mikhaildruzhinin.trader.core.{ShareWrapper, TypeCode}
 import com.github.mikhaildruzhinin.trader.database.SharesTable
 import com.typesafe.scalalogging.Logger
 
@@ -15,8 +14,8 @@ class SellHandler[T](implicit appConfig: AppConfig) extends VoidExecutionHandler
   override def execute(taskInstance: TaskInstance[T],
                        executionContext: ExecutionContext): Unit = {
 
-    val soldShares: Seq[ShareWrapper] = ShareWrapper
-      .getPersistedShares(5)
+    val sharesToSell: Seq[ShareWrapper] = ShareWrapper
+      .getPersistedShares(TypeCode.Kept)
       .map(
         s => ShareWrapper(
           shareWrapper = s,
@@ -28,11 +27,11 @@ class SellHandler[T](implicit appConfig: AppConfig) extends VoidExecutionHandler
       )
 
     val soldSharesNum: Option[Int] = Await.result(
-      SharesTable.insert(soldShares.map(_.getShareTuple(4))),
+      SharesTable.insert(sharesToSell.map(_.getShareTuple(TypeCode.Sold))),
       appConfig.slick.await.duration
     )
     log.info(s"sell: ${soldSharesNum.getOrElse(-1).toString}")
-    soldShares.foreach(s => log.info(s.toString))
+    sharesToSell.foreach(s => log.info(s.toString))
   }
 }
 

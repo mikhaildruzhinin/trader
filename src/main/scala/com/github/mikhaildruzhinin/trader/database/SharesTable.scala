@@ -76,8 +76,8 @@ object SharesTable {
 
   def selectAll: Future[Seq[Share]] = Connection.db.run(sharesTable.result)
 
-  def filterByTypeCd(typeCd: Int)
-                    (implicit appConfig: AppConfig): Future[Seq[Share]] = {
+  def filterByTypeCode(typeCode: Int)
+                      (implicit appConfig: AppConfig): Future[Seq[Share]] = {
 
     val start: Instant = LocalDate
       .now
@@ -98,7 +98,7 @@ object SharesTable {
         s.updateDttm >= start &&
           s.updateDttm < end &&
           s.testFlg === appConfig.testFlg &&
-          s.typeCd === typeCd
+          s.typeCd === typeCode
       )
 
     Connection.db.run(

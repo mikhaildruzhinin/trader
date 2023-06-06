@@ -170,8 +170,10 @@ case class ShareWrapper(figi: String,
     )
   }
 
-  def getShareTuple(typeCd: Int): ShareType = (
-    typeCd,
+  def getShareTuple(typeCode: TypeCode): ShareType = (
+    TypeCode
+      .unapply(typeCode)
+      .getOrElse(-1),
     figi,
     lot,
     currency,
@@ -312,11 +314,11 @@ object ShareWrapper {
       )
   }
 
-  def getPersistedShares(typeCd: Int)
+  def getPersistedShares(typeCode: TypeCode)
                         (implicit appConfig: AppConfig): Seq[ShareWrapper] = {
 
     Await.result(
-      SharesTable.filterByTypeCd(typeCd),
+      SharesTable.filterByTypeCode(TypeCode.unapply(typeCode).getOrElse(-1)),
       appConfig.slick.await.duration
     ).map(s => ShareWrapper(s))
   }

@@ -1,5 +1,6 @@
 package com.github.mikhaildruzhinin.trader.config
 
+import com.github.mikhaildruzhinin.trader.config.tinkoff.InvestApiMode
 import pureconfig._
 import pureconfig.generic.ProductHint
 import pureconfig.generic.auto.exportReader
