@@ -1,6 +1,6 @@
 package ru.mikhaildruzhinin.trader.core
 
-sealed class TypeCode(val code: Int)
+sealed abstract class TypeCode(val code: Int)
 
 object TypeCode {
   def unapply(typeCode: TypeCode): Option[Int] = Some(typeCode.code)

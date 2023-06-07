@@ -101,17 +101,17 @@ object SharesTable {
           s.typeCd === typeCode
       )
 
-    Connection.db.run(
-      filteredShares
-        .join(
-          filteredShares.map(s => (s.id, rowNumCol))
-        )
-        .on((s, rn) => s.id === rn._1)
-        .filter(_._2._2 === 1)
-        .map(_._1)
-        .sortBy(_.id)
-        .result
-    )
+    val query = filteredShares
+      .join(
+        filteredShares.map(s => (s.id, rowNumCol))
+      )
+      .on((s, rn) => s.id === rn._1)
+      .filter(_._2._2 === 1)
+      .map(_._1)
+      .sortBy(_.id)
+      .result
+
+    Connection.db.run(query)
   }
 
     def insert(shares: Seq[ShareType]): Future[Option[Int]] = {

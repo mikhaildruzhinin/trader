@@ -18,7 +18,7 @@ object TaskManager {
   val purchaseTask: RecurringTask[Void] = Tasks.recurring(
     "purchase",
     Schedules.cron(
-      "0 0 9 * * *",
+      "0 10 9 * * *",
       ZoneId.of("UTC")
     )
   ).execute(PurchaseHandler())
@@ -26,7 +26,7 @@ object TaskManager {
   val monitorTask: RecurringTask[Void] = Tasks.recurring(
     "monitor",
     Schedules.cron(
-      "0 */2 9-12 * * *",
+      "0 12/2 9-12 * * *",
       ZoneId.of("UTC")
     )
   ).execute(MonitorHandler())

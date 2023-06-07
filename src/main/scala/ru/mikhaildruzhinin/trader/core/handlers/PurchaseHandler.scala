@@ -4,7 +4,8 @@ import com.github.kagkarlsson.scheduler.task.{ExecutionContext, TaskInstance, Vo
 import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.core.{ShareWrapper, TypeCode}
+import ru.mikhaildruzhinin.trader.core.ShareWrapper
+import ru.mikhaildruzhinin.trader.core.TypeCode._
 import ru.mikhaildruzhinin.trader.database.SharesTable
 
 import scala.concurrent.Await
@@ -20,13 +21,13 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
       .getAvailableShares
 
     val sharesNum: Option[Int] = Await.result(
-      SharesTable.insert(shares.map(_.getShareTuple(TypeCode.Available))),
+      SharesTable.insert(shares.map(_.getShareTuple(Available))),
       appConfig.slick.await.duration
     )
-    log.info(s"total: ${sharesNum.getOrElse(-1).toString}")
+    log.info(s"Total: ${sharesNum.getOrElse(-1).toString}")
 
     val uptrendShares: Seq[ShareWrapper] = ShareWrapper
-      .getPersistedShares(TypeCode.Available)
+      .getPersistedShares(Available)
       .map(_.updateShare)
       .filter(_.uptrendPct >= Some(appConfig.uptrendThresholdPct))
       .sortBy(_.uptrendAbs)
@@ -34,14 +35,14 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
       .take(appConfig.numUptrendShares)
 
     val uptrendSharesNum: Option[Int] = Await.result(
-      SharesTable.insert(uptrendShares.map(_.getShareTuple(TypeCode.Uptrend))),
+      SharesTable.insert(uptrendShares.map(_.getShareTuple(Uptrend))),
       appConfig.slick.await.duration
     )
     log.info(s"best uptrend: ${uptrendSharesNum.getOrElse(-1).toString}")
 
     // buy uptrendShares
     val purchasedShares: Seq[ShareWrapper] = ShareWrapper
-      .getPersistedShares(TypeCode.Uptrend)
+      .getPersistedShares(Uptrend)
       .map(
         s => ShareWrapper(
           shareWrapper = s,
@@ -53,10 +54,10 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
       )
 
     val purchasedSharesNum: Option[Int] = Await.result(
-      SharesTable.insert(purchasedShares.map(_.getShareTuple(TypeCode.Purchased))),
+      SharesTable.insert(purchasedShares.map(_.getShareTuple(Purchased))),
       appConfig.slick.await.duration
     )
-    log.info(s"purchased: ${purchasedSharesNum.getOrElse(-1).toString}")
+    log.info(s"Purchased: ${purchasedSharesNum.getOrElse(-1).toString}")
   }
 }
 

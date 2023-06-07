@@ -4,7 +4,8 @@ import com.github.kagkarlsson.scheduler.task.{ExecutionContext, TaskInstance, Vo
 import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.core.{ShareWrapper, TypeCode}
+import ru.mikhaildruzhinin.trader.core.ShareWrapper
+import ru.mikhaildruzhinin.trader.core.TypeCode._
 import ru.mikhaildruzhinin.trader.database.SharesTable
 
 import scala.concurrent.Await
@@ -16,23 +17,25 @@ class MonitorHandler[T](implicit appConfig: AppConfig,
   override def execute(taskInstance: TaskInstance[T],
                        executionContext: ExecutionContext): Unit = {
 
-    val (sharesToSell: List[ShareWrapper], sharesToKeep: Seq[ShareWrapper]) = investApiClient
-      .getLastPrices(ShareWrapper.getPersistedShares(TypeCode.Purchased).map(_.figi))
-      .zip(ShareWrapper.getPersistedShares(TypeCode.Purchased))
+    val purchasedShares: Seq[ShareWrapper] = ShareWrapper.getPersistedShares(Purchased)
+
+    val (sharesToSell: Seq[ShareWrapper], sharesToKeep: Seq[ShareWrapper]) = investApiClient
+      .getLastPrices(purchasedShares.map(_.figi))
+      .zip(purchasedShares)
       .map(x => ShareWrapper(x._2, x._1))
       .partition(_.roi <= Some(BigDecimal(0)))
 
     val sellSharesNum: Option[Int] = Await.result(
-      SharesTable.insert(sharesToSell.map(_.getShareTuple(TypeCode.Sold))),
+      SharesTable.insert(sharesToSell.map(_.getShareTuple(Sold))),
       appConfig.slick.await.duration
     )
-    log.info(s"sell: ${sellSharesNum.getOrElse(-1).toString}")
+    log.info(s"Sell: ${sellSharesNum.getOrElse(-1).toString}")
 
     val keepSharesNum: Option[Int] = Await.result(
-      SharesTable.insert(sharesToKeep.map(_.getShareTuple(TypeCode.Kept))),
+      SharesTable.insert(sharesToKeep.map(_.getShareTuple(Kept))),
       appConfig.slick.await.duration
     )
-    log.info(s"keep: ${keepSharesNum.getOrElse(-1).toString}")
+    log.info(s"Keep: ${keepSharesNum.getOrElse(-1).toString}")
   }
 }
 

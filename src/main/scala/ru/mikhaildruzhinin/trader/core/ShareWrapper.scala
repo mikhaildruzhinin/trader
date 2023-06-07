@@ -2,6 +2,7 @@ package ru.mikhaildruzhinin.trader.core
 
 import ru.mikhaildruzhinin.trader.database.Models.ShareType
 import com.google.protobuf.Timestamp
+import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.database.{Models, SharesTable}
@@ -227,6 +228,8 @@ case class ShareWrapper(figi: String,
 }
 
 object ShareWrapper {
+  val log: Logger = Logger(getClass.getName.stripSuffix("$"))
+
   def apply(share: Share)
            (implicit appConfig: AppConfig): ShareWrapper = new ShareWrapper(share)
 
@@ -317,9 +320,13 @@ object ShareWrapper {
   def getPersistedShares(typeCode: TypeCode)
                         (implicit appConfig: AppConfig): Seq[ShareWrapper] = {
 
-    Await.result(
-      SharesTable.filterByTypeCode(TypeCode.unapply(typeCode).getOrElse(-1)),
+    val code = TypeCode.unapply(typeCode).getOrElse(-1)
+    val shares: Seq[ShareWrapper] = Await.result(
+      SharesTable.filterByTypeCode(code),
       appConfig.slick.await.duration
     ).map(s => ShareWrapper(s))
+
+    log.info(s"Got ${shares.length} shares of type: $typeCode($code)")
+    shares
   }
 }
