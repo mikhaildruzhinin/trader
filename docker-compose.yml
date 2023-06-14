@@ -1,13 +1,17 @@
 version: '3.8'
 services:
-  db:
-    image: postgres:14.1-alpine
-    restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=admin
-    ports:
-      - '2345:5432'
-    volumes:
-      - ./db:/var/lib/postgresql/data
-      - ./scripts/init.sql:/docker-entrypoint-initdb.d/scripts.sql
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    command:
+      - java
+      - "-DtinkoffInvestApi.token=${TINKOFF_TOKEN}"
+      - "-Dslick.db.properties.serverName=${POSTGRES_HOST}"
+      - "-Dslick.db.properties.portNumber=${POSTGRES_PORT}"
+      - "-Dslick.db.properties.databaseName=${POSTGRES_DBNAME}"
+      - "-Dslick.db.properties.user=${POSTGRES_USER}"
+      - "-Dslick.db.properties.password=${POSTGRES_PASSWORD}"
+      - -cp
+      - app.jar
+      - ru.mikhaildruzhinin.trader.Trader

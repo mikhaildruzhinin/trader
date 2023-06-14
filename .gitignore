@@ -41,5 +41,6 @@ bin/
 *.class
 
 # project-specific
-application.conf
+.env
 db/
+jars/

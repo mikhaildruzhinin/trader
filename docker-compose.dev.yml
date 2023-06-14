@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  app:
+    depends_on:
+      - db
+    restart: always
+  db:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ./db:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/scripts.sql
