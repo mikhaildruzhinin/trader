@@ -8,7 +8,6 @@ import ru.mikhaildruzhinin.trader.core.ShareWrapper
 import ru.mikhaildruzhinin.trader.core.TypeCode._
 import ru.mikhaildruzhinin.trader.database.SharesTable
 
-import scala.annotation.tailrec
 import scala.concurrent.Await
 
 class PurchaseHandler[T](implicit appConfig: AppConfig,
@@ -28,7 +27,16 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
     sharesNum
   }
 
-  @tailrec
+  private def attemptLoadUptrendShares(numAttempt: Int,
+                                       maxNumAttempts: Int,
+                                       fallbackNumUptrendShares: Int): Option[Int] = {
+
+    if (numAttempt < maxNumAttempts) {
+      Thread.sleep(5 * 60 * 1000)
+      loadUptrendShares(numAttempt + 1)
+    } else Some(fallbackNumUptrendShares)
+  }
+
   private def loadUptrendShares(numAttempt: Int = 1): Option[Int] = {
 
     val maxNumAttempts: Int = 3
@@ -49,16 +57,16 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
 
     uptrendSharesNum match {
       case Some(x) if x > 0 => Some(x)
-      case Some(x) =>
-        if (numAttempt < maxNumAttempts) {
-          Thread.sleep(5 * 60 * 1000)
-          loadUptrendShares(numAttempt + 1)
-        } else Some(x)
-      case None =>
-        if (numAttempt < maxNumAttempts) {
-          Thread.sleep(5 * 60 * 1000)
-          loadUptrendShares(numAttempt + 1)
-        } else Some(-1)
+      case Some(x) => attemptLoadUptrendShares(
+        numAttempt = numAttempt,
+        maxNumAttempts = maxNumAttempts,
+        fallbackNumUptrendShares = x
+      )
+      case None => attemptLoadUptrendShares(
+        numAttempt = numAttempt,
+        maxNumAttempts = maxNumAttempts,
+        fallbackNumUptrendShares = -1
+      )
     }
   }
 
