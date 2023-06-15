@@ -3,7 +3,7 @@ package ru.mikhaildruzhinin.trader.core
 sealed abstract class TypeCode(val code: Int)
 
 object TypeCode {
-  def unapply(typeCode: TypeCode): Option[Int] = Some(typeCode.code)
+  def unapply(typeCode: TypeCode): Int = typeCode.code
 
   final case object Available extends TypeCode(code = 1)
   final case object Uptrend extends TypeCode(code = 2)

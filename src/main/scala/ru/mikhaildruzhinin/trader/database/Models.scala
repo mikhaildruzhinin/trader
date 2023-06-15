@@ -17,6 +17,8 @@ object Models {
                    testFlg: Boolean,
                    loadDttm: Instant)
 
+  type ShareModel = Share
+
   type ShareType = (
     Int,
     String,

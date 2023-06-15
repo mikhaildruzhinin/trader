@@ -1,11 +1,11 @@
 package ru.mikhaildruzhinin.trader.core
 
-import ru.mikhaildruzhinin.trader.database.Models.ShareType
 import com.google.protobuf.Timestamp
 import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.database.{Models, SharesTable}
+import ru.mikhaildruzhinin.trader.database.Models.{ShareModel, ShareType}
+import ru.mikhaildruzhinin.trader.database.SharesTable
 import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.utils.DateUtils._
 import ru.tinkoff.piapi.core.utils.MapperUtils._
@@ -64,7 +64,7 @@ case class ShareWrapper(figi: String,
     Some(lastPrice.getTime)
   )
 
-  def this(share: Models.Share)
+  def this(share: ShareModel)
           (implicit appConfig: AppConfig) = this(
     share.figi,
     share.lot,
@@ -172,9 +172,7 @@ case class ShareWrapper(figi: String,
   }
 
   def getShareTuple(typeCode: TypeCode): ShareType = (
-    TypeCode
-      .unapply(typeCode)
-      .getOrElse(-1),
+    TypeCode.unapply(typeCode),
     figi,
     lot,
     currency,
@@ -228,7 +226,7 @@ case class ShareWrapper(figi: String,
 }
 
 object ShareWrapper {
-  val log: Logger = Logger(getClass.getName.stripSuffix("$"))
+  val log: Logger = Logger(getClass.getName)
 
   def apply(share: Share)
            (implicit appConfig: AppConfig): ShareWrapper = new ShareWrapper(share)
@@ -247,7 +245,7 @@ object ShareWrapper {
             lastPrice: LastPrice)
            (implicit appConfig: AppConfig): ShareWrapper = new ShareWrapper(shareWrapper, lastPrice)
 
-  def apply(share: Models.Share)
+  def apply(share: ShareModel)
            (implicit appConfig: AppConfig): ShareWrapper = new ShareWrapper(share)
 
   private def getFilteredShares(implicit appConfig: AppConfig,
@@ -320,7 +318,7 @@ object ShareWrapper {
   def getPersistedShares(typeCode: TypeCode)
                         (implicit appConfig: AppConfig): Seq[ShareWrapper] = {
 
-    val code = TypeCode.unapply(typeCode).getOrElse(-1)
+    val code = TypeCode.unapply(typeCode)
     val shares: Seq[ShareWrapper] = Await.result(
       SharesTable.filterByTypeCode(code),
       appConfig.slick.await.duration
