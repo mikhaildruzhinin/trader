@@ -10,7 +10,7 @@ import ru.mikhaildruzhinin.trader.database.SharesTable
 import scala.concurrent.Await
 
 class SellHandler[T](implicit appConfig: AppConfig) extends VoidExecutionHandler[T] {
-  val log: Logger = Logger(getClass.getName.stripSuffix("$"))
+  val log: Logger = Logger(getClass.getName)
 
   override def execute(taskInstance: TaskInstance[T],
                        executionContext: ExecutionContext): Unit = {

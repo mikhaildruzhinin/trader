@@ -11,7 +11,7 @@ import scala.concurrent.Await
 
 object Main extends App {
 
-  val log: Logger = Logger(getClass.getName.stripSuffix("$"))
+  val log: Logger = Logger(getClass.getName)
   log.info("Start")
 
   implicit val appConfig: AppConfig = ConfigReader.appConfig

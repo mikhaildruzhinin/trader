@@ -12,7 +12,7 @@ import scala.concurrent.Await
 
 class PurchaseHandler[T](implicit appConfig: AppConfig,
                          investApiClient: BaseInvestApiClient) extends VoidExecutionHandler[T] {
-  val log: Logger = Logger(getClass.getName.stripSuffix("$"))
+  val log: Logger = Logger(getClass.getName)
 
   override def execute(taskInstance: TaskInstance[T],
                        executionContext: ExecutionContext): Unit = {

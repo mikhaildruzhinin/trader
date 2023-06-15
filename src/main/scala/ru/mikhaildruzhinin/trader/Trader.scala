@@ -9,7 +9,7 @@ import ru.mikhaildruzhinin.trader.core.TaskManager
 import java.time.Instant
 
 object Trader extends App {
-  val log: Logger = Logger(getClass.getName.stripSuffix("$"))
+  val log: Logger = Logger(getClass.getName)
 
   implicit val appConfig: AppConfig = ConfigReader.appConfig
   implicit val investApiClient: BaseInvestApiClient = SyncInvestApiClient

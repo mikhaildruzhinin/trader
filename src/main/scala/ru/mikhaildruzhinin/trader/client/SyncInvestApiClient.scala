@@ -11,7 +11,7 @@ import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 object SyncInvestApiClient extends BaseInvestApiClient {
-  val log: Logger = Logger(getClass.getName.stripSuffix("$"))
+  val log: Logger = Logger(getClass.getName)
 
   @tailrec
   override def getCandles(figi: String,
