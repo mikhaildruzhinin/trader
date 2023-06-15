@@ -30,6 +30,9 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
 
   @tailrec
   private def loadUptrendShares(numAttempt: Int = 1): Option[Int] = {
+
+    val maxNumAttempts: Int = 3
+    log.info(s"Attempt $numAttempt of $maxNumAttempts")
     val uptrendShares: Seq[ShareWrapper] = ShareWrapper
       .getPersistedShares(Available)
       .map(_.updateShare)
@@ -46,16 +49,16 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
 
     uptrendSharesNum match {
       case Some(x) if x > 0 => Some(x)
-      case Some(0) =>
-        if (numAttempt < 3) {
+      case Some(x) =>
+        if (numAttempt < maxNumAttempts) {
           Thread.sleep(5 * 60 * 1000)
           loadUptrendShares(numAttempt + 1)
-        } else Some(0)
+        } else Some(x)
       case None =>
-        if (numAttempt < 3) {
+        if (numAttempt < maxNumAttempts) {
           Thread.sleep(5 * 60 * 1000)
           loadUptrendShares(numAttempt + 1)
-        } else Some(0)
+        } else Some(-1)
     }
   }
 
