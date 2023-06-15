@@ -8,15 +8,15 @@ import ru.mikhaildruzhinin.trader.core.ShareWrapper
 import ru.mikhaildruzhinin.trader.core.TypeCode._
 import ru.mikhaildruzhinin.trader.database.SharesTable
 
+import scala.annotation.tailrec
 import scala.concurrent.Await
 
 class PurchaseHandler[T](implicit appConfig: AppConfig,
                          investApiClient: BaseInvestApiClient) extends VoidExecutionHandler[T] {
+
   val log: Logger = Logger(getClass.getName)
 
-  override def execute(taskInstance: TaskInstance[T],
-                       executionContext: ExecutionContext): Unit = {
-
+  private def loadAvailableShares(): Option[Int] = {
     val shares: Seq[ShareWrapper] = ShareWrapper
       .getAvailableShares
 
@@ -25,7 +25,11 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
       appConfig.slick.await.duration
     )
     log.info(s"Total: ${sharesNum.getOrElse(-1).toString}")
+    sharesNum
+  }
 
+  @tailrec
+  private def loadUptrendShares(numAttempt: Int = 1): Option[Int] = {
     val uptrendShares: Seq[ShareWrapper] = ShareWrapper
       .getPersistedShares(Available)
       .map(_.updateShare)
@@ -40,7 +44,22 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
     )
     log.info(s"best uptrend: ${uptrendSharesNum.getOrElse(-1).toString}")
 
-    // buy uptrendShares
+    uptrendSharesNum match {
+      case Some(x) if x > 0 => Some(x)
+      case Some(0) =>
+        if (numAttempt < 3) {
+          Thread.sleep(5 * 60 * 1000)
+          loadUptrendShares(numAttempt + 1)
+        } else Some(0)
+      case None =>
+        if (numAttempt < 3) {
+          Thread.sleep(5 * 60 * 1000)
+          loadUptrendShares(numAttempt + 1)
+        } else Some(0)
+    }
+  }
+
+  private def purchaseShares(): Option[Int] = {
     val purchasedShares: Seq[ShareWrapper] = ShareWrapper
       .getPersistedShares(Uptrend)
       .map(
@@ -58,6 +77,15 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
       appConfig.slick.await.duration
     )
     log.info(s"Purchased: ${purchasedSharesNum.getOrElse(-1).toString}")
+    purchasedSharesNum
+  }
+
+  override def execute(taskInstance: TaskInstance[T],
+                       executionContext: ExecutionContext): Unit = {
+
+    loadAvailableShares()
+    loadUptrendShares()
+    purchaseShares()
   }
 }
 
