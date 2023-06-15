@@ -3,7 +3,17 @@ services:
   app:
     depends_on:
       - db
-    restart: always
+    command:
+      - java
+      - "-DtinkoffInvestApi.token=${TINKOFF_TOKEN}"
+      - "-Dslick.db.properties.serverName=${POSTGRES_HOST}"
+      - "-Dslick.db.properties.portNumber=${POSTGRES_PORT}"
+      - "-Dslick.db.properties.databaseName=${POSTGRES_DBNAME}"
+      - "-Dslick.db.properties.user=${POSTGRES_USER}"
+      - "-Dslick.db.properties.password=${POSTGRES_PASSWORD}"
+      - -cp
+      - app.jar
+      - ru.mikhaildruzhinin.trader.Main
   db:
     image: postgres:14.1-alpine
     restart: always

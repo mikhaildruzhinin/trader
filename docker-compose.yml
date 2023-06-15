@@ -4,6 +4,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
+    restart: on-failure
     command:
       - java
       - "-DtinkoffInvestApi.token=${TINKOFF_TOKEN}"
