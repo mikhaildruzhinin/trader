@@ -44,10 +44,10 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
     val uptrendShares: Seq[ShareWrapper] = ShareWrapper
       .getPersistedShares(Available)
       .map(_.updateShare)
-      .filter(_.uptrendPct >= Some(appConfig.uptrendThresholdPct))
+      .filter(_.uptrendPct >= Some(appConfig.shares.uptrendThresholdPct))
       .sortBy(_.uptrendAbs)
       .reverse
-      .take(appConfig.numUptrendShares)
+      .take(appConfig.shares.numUptrendShares)
 
     val uptrendSharesNum: Option[Int] = Await.result(
       SharesTable.insert(uptrendShares.map(_.getShareTuple(Uptrend))),

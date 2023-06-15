@@ -99,7 +99,7 @@ case class ShareWrapper(figi: String,
           )
             / quotationToBigDecimal(startingPriceValue)
             * 100
-            * (100 - appConfig.incomeTaxPct) / 100
+            * (100 - appConfig.shares.incomeTaxPct) / 100
         )
       case _ => None
     }
@@ -145,7 +145,7 @@ case class ShareWrapper(figi: String,
   }
 
   private def applyTaxes(noTaxValue: BigDecimal): BigDecimal = {
-    noTaxValue * (100 - appConfig.incomeTaxPct) / 100
+    noTaxValue * (100 - appConfig.shares.incomeTaxPct) / 100
   }
 
   def updateShare(implicit appConfig: AppConfig,
@@ -181,19 +181,19 @@ case class ShareWrapper(figi: String,
     startingPrice match {
       case Some(s) =>
         Some(quotationToBigDecimal(s)
-          .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
+          .setScale(appConfig.shares.priceScale, RoundingMode.HALF_UP))
       case _ => None
     },
     purchasePrice match {
       case Some(p) =>
         Some(quotationToBigDecimal(p)
-          .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
+          .setScale(appConfig.shares.priceScale, RoundingMode.HALF_UP))
       case _ => None
     },
     currentPrice match {
       case Some(p) =>
         Some(quotationToBigDecimal(p)
-          .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
+          .setScale(appConfig.shares.priceScale, RoundingMode.HALF_UP))
       case _ => None
     },
     updateTime match {
@@ -209,16 +209,16 @@ case class ShareWrapper(figi: String,
     new StringBuilder(s"$name, ")
       .append(roi
         .getOrElse(BigDecimal(0))
-        .setScale(appConfig.pctScale, RoundingMode.HALF_UP))
+        .setScale(appConfig.shares.pctScale, RoundingMode.HALF_UP))
       .append("%, ")
       .append((quotationToBigDecimal(purchasePrice.getOrElse(Quotation.newBuilder.build)) * lot)
-        .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
+        .setScale(appConfig.shares.priceScale, RoundingMode.HALF_UP))
       .append(" руб., ")
       .append((quotationToBigDecimal(currentPrice.getOrElse(Quotation.newBuilder.build)) * lot)
-        .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
+        .setScale(appConfig.shares.priceScale, RoundingMode.HALF_UP))
       .append(" руб., ")
       .append(profit.getOrElse(BigDecimal(0))
-        .setScale(appConfig.priceScale, RoundingMode.HALF_UP))
+        .setScale(appConfig.shares.priceScale, RoundingMode.HALF_UP))
       .append(" руб., ")
       .append(timestampToString(updateTime.getOrElse(Timestamp.newBuilder.build)))
       .toString
