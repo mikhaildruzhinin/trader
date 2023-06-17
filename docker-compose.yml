@@ -1,9 +1,7 @@
 version: '3.8'
 services:
   app:
-    build:
-      context: ./
-      dockerfile: Dockerfile
+    image: bellsoft/liberica-openjre-alpine-musl:11.0.19
     restart: on-failure
     command:
       - java
@@ -14,5 +12,7 @@ services:
       - "-Dslick.db.properties.user=${POSTGRES_USER}"
       - "-Dslick.db.properties.password=${POSTGRES_PASSWORD}"
       - -cp
-      - app.jar
+      - jars/app.jar
       - ru.mikhaildruzhinin.trader.Trader
+    volumes:
+      - ./jars:/jars

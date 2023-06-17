@@ -12,14 +12,18 @@ services:
       - "-Dslick.db.properties.user=${POSTGRES_USER}"
       - "-Dslick.db.properties.password=${POSTGRES_PASSWORD}"
       - -cp
-      - app.jar
-      - ru.mikhaildruzhinin.trader.Main
+      - jars/trader-assembly-0.1.0-SNAPSHOT.jar
+      - ru.mikhaildruzhinin.trader.Trader
+    volumes:
+      - ./target/scala-2.13:/jars
   db:
     image: postgres:14.1-alpine
     restart: always
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - '2345:5432'
     volumes:
       - ./db:/var/lib/postgresql/data
       - ./scripts/init.sql:/docker-entrypoint-initdb.d/scripts.sql
