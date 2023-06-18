@@ -1,15 +1,18 @@
 package ru.mikhaildruzhinin.trader.core.handlers
 
-import com.github.kagkarlsson.scheduler.task.{ExecutionContext, TaskInstance, VoidExecutionHandler}
+import com.github.kagkarlsson.scheduler.task._
 import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.ShareWrapper
 import ru.mikhaildruzhinin.trader.core.TypeCode._
-import ru.mikhaildruzhinin.trader.database.SharesTable
+import ru.mikhaildruzhinin.trader.database._
+import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
 
 import scala.concurrent.Await
 
-class SellHandler[T](implicit appConfig: AppConfig) extends VoidExecutionHandler[T] {
+class SellHandler[T](implicit appConfig: AppConfig,
+                     connection: Connection) extends VoidExecutionHandler[T] {
+
   val log: Logger = Logger(getClass.getName)
 
   override def execute(taskInstance: TaskInstance[T],
@@ -27,15 +30,21 @@ class SellHandler[T](implicit appConfig: AppConfig) extends VoidExecutionHandler
         )
       )
 
-    val soldSharesNum: Option[Int] = Await.result(
-      SharesTable.insert(sharesToSell.map(_.getShareTuple(Sold))),
+    val sellSharesNum: Seq[Option[Int]] = Await.result(
+      DatabaseConnection.run(
+        Vector(
+          SharesTable.insert(sharesToSell.map(_.getShareTuple(Sold))),
+          SharesLogTable.insert(sharesToSell.map(_.getShareTuple(Sold)))
+        )
+      ),
       appConfig.slick.await.duration
     )
-    log.info(s"Sold: ${soldSharesNum.getOrElse(-1).toString}")
+    log.info(s"Sell: ${sellSharesNum.headOption.flatten.getOrElse(-1).toString}")
     sharesToSell.foreach(s => log.info(s.toString))
   }
 }
 
 object SellHandler {
-  def apply()(implicit appConfig: AppConfig) = new SellHandler[Void]()
+  def apply()(implicit appConfig: AppConfig,
+              connection: Connection) = new SellHandler[Void]()
 }

@@ -1,29 +1,36 @@
 package ru.mikhaildruzhinin.trader.core.handlers
 
-import com.github.kagkarlsson.scheduler.task.{ExecutionContext, TaskInstance, VoidExecutionHandler}
+import com.github.kagkarlsson.scheduler.task._
 import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.ShareWrapper
 import ru.mikhaildruzhinin.trader.core.TypeCode._
-import ru.mikhaildruzhinin.trader.database.SharesTable
+import ru.mikhaildruzhinin.trader.database._
+import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
 
 import scala.concurrent.Await
 
 class PurchaseHandler[T](implicit appConfig: AppConfig,
-                         investApiClient: BaseInvestApiClient) extends VoidExecutionHandler[T] {
+                         investApiClient: BaseInvestApiClient,
+                         connection: Connection) extends VoidExecutionHandler[T] {
 
   val log: Logger = Logger(getClass.getName)
 
-  private def loadAvailableShares(): Option[Int] = {
+  private def loadAvailableShares(): Seq[Option[Int]] = {
     val shares: Seq[ShareWrapper] = ShareWrapper
       .getAvailableShares
 
-    val sharesNum: Option[Int] = Await.result(
-      SharesTable.insert(shares.map(_.getShareTuple(Available))),
+    val sharesNum: Seq[Option[Int]] = Await.result(
+      DatabaseConnection.run(
+        Vector(
+          SharesTable.insert(shares.map(_.getShareTuple(Available))),
+          SharesLogTable.insert(shares.map(_.getShareTuple(Available)))
+        )
+      ),
       appConfig.slick.await.duration
     )
-    log.info(s"Total: ${sharesNum.getOrElse(-1).toString}")
+    log.info(s"Total: ${sharesNum.headOption.flatten.getOrElse(-1).toString}")
     sharesNum
   }
 
@@ -49,13 +56,18 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
       .reverse
       .take(appConfig.shares.numUptrendShares)
 
-    val uptrendSharesNum: Option[Int] = Await.result(
-      SharesTable.insert(uptrendShares.map(_.getShareTuple(Uptrend))),
+    val uptrendSharesNum: Seq[Option[Int]] = Await.result(
+      DatabaseConnection.run(
+        Vector(
+          SharesTable.insert(uptrendShares.map(_.getShareTuple(Uptrend))),
+          SharesLogTable.insert(uptrendShares.map(_.getShareTuple(Uptrend)))
+        )
+      ),
       appConfig.slick.await.duration
     )
-    log.info(s"best uptrend: ${uptrendSharesNum.getOrElse(-1).toString}")
+    log.info(s"Best uptrend: ${uptrendSharesNum.headOption.flatten.getOrElse(-1).toString}")
 
-    uptrendSharesNum match {
+    uptrendSharesNum.headOption.flatten match {
       case Some(x) if x > 0 => Some(x)
       case Some(x) => attemptLoadUptrendShares(
         numAttempt = numAttempt,
@@ -70,7 +82,7 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
     }
   }
 
-  private def purchaseShares(): Option[Int] = {
+  private def purchaseShares(): Seq[Option[Int]] = {
     val purchasedShares: Seq[ShareWrapper] = ShareWrapper
       .getPersistedShares(Uptrend)
       .map(
@@ -83,11 +95,16 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
         )
       )
 
-    val purchasedSharesNum: Option[Int] = Await.result(
-      SharesTable.insert(purchasedShares.map(_.getShareTuple(Purchased))),
+    val purchasedSharesNum: Seq[Option[Int]] = Await.result(
+      DatabaseConnection.run(
+        Vector(
+          SharesTable.insert(purchasedShares.map(_.getShareTuple(Purchased))),
+          SharesLogTable.insert(purchasedShares.map(_.getShareTuple(Purchased)))
+        )
+      ),
       appConfig.slick.await.duration
     )
-    log.info(s"Purchased: ${purchasedSharesNum.getOrElse(-1).toString}")
+    log.info(s"Purchased: ${purchasedSharesNum.headOption.flatten.getOrElse(-1).toString}")
     purchasedSharesNum
   }
 
@@ -102,5 +119,6 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
 
 object PurchaseHandler {
   def apply()(implicit appConfig: AppConfig,
-              investApiClient: BaseInvestApiClient) = new PurchaseHandler[Void]()
+              investApiClient: BaseInvestApiClient,
+              connection: Connection) = new PurchaseHandler[Void]()
 }

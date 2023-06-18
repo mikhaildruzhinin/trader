@@ -5,11 +5,13 @@ import com.github.kagkarlsson.scheduler.task.schedule.Schedules
 import ru.mikhaildruzhinin.trader.client.{BaseInvestApiClient, SyncInvestApiClient}
 import ru.mikhaildruzhinin.trader.config.{AppConfig, ConfigReader}
 import ru.mikhaildruzhinin.trader.core.handlers._
+import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
 
 import java.time.ZoneId
 
 object TaskManager {
   implicit val appConfig: AppConfig = ConfigReader.appConfig
+  implicit val connection: Connection = DatabaseConnection
   implicit val investApiClient: BaseInvestApiClient = SyncInvestApiClient
 
   val startUpTask: OneTimeTask[Void] = Tasks.oneTime("start-up")

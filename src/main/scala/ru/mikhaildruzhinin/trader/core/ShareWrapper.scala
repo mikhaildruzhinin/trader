@@ -5,7 +5,8 @@ import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.database.Models.{ShareModel, ShareType}
-import ru.mikhaildruzhinin.trader.database.SharesTable
+import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
+import ru.mikhaildruzhinin.trader.database.{SharesLogTable, SharesTable}
 import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.utils.DateUtils._
 import ru.tinkoff.piapi.core.utils.MapperUtils._
@@ -25,7 +26,8 @@ case class ShareWrapper(figi: String,
                         updateTime: scala.Option[Timestamp] = None)
                        (implicit appConfig: AppConfig) {
 
-  def this(share: Share)(implicit appConfig: AppConfig) = this(
+  def this(share: Share)
+          (implicit appConfig: AppConfig) = this(
     share.getFigi,
     share.getLot,
     share.getCurrency,
@@ -201,6 +203,10 @@ case class ShareWrapper(figi: String,
         Some(timestampToInstant(t))
       case _ => None
     },
+    uptrendPct,
+    uptrendAbs,
+    roi,
+    profit,
     appConfig.testFlg
   )
 
@@ -316,13 +322,14 @@ object ShareWrapper {
   }
 
   def getPersistedShares(typeCode: TypeCode)
-                        (implicit appConfig: AppConfig): Seq[ShareWrapper] = {
+                        (implicit appConfig: AppConfig,
+                         connection: Connection): Seq[ShareWrapper] = {
 
     val code = TypeCode.unapply(typeCode)
     val shares: Seq[ShareWrapper] = Await.result(
-      SharesTable.filterByTypeCode(code),
+      connection.run(Vector(SharesTable.filterByTypeCode(code))),
       appConfig.slick.await.duration
-    ).map(s => ShareWrapper(s))
+    ).flatten.map(s => ShareWrapper(s))
 
     log.info(s"Got ${shares.length} shares of type: $typeCode($code)")
     shares
