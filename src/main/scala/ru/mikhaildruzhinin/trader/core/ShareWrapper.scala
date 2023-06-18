@@ -326,10 +326,12 @@ object ShareWrapper {
                          connection: Connection): Seq[ShareWrapper] = {
 
     val code = TypeCode.unapply(typeCode)
-    val shares: Seq[ShareWrapper] = Await.result(
-      connection.run(Vector(SharesTable.filterByTypeCode(code))),
-      appConfig.slick.await.duration
-    ).flatten.map(s => ShareWrapper(s))
+    val shares: Seq[ShareWrapper] = connection
+      .run(
+        Vector(SharesTable.filterByTypeCode(code))
+      )
+      .flatten
+      .map(s => ShareWrapper(s))
 
     log.info(s"Got ${shares.length} shares of type: $typeCode($code)")
     shares

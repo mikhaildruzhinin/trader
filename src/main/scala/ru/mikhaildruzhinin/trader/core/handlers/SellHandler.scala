@@ -31,7 +31,7 @@ class SellHandler[T](implicit appConfig: AppConfig,
       )
 
     val sellSharesNum: Seq[Option[Int]] = Await.result(
-      DatabaseConnection.run(
+      DatabaseConnection.asyncRun(
         Vector(
           SharesTable.insert(sharesToSell.map(_.getShareTuple(Sold))),
           SharesLogTable.insert(sharesToSell.map(_.getShareTuple(Sold)))

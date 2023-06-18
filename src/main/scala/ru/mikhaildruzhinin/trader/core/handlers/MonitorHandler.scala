@@ -29,7 +29,7 @@ class MonitorHandler[T](implicit appConfig: AppConfig,
       .partition(_.roi <= Some(BigDecimal(0)))
 
     val sellSharesNum: Seq[Option[Int]] = Await.result(
-      DatabaseConnection.run(
+      DatabaseConnection.asyncRun(
         Vector(
           SharesTable.insert(sharesToSell.map(_.getShareTuple(Sold))),
           SharesLogTable.insert(sharesToSell.map(_.getShareTuple(Sold)))
@@ -40,7 +40,7 @@ class MonitorHandler[T](implicit appConfig: AppConfig,
     log.info(s"Sell: ${sellSharesNum.headOption.flatten.getOrElse(-1).toString}")
 
     val keepSharesNum: Seq[Option[Int]] = Await.result(
-      DatabaseConnection.run(
+      DatabaseConnection.asyncRun(
         Vector(
           SharesTable.insert(sharesToKeep.map(_.getShareTuple(Kept))),
           SharesLogTable.insert(sharesToKeep.map(_.getShareTuple(Kept)))

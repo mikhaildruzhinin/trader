@@ -20,7 +20,7 @@ object Main extends App {
   implicit val investApiClient: BaseInvestApiClient = SyncInvestApiClient
 
    Await.result(
-    DatabaseConnection.run(
+    DatabaseConnection.asyncRun(
       Vector(
         SharesTable.createIfNotExists,
         SharesLogTable.createIfNotExists
@@ -32,14 +32,11 @@ object Main extends App {
   val shares: Seq[ShareWrapper] = ShareWrapper
     .getAvailableShares
 
-  val sharesNum: Seq[Option[Int]] = Await.result(
-    DatabaseConnection.run(
-      Vector(
-        SharesTable.insert(shares.map(_.getShareTuple(Available))),
-        SharesLogTable.insert(shares.map(_.getShareTuple(Available)))
-      )
-    ),
-    appConfig.slick.await.duration
+  val sharesNum: Seq[Option[Int]] = DatabaseConnection.run(
+    Vector(
+      SharesTable.insert(shares.map(_.getShareTuple(Available))),
+      SharesLogTable.insert(shares.map(_.getShareTuple(Available)))
+    )
   )
   log.info(s"Total: ${sharesNum.headOption.flatten.getOrElse(-1).toString}")
 
@@ -53,7 +50,7 @@ object Main extends App {
 
 
   val uptrendSharesNum: Seq[Option[Int]] = Await.result(
-    DatabaseConnection.run(
+    DatabaseConnection.asyncRun(
       Vector(
         SharesTable.insert(uptrendShares.map(_.getShareTuple(Uptrend))),
         SharesLogTable.insert(uptrendShares.map(_.getShareTuple(Uptrend)))
@@ -77,7 +74,7 @@ object Main extends App {
     )
 
   val purchasedSharesNum: Seq[Option[Int]] = Await.result(
-    DatabaseConnection.run(
+    DatabaseConnection.asyncRun(
       Vector(
         SharesTable.insert(purchasedShares.map(_.getShareTuple(Purchased))),
         SharesLogTable.insert(purchasedShares.map(_.getShareTuple(Purchased)))
@@ -95,7 +92,7 @@ object Main extends App {
     .partition(_.roi <= Some(BigDecimal(0)))
 
   val sellSharesNum: Seq[Option[Int]] = Await.result(
-    DatabaseConnection.run(
+    DatabaseConnection.asyncRun(
       Vector(
         SharesTable.insert(sharesToSell.map(_.getShareTuple(Sold))),
         SharesLogTable.insert(sharesToSell.map(_.getShareTuple(Sold)))
@@ -107,7 +104,7 @@ object Main extends App {
   sharesToSell.foreach(s => log.info(s.toString))
 
   val keepSharesNum: Seq[Option[Int]] = Await.result(
-    DatabaseConnection.run(
+    DatabaseConnection.asyncRun(
       Vector(
         SharesTable.insert(sharesToKeep.map(_.getShareTuple(Kept))),
         SharesLogTable.insert(sharesToKeep.map(_.getShareTuple(Kept)))

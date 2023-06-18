@@ -22,7 +22,7 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
       .getAvailableShares
 
     val sharesNum: Seq[Option[Int]] = Await.result(
-      DatabaseConnection.run(
+      DatabaseConnection.asyncRun(
         Vector(
           SharesTable.insert(shares.map(_.getShareTuple(Available))),
           SharesLogTable.insert(shares.map(_.getShareTuple(Available)))
@@ -57,7 +57,7 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
       .take(appConfig.shares.numUptrendShares)
 
     val uptrendSharesNum: Seq[Option[Int]] = Await.result(
-      DatabaseConnection.run(
+      DatabaseConnection.asyncRun(
         Vector(
           SharesTable.insert(uptrendShares.map(_.getShareTuple(Uptrend))),
           SharesLogTable.insert(uptrendShares.map(_.getShareTuple(Uptrend)))
@@ -96,7 +96,7 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
       )
 
     val purchasedSharesNum: Seq[Option[Int]] = Await.result(
-      DatabaseConnection.run(
+      DatabaseConnection.asyncRun(
         Vector(
           SharesTable.insert(purchasedShares.map(_.getShareTuple(Purchased))),
           SharesLogTable.insert(purchasedShares.map(_.getShareTuple(Purchased)))
