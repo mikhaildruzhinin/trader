@@ -6,7 +6,7 @@ import ru.mikhaildruzhinin.trader.config.{AppConfig, ConfigReader}
 import ru.mikhaildruzhinin.trader.core.ShareWrapper
 import ru.mikhaildruzhinin.trader.core.TypeCode._
 import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
-import ru.mikhaildruzhinin.trader.database.{SharesLogTable, SharesTable}
+import ru.mikhaildruzhinin.trader.database.tables.{SharesLogTable, SharesTable}
 
 import scala.concurrent.Await
 

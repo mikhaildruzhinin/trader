@@ -5,14 +5,13 @@ import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.database.Models.{ShareModel, ShareType}
-import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
-import ru.mikhaildruzhinin.trader.database.{SharesLogTable, SharesTable}
+import ru.mikhaildruzhinin.trader.database.connection.Connection
+import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.utils.DateUtils._
 import ru.tinkoff.piapi.core.utils.MapperUtils._
 
 import java.time.{DayOfWeek, Instant, LocalDate}
-import scala.concurrent.Await
 import scala.math.BigDecimal.{RoundingMode, javaBigDecimal2bigDecimal}
 
 case class ShareWrapper(figi: String,

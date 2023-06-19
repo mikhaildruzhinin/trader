@@ -5,8 +5,8 @@ import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.ShareWrapper
 import ru.mikhaildruzhinin.trader.core.TypeCode._
-import ru.mikhaildruzhinin.trader.database._
 import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
+import ru.mikhaildruzhinin.trader.database.tables.{SharesLogTable, SharesTable}
 
 import scala.concurrent.Await
 
