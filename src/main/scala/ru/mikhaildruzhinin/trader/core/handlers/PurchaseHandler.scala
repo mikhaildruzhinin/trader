@@ -1,6 +1,5 @@
 package ru.mikhaildruzhinin.trader.core.handlers
 
-import com.github.kagkarlsson.scheduler.task._
 import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
@@ -11,13 +10,13 @@ import ru.mikhaildruzhinin.trader.database.tables.{SharesLogTable, SharesTable}
 
 import scala.concurrent.Await
 
-class PurchaseHandler[T](implicit appConfig: AppConfig,
-                         investApiClient: BaseInvestApiClient,
-                         connection: Connection) extends VoidExecutionHandler[T] {
+object PurchaseHandler {
 
   val log: Logger = Logger(getClass.getName)
 
-  private def loadAvailableShares(): Seq[Option[Int]] = {
+  private def loadAvailableShares()(implicit appConfig: AppConfig,
+                                    investApiClient: BaseInvestApiClient): Seq[Option[Int]] = {
+
     val shares: Seq[ShareWrapper] = ShareWrapper
       .getAvailableShares
 
@@ -36,7 +35,10 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
 
   private def attemptLoadUptrendShares(numAttempt: Int,
                                        maxNumAttempts: Int,
-                                       fallbackNumUptrendShares: Int): Option[Int] = {
+                                       fallbackNumUptrendShares: Int)
+                                      (implicit appConfig: AppConfig,
+                                       investApiClient: BaseInvestApiClient,
+                                       connection: Connection): Option[Int] = {
 
     if (numAttempt < maxNumAttempts) {
       Thread.sleep(5 * 60 * 1000)
@@ -44,14 +46,17 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
     } else Some(fallbackNumUptrendShares)
   }
 
-  private def loadUptrendShares(numAttempt: Int = 1): Option[Int] = {
+  private def loadUptrendShares(numAttempt: Int = 1)
+                               (implicit appConfig: AppConfig,
+                                investApiClient: BaseInvestApiClient,
+                                connection: Connection): Option[Int] = {
 
     val maxNumAttempts: Int = 3
     log.info(s"Attempt $numAttempt of $maxNumAttempts")
     val uptrendShares: Seq[ShareWrapper] = ShareWrapper
       .getPersistedShares(Available)
       .map(_.updateShare)
-      .filter(_.uptrendPct >= Some(appConfig.shares.uptrendThresholdPct))
+//      .filter(_.uptrendPct >= Some(appConfig.shares.uptrendThresholdPct))
       .sortBy(_.uptrendAbs)
       .reverse
       .take(appConfig.shares.numUptrendShares)
@@ -82,7 +87,9 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
     }
   }
 
-  private def purchaseShares(): Seq[Option[Int]] = {
+  private def purchaseShares()(implicit appConfig: AppConfig,
+                               connection: Connection): Seq[Option[Int]] = {
+
     val purchasedShares: Seq[ShareWrapper] = ShareWrapper
       .getPersistedShares(Uptrend)
       .map(
@@ -108,17 +115,12 @@ class PurchaseHandler[T](implicit appConfig: AppConfig,
     purchasedSharesNum
   }
 
-  override def execute(taskInstance: TaskInstance[T],
-                       executionContext: ExecutionContext): Unit = {
+  def apply()(implicit appConfig: AppConfig,
+                     investApiClient: BaseInvestApiClient,
+                     connection: Connection): Unit = {
 
     loadAvailableShares()
     loadUptrendShares()
     purchaseShares()
   }
-}
-
-object PurchaseHandler {
-  def apply()(implicit appConfig: AppConfig,
-              investApiClient: BaseInvestApiClient,
-              connection: Connection) = new PurchaseHandler[Void]()
 }

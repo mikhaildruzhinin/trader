@@ -1,6 +1,5 @@
 package ru.mikhaildruzhinin.trader.core.handlers
 
-import com.github.kagkarlsson.scheduler.task._
 import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
@@ -11,14 +10,13 @@ import ru.mikhaildruzhinin.trader.database.tables.{SharesLogTable, SharesTable}
 
 import scala.concurrent.Await
 
-class MonitorHandler[T](implicit appConfig: AppConfig,
-                        investApiClient: BaseInvestApiClient,
-                        connection: Connection) extends VoidExecutionHandler[T] {
+object MonitorHandler {
 
   val log: Logger = Logger(getClass.getName)
 
-  override def execute(taskInstance: TaskInstance[T],
-                       executionContext: ExecutionContext): Unit = {
+  def apply()(implicit appConfig: AppConfig,
+              investApiClient: BaseInvestApiClient,
+              connection: Connection): Unit = {
 
     val purchasedShares: Seq[ShareWrapper] = ShareWrapper.getPersistedShares(Purchased)
 
@@ -50,10 +48,4 @@ class MonitorHandler[T](implicit appConfig: AppConfig,
     )
     log.info(s"Keep: ${keepSharesNum.headOption.flatten.getOrElse(-1).toString}")
   }
-}
-
-object MonitorHandler {
-  def apply()(implicit appConfig: AppConfig,
-              investApiClient: BaseInvestApiClient,
-              connection: Connection) = new MonitorHandler[Void]()
 }

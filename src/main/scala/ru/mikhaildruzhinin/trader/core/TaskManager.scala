@@ -15,7 +15,7 @@ object TaskManager {
   implicit val investApiClient: BaseInvestApiClient = SyncInvestApiClient
 
   val startUpTask: OneTimeTask[Void] = Tasks.oneTime("start-up")
-    .execute(StartUpHandler())
+    .execute((_, _) => StartUpHandler())
 
   val purchaseTask: RecurringTask[Void] = Tasks.recurring(
     "purchase",
@@ -23,7 +23,7 @@ object TaskManager {
       "0 10 9 * * *",
       ZoneId.of("UTC")
     )
-  ).execute(PurchaseHandler())
+  ).execute((_, _) => PurchaseHandler())
 
   val monitorTask: RecurringTask[Void] = Tasks.recurring(
     "monitor",
@@ -31,7 +31,7 @@ object TaskManager {
       "0 12/2 9-12 * * *",
       ZoneId.of("UTC")
     )
-  ).execute(MonitorHandler())
+  ).execute((_, _) => MonitorHandler())
 
   val sellTask: RecurringTask[Void] = Tasks.recurring(
     "sell",
@@ -39,5 +39,5 @@ object TaskManager {
       "0 0 13 * * *",
       ZoneId.of("UTC")
     )
-  ).execute(SellHandler())
+  ).execute((_, _) => SellHandler())
 }
