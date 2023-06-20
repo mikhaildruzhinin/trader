@@ -10,13 +10,13 @@ import ru.mikhaildruzhinin.trader.database.tables.{SharesLogTable, SharesTable}
 
 import scala.concurrent.Await
 
-object MonitorHandler {
+object MonitorHandler extends Handler {
 
   val log: Logger = Logger(getClass.getName)
 
-  def apply()(implicit appConfig: AppConfig,
-              investApiClient: BaseInvestApiClient,
-              connection: Connection): Unit = {
+  override def apply()(implicit appConfig: AppConfig,
+                       investApiClient: BaseInvestApiClient,
+                       connection: Connection): Unit = {
 
     val purchasedShares: Seq[ShareWrapper] = ShareWrapper.getPersistedShares(Purchased)
 

@@ -10,7 +10,7 @@ import ru.mikhaildruzhinin.trader.database.tables.{SharesLogTable, SharesTable}
 
 import scala.concurrent.Await
 
-object PurchaseHandler {
+object PurchaseHandler extends Handler {
 
   val log: Logger = Logger(getClass.getName)
 
@@ -115,9 +115,9 @@ object PurchaseHandler {
     purchasedSharesNum
   }
 
-  def apply()(implicit appConfig: AppConfig,
-                     investApiClient: BaseInvestApiClient,
-                     connection: Connection): Unit = {
+  override def apply()(implicit appConfig: AppConfig,
+                       investApiClient: BaseInvestApiClient,
+                       connection: Connection): Unit = {
 
     loadAvailableShares()
     loadUptrendShares()

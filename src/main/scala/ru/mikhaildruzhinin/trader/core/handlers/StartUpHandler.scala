@@ -1,15 +1,17 @@
 package ru.mikhaildruzhinin.trader.core.handlers
 
+import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.{SharesLogTable, SharesTable}
 
 import scala.concurrent.Await
 
-object StartUpHandler {
+object StartUpHandler extends Handler {
 
-  def apply()(implicit appConfig: AppConfig,
-              connection: Connection): Unit = {
+  override def apply()(implicit appConfig: AppConfig,
+                       investApiClient: BaseInvestApiClient,
+                       connection: Connection): Unit = {
 
     Await.result(
       connection.asyncRun(
