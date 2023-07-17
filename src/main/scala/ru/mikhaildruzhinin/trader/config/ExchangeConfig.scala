@@ -1,4 +1,4 @@
-package ru.mikhaildruzhinin.trader.config.exchange
+package ru.mikhaildruzhinin.trader.config
 
 import java.time.temporal.ChronoUnit
 import java.time.{Instant, LocalDate, ZoneOffset}

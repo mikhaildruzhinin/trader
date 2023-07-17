@@ -1,4 +1,4 @@
-package ru.mikhaildruzhinin.trader.config.tinkoff
+package ru.mikhaildruzhinin.trader.config
 
 import ru.tinkoff.piapi.core.{InstrumentsService, InvestApi, MarketDataService}
 
@@ -13,4 +13,12 @@ case class TinkoffInvestApiConfig(token: String,
   }
   lazy val instrumentService: InstrumentsService = api.getInstrumentsService
   lazy val marketDataService: MarketDataService = api.getMarketDataService
+}
+
+sealed trait InvestApiMode
+
+object InvestApiMode {
+  case object Trade extends InvestApiMode
+  case object Readonly extends InvestApiMode
+  case object Sandbox extends InvestApiMode
 }

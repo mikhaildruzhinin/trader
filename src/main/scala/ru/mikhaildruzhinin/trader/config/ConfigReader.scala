@@ -4,7 +4,6 @@ import pureconfig._
 import pureconfig.generic.ProductHint
 import pureconfig.generic.auto.exportReader
 import pureconfig.generic.semiauto.deriveEnumerationReader
-import ru.mikhaildruzhinin.trader.config.tinkoff.InvestApiMode
 
 object ConfigReader {
   implicit def hint[A]: ProductHint[A] = ProductHint[A](ConfigFieldMapping(CamelCase, CamelCase))
