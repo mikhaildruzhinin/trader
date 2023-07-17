@@ -6,7 +6,7 @@ import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.database.Models.{ShareModel, ShareType}
 import ru.mikhaildruzhinin.trader.database.connection.Connection
-import ru.mikhaildruzhinin.trader.database.tables.SharesTable
+import ru.mikhaildruzhinin.trader.database.tables.shares.SharesOperationsTable
 import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.utils.DateUtils._
 import ru.tinkoff.piapi.core.utils.MapperUtils._
@@ -327,7 +327,7 @@ object ShareWrapper {
     val code = TypeCode.unapply(typeCode)
     val shares: Seq[ShareWrapper] = connection
       .run(
-        Vector(SharesTable.filterByTypeCode(code))
+        Vector(SharesOperationsTable.filterByTypeCode(code))
       )
       .flatten
       .map(s => ShareWrapper(s))

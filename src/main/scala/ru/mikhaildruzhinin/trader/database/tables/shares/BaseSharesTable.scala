@@ -1,15 +1,13 @@
-package ru.mikhaildruzhinin.trader.database.tables
+package ru.mikhaildruzhinin.trader.database.tables.shares
 
-import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.database.Models.{Share, ShareType}
+import ru.mikhaildruzhinin.trader.database.Models.Share
 import ru.mikhaildruzhinin.trader.database.connection.DatabaseConnection.databaseConfig.profile.api._
 import slick.lifted.ProvenShape
 
-import java.time.temporal.ChronoUnit
-import java.time.{Instant, LocalDate, ZoneOffset}
+import java.time.Instant
 
 //noinspection MutatorLikeMethodIsParameterless
-class SharesTable(tag: Tag) extends Table[Share](tag, Some("trader"), "shares") {
+abstract class BaseSharesTable(tag: Tag, _tableName: String) extends Table[Share](tag, Some("trader"), _tableName) {
   def id: Rep[Long] = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
   def typeCd: Rep[Int] = column[Int]("type_cd")
@@ -78,61 +76,4 @@ class SharesTable(tag: Tag) extends Table[Share](tag, Some("trader"), "shares") 
     testFlg,
     loadDttm
   ) <> (Share.tupled, Share.unapply)
-}
-
-object SharesTable {
-  import ru.mikhaildruzhinin.trader.database.connection.DatabaseConnection.databaseConfig.profile._
-
-  private lazy val table = TableQuery[SharesTable]
-
-  def createIfNotExists: ProfileAction[Unit, NoStream, Effect.Schema] = table.schema.createIfNotExists
-
-  def selectAll: StreamingProfileAction[Seq[Share], Share, Effect.Read] = table.result
-
-  def filterByTypeCode(typeCode: Int)
-                      (implicit appConfig: AppConfig): StreamingProfileAction[Seq[Share], Share, Effect.Read] = {
-
-    val start: Instant = LocalDate
-      .now
-      .atStartOfDay
-      .toInstant(ZoneOffset.UTC)
-
-    val end: Instant = LocalDate
-      .now
-      .plus(1, ChronoUnit.DAYS)
-      .atStartOfDay
-      .toInstant(ZoneOffset.UTC)
-
-    table
-      .filter(s =>
-        s.loadDttm >= start &&
-          s.loadDttm < end &&
-          s.testFlg === appConfig.testFlg &&
-          s.typeCd === typeCode
-      )
-      .result
-  }
-
-    def insert(shares: Seq[ShareType]): ProfileAction[Option[Int], NoStream, Effect.Write] = {
-      table
-        .map(
-          s => (
-            s.typeCd,
-            s.figi,
-            s.lot,
-            s.currency,
-            s.name,
-            s.exchange,
-            s.startingPrice,
-            s.purchasePrice,
-            s.currentPrice,
-            s.updateDttm,
-            s.uptrendPct,
-            s.uptrendAbs,
-            s.roi,
-            s.profit,
-            s.testFlg
-          )
-        ) ++= shares
-  }
 }

@@ -5,7 +5,7 @@ import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.ShareWrapper
 import ru.mikhaildruzhinin.trader.core.TypeCode._
 import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
-import ru.mikhaildruzhinin.trader.database.tables.{SharesLogTable, SharesTable}
+import ru.mikhaildruzhinin.trader.database.tables.shares.{SharesLogTable, SharesOperationsTable}
 
 import scala.concurrent.Await
 
@@ -26,7 +26,7 @@ object MonitorHandler extends Handler {
     val sellSharesNum: Seq[Option[Int]] = Await.result(
       DatabaseConnection.asyncRun(
         Vector(
-          SharesTable.insert(sharesToSell.map(_.getShareTuple(Sold))),
+          SharesOperationsTable.insert(sharesToSell.map(_.getShareTuple(Sold))),
           SharesLogTable.insert(sharesToSell.map(_.getShareTuple(Sold)))
         )
       ),
@@ -38,7 +38,7 @@ object MonitorHandler extends Handler {
       .result(
         DatabaseConnection.asyncRun(
           Vector(
-            SharesTable.insert(sharesToKeep.map(_.getShareTuple(Kept))),
+            SharesOperationsTable.insert(sharesToKeep.map(_.getShareTuple(Kept))),
             SharesLogTable.insert(sharesToKeep.map(_.getShareTuple(Kept)))
           )
         ),

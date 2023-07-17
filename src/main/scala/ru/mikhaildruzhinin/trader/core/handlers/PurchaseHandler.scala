@@ -5,7 +5,7 @@ import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.ShareWrapper
 import ru.mikhaildruzhinin.trader.core.TypeCode._
 import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
-import ru.mikhaildruzhinin.trader.database.tables.{SharesLogTable, SharesTable}
+import ru.mikhaildruzhinin.trader.database.tables.shares.{SharesLogTable, SharesOperationsTable}
 
 import scala.concurrent.Await
 
@@ -21,7 +21,7 @@ object PurchaseHandler extends Handler {
       .result(
         DatabaseConnection.asyncRun(
           Vector(
-            SharesTable.insert(shares.map(_.getShareTuple(Available))),
+            SharesOperationsTable.insert(shares.map(_.getShareTuple(Available))),
             SharesLogTable.insert(shares.map(_.getShareTuple(Available)))
           )
         ),
@@ -67,7 +67,7 @@ object PurchaseHandler extends Handler {
       .result(
         DatabaseConnection.asyncRun(
           Vector(
-            SharesTable.insert(uptrendShares.map(_.getShareTuple(Uptrend))),
+            SharesOperationsTable.insert(uptrendShares.map(_.getShareTuple(Uptrend))),
             SharesLogTable.insert(uptrendShares.map(_.getShareTuple(Uptrend)))
           )
         ),
@@ -108,7 +108,7 @@ object PurchaseHandler extends Handler {
       .result(
         DatabaseConnection.asyncRun(
           Vector(
-            SharesTable.insert(purchasedShares.map(_.getShareTuple(Purchased))),
+            SharesOperationsTable.insert(purchasedShares.map(_.getShareTuple(Purchased))),
             SharesLogTable.insert(purchasedShares.map(_.getShareTuple(Purchased)))
           )
         ),
