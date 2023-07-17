@@ -13,7 +13,7 @@ object SellHandler extends Handler {
 
   override def apply()(implicit appConfig: AppConfig,
                        investApiClient: BaseInvestApiClient,
-                       connection: Connection): Unit = {
+                       connection: Connection): Int = {
 
     val sharesToSell: Seq[ShareWrapper] = ShareWrapper
       .getPersistedShares(Kept)
@@ -27,16 +27,22 @@ object SellHandler extends Handler {
         )
       )
 
-    val sellSharesNum: Seq[Option[Int]] = Await.result(
-      DatabaseConnection.asyncRun(
-        Vector(
-          SharesTable.insert(sharesToSell.map(_.getShareTuple(Sold))),
-          SharesLogTable.insert(sharesToSell.map(_.getShareTuple(Sold)))
-        )
-      ),
-      appConfig.slick.await.duration
-    )
-    log.info(s"Sell: ${sellSharesNum.headOption.flatten.getOrElse(-1).toString}")
+    val sellSharesNum: Int = Await
+      .result(
+        DatabaseConnection.asyncRun(
+          Vector(
+            SharesTable.insert(sharesToSell.map(_.getShareTuple(Sold))),
+            SharesLogTable.insert(sharesToSell.map(_.getShareTuple(Sold)))
+          )
+        ),
+        appConfig.slick.await.duration
+      )
+      .headOption
+      .flatten
+      .getOrElse(-1)
+
+    log.info(s"Sell: ${sellSharesNum.toString}")
     sharesToSell.foreach(s => log.info(s.toString))
+    sellSharesNum
   }
 }

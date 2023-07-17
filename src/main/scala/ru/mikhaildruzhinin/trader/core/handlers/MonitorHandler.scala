@@ -13,7 +13,7 @@ object MonitorHandler extends Handler {
 
   override def apply()(implicit appConfig: AppConfig,
                        investApiClient: BaseInvestApiClient,
-                       connection: Connection): Unit = {
+                       connection: Connection): Int = {
 
     val purchasedShares: Seq[ShareWrapper] = ShareWrapper.getPersistedShares(Purchased)
 
@@ -34,15 +34,22 @@ object MonitorHandler extends Handler {
     )
     log.info(s"Sell: ${sellSharesNum.headOption.flatten.getOrElse(-1).toString}")
 
-    val keepSharesNum: Seq[Option[Int]] = Await.result(
-      DatabaseConnection.asyncRun(
-        Vector(
-          SharesTable.insert(sharesToKeep.map(_.getShareTuple(Kept))),
-          SharesLogTable.insert(sharesToKeep.map(_.getShareTuple(Kept)))
-        )
-      ),
-      appConfig.slick.await.duration
-    )
-    log.info(s"Keep: ${keepSharesNum.headOption.flatten.getOrElse(-1).toString}")
+    val keepSharesNum: Int = Await
+      .result(
+        DatabaseConnection.asyncRun(
+          Vector(
+            SharesTable.insert(sharesToKeep.map(_.getShareTuple(Kept))),
+            SharesLogTable.insert(sharesToKeep.map(_.getShareTuple(Kept)))
+          )
+        ),
+        appConfig.slick.await.duration
+      )
+      .headOption
+      .flatten
+      .getOrElse(-1)
+
+    log.info(s"Keep: ${keepSharesNum.toString}")
+
+    keepSharesNum
   }
 }

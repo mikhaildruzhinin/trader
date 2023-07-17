@@ -11,7 +11,7 @@ object StartUpHandler extends Handler {
 
   override def apply()(implicit appConfig: AppConfig,
                        investApiClient: BaseInvestApiClient,
-                       connection: Connection): Unit = {
+                       connection: Connection): Int = {
 
     Await.result(
       connection.asyncRun(
@@ -22,5 +22,6 @@ object StartUpHandler extends Handler {
       ),
       appConfig.slick.await.duration
     )
+    0 // returns OK status
   }
 }

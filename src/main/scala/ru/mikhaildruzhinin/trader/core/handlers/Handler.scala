@@ -11,5 +11,5 @@ trait Handler {
 
   def apply()(implicit appConfig: AppConfig,
               investApiClient: BaseInvestApiClient,
-              connection: Connection): Unit
+              connection: Connection): Int
 }

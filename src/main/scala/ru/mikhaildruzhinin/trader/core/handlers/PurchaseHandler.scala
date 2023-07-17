@@ -12,21 +12,26 @@ import scala.concurrent.Await
 object PurchaseHandler extends Handler {
 
   private def loadAvailableShares()(implicit appConfig: AppConfig,
-                                    investApiClient: BaseInvestApiClient): Seq[Option[Int]] = {
+                                    investApiClient: BaseInvestApiClient): Int = {
 
     val shares: Seq[ShareWrapper] = ShareWrapper
       .getAvailableShares
 
-    val sharesNum: Seq[Option[Int]] = Await.result(
-      DatabaseConnection.asyncRun(
-        Vector(
-          SharesTable.insert(shares.map(_.getShareTuple(Available))),
-          SharesLogTable.insert(shares.map(_.getShareTuple(Available)))
-        )
-      ),
-      appConfig.slick.await.duration
-    )
-    log.info(s"Total: ${sharesNum.headOption.flatten.getOrElse(-1).toString}")
+    val sharesNum: Int = Await
+      .result(
+        DatabaseConnection.asyncRun(
+          Vector(
+            SharesTable.insert(shares.map(_.getShareTuple(Available))),
+            SharesLogTable.insert(shares.map(_.getShareTuple(Available)))
+          )
+        ),
+        appConfig.slick.await.duration
+      )
+      .headOption
+      .flatten
+      .getOrElse(-1)
+
+    log.info(s"Total: ${sharesNum.toString}")
     sharesNum
   }
 
@@ -35,18 +40,18 @@ object PurchaseHandler extends Handler {
                                        fallbackNumUptrendShares: Int)
                                       (implicit appConfig: AppConfig,
                                        investApiClient: BaseInvestApiClient,
-                                       connection: Connection): Option[Int] = {
+                                       connection: Connection): Int = {
 
     if (numAttempt < maxNumAttempts) {
       Thread.sleep(5 * 60 * 1000)
       loadUptrendShares(numAttempt + 1)
-    } else Some(fallbackNumUptrendShares)
+    } else fallbackNumUptrendShares
   }
 
   private def loadUptrendShares(numAttempt: Int = 1)
                                (implicit appConfig: AppConfig,
                                 investApiClient: BaseInvestApiClient,
-                                connection: Connection): Option[Int] = {
+                                connection: Connection): Int = {
 
     val maxNumAttempts: Int = 3
     log.info(s"Attempt $numAttempt of $maxNumAttempts")
@@ -58,34 +63,34 @@ object PurchaseHandler extends Handler {
       .reverse
       .take(appConfig.shares.numUptrendShares)
 
-    val uptrendSharesNum: Seq[Option[Int]] = Await.result(
-      DatabaseConnection.asyncRun(
-        Vector(
-          SharesTable.insert(uptrendShares.map(_.getShareTuple(Uptrend))),
-          SharesLogTable.insert(uptrendShares.map(_.getShareTuple(Uptrend)))
-        )
-      ),
-      appConfig.slick.await.duration
-    )
-    log.info(s"Best uptrend: ${uptrendSharesNum.headOption.flatten.getOrElse(-1).toString}")
+    val uptrendSharesNum: Int = Await
+      .result(
+        DatabaseConnection.asyncRun(
+          Vector(
+            SharesTable.insert(uptrendShares.map(_.getShareTuple(Uptrend))),
+            SharesLogTable.insert(uptrendShares.map(_.getShareTuple(Uptrend)))
+          )
+        ),
+        appConfig.slick.await.duration
+      )
+      .headOption
+      .flatten
+      .getOrElse(-1)
 
-    uptrendSharesNum.headOption.flatten match {
-      case Some(x) if x > 0 => Some(x)
-      case Some(x) => attemptLoadUptrendShares(
+    log.info(s"Best uptrend: ${uptrendSharesNum.toString}")
+
+    uptrendSharesNum match {
+      case x if x > 0 => x
+      case x => attemptLoadUptrendShares(
         numAttempt = numAttempt,
         maxNumAttempts = maxNumAttempts,
         fallbackNumUptrendShares = x
-      )
-      case None => attemptLoadUptrendShares(
-        numAttempt = numAttempt,
-        maxNumAttempts = maxNumAttempts,
-        fallbackNumUptrendShares = -1
       )
     }
   }
 
   private def purchaseShares()(implicit appConfig: AppConfig,
-                               connection: Connection): Seq[Option[Int]] = {
+                               connection: Connection): Int = {
 
     val purchasedShares: Seq[ShareWrapper] = ShareWrapper
       .getPersistedShares(Uptrend)
@@ -99,22 +104,27 @@ object PurchaseHandler extends Handler {
         )
       )
 
-    val purchasedSharesNum: Seq[Option[Int]] = Await.result(
-      DatabaseConnection.asyncRun(
-        Vector(
-          SharesTable.insert(purchasedShares.map(_.getShareTuple(Purchased))),
-          SharesLogTable.insert(purchasedShares.map(_.getShareTuple(Purchased)))
-        )
-      ),
-      appConfig.slick.await.duration
-    )
-    log.info(s"Purchased: ${purchasedSharesNum.headOption.flatten.getOrElse(-1).toString}")
+    val purchasedSharesNum: Int = Await
+      .result(
+        DatabaseConnection.asyncRun(
+          Vector(
+            SharesTable.insert(purchasedShares.map(_.getShareTuple(Purchased))),
+            SharesLogTable.insert(purchasedShares.map(_.getShareTuple(Purchased)))
+          )
+        ),
+        appConfig.slick.await.duration
+      )
+      .headOption
+      .flatten
+      .getOrElse(-1)
+
+    log.info(s"Purchased: ${purchasedSharesNum.toString}")
     purchasedSharesNum
   }
 
   override def apply()(implicit appConfig: AppConfig,
                        investApiClient: BaseInvestApiClient,
-                       connection: Connection): Unit = {
+                       connection: Connection): Int = {
 
     loadAvailableShares()
     loadUptrendShares()
