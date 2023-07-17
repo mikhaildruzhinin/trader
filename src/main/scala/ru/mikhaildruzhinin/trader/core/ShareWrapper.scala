@@ -14,7 +14,7 @@ import ru.tinkoff.piapi.core.utils.MapperUtils._
 import java.time.{DayOfWeek, Instant, LocalDate}
 import scala.math.BigDecimal.{RoundingMode, javaBigDecimal2bigDecimal}
 
-case class ShareWrapper(figi: String,
+case class ShareWrapper private (figi: String,
                         lot: Int,
                         currency: String,
                         name: String,
@@ -25,7 +25,7 @@ case class ShareWrapper(figi: String,
                         updateTime: scala.Option[Timestamp] = None)
                        (implicit appConfig: AppConfig) {
 
-  def this(share: Share)
+  private def this(share: Share)
           (implicit appConfig: AppConfig) = this(
     share.getFigi,
     share.getLot,
@@ -34,7 +34,7 @@ case class ShareWrapper(figi: String,
     share.getExchange
   )
 
-  def this(shareWrapper: ShareWrapper,
+  private def this(shareWrapper: ShareWrapper,
            startingPrice: scala.Option[Quotation],
            purchasePrice: scala.Option[Quotation],
            currentPrice: scala.Option[Quotation],
@@ -51,7 +51,7 @@ case class ShareWrapper(figi: String,
     updateTime
   )
 
-  def this(shareWrapper: ShareWrapper,
+  private def this(shareWrapper: ShareWrapper,
            lastPrice: LastPrice)
           (implicit appConfig: AppConfig) = this(
     shareWrapper.figi,
@@ -65,7 +65,7 @@ case class ShareWrapper(figi: String,
     Some(lastPrice.getTime)
   )
 
-  def this(share: ShareModel)
+  private def this(share: ShareModel)
           (implicit appConfig: AppConfig) = this(
     share.figi,
     share.lot,
