@@ -2,16 +2,12 @@ package ru.mikhaildruzhinin.trader.core
 
 import com.google.protobuf.Timestamp
 import com.typesafe.scalalogging.Logger
-import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.database.Models.{ShareModel, ShareType}
-import ru.mikhaildruzhinin.trader.database.connection.Connection
-import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.utils.DateUtils._
 import ru.tinkoff.piapi.core.utils.MapperUtils._
 
-import java.time.{DayOfWeek, Instant, LocalDate}
 import scala.math.BigDecimal.{RoundingMode, javaBigDecimal2bigDecimal}
 
 case class ShareWrapper private (figi: String,
@@ -149,29 +145,6 @@ case class ShareWrapper private (figi: String,
     noTaxValue * (100 - appConfig.shares.incomeTaxPct) / 100
   }
 
-  def updateShare(implicit appConfig: AppConfig,
-                  investApiClient: BaseInvestApiClient): ShareWrapper = {
-
-    val (
-      _: scala.Option[Quotation],
-      currentPrice: scala.Option[Quotation],
-      updateTime: scala.Option[Timestamp]
-    ) = ShareWrapper.getUpdatedCandlePrices(
-      shareWrapper = this,
-      from = appConfig.exchange.updateInstantFrom,
-      to = appConfig.exchange.updateInstantTo,
-      interval = CandleInterval.CANDLE_INTERVAL_5_MIN
-    )
-
-    ShareWrapper(
-      this,
-      startingPrice,
-      None,
-      currentPrice,
-      updateTime
-    )
-  }
-
   def toShareType(typeCode: TypeCode): ShareType = (
     TypeCode.unapply(typeCode),
     figi,
@@ -252,45 +225,4 @@ object ShareWrapper {
 
   def apply(share: ShareModel)
            (implicit appConfig: AppConfig): ShareWrapper = new ShareWrapper(share)
-
-  def getUpdatedCandlePrices(shareWrapper: ShareWrapper,
-                             from: Instant,
-                             to: Instant,
-                             interval: CandleInterval)
-                            (implicit appConfig: AppConfig,
-                             investApiClient: BaseInvestApiClient): (
-    scala.Option[Quotation],
-      scala.Option[Quotation],
-      scala.Option[Timestamp]
-    ) = {
-
-    val candle: scala.Option[HistoricCandle] = investApiClient
-      .getCandles(shareWrapper.figi, from, to, interval)
-      .headOption
-
-    candle match {
-        case Some(c) => (
-          Some(c.getOpen),
-          Some(c.getClose),
-          Some(c.getTime)
-        )
-        case None => (None, None, None)
-      }
-  }
-
-  def getPersistedShares(typeCode: TypeCode)
-                        (implicit appConfig: AppConfig,
-                         connection: Connection): Seq[ShareWrapper] = {
-
-    val code = TypeCode.unapply(typeCode)
-    val shares: Seq[ShareWrapper] = connection
-      .runMultiple(
-        Vector(SharesTable.filterByTypeCode(code))
-      )
-      .flatten
-      .map(s => ShareWrapper(s))
-
-    log.info(s"Got ${shares.length} shares of type: $typeCode($code)")
-    shares
-  }
 }

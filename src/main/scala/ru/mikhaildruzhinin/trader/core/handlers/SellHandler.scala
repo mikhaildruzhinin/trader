@@ -15,8 +15,7 @@ object SellHandler extends Handler {
                        investApiClient: BaseInvestApiClient,
                        connection: Connection): Int = {
 
-    val sharesToSell: Seq[ShareWrapper] = ShareWrapper
-      .getPersistedShares(Kept)
+    val sharesToSell: Seq[ShareWrapper] = wrapPersistedShares(Kept)
       .map(
         s => ShareWrapper(
           shareWrapper = s,
@@ -30,7 +29,7 @@ object SellHandler extends Handler {
     Await.result(
       connection.asyncRun(
         Vector(
-          SharesTable.update(figis = sharesToSell.map(s => s.figi), Sold.code),
+          SharesTable.updateTypeCode(figis = sharesToSell.map(s => s.figi), Sold.code),
         )
       ),
       appConfig.slick.await.duration

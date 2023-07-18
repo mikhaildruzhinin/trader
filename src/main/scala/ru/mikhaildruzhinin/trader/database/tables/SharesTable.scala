@@ -146,26 +146,64 @@ object SharesTable {
       .result
   }
 
-  def update(figis: Seq[String], typeCode: Int): ProfileAction[Int, NoStream, Effect.Write] = {
+  def update(figi: String,
+             share: ShareType): ProfileAction[Int, NoStream, Effect.Write] = {
+
     val (start: Instant, end: Instant) = getDayInterval
 
-    val query: Query[Rep[Int], Int, Seq] = for {
-      s <- table if s.loadDttm >= start &&
-        s.loadDttm < end &&
-        s.figi.inSet(figis) &&
-        s.deletedFlg === false
-    } yield s.typeCd
-    query.update(typeCode)
+    table
+      .filter(s => {
+        s.loadDttm >= start &&
+          s.loadDttm < end &&
+          s.figi === figi &&
+          s.deletedFlg === false
+      })
+      .map(
+        s => (
+          s.typeCd,
+          s.figi,
+          s.lot,
+          s.currency,
+          s.name,
+          s.exchange,
+          s.startingPrice,
+          s.purchasePrice,
+          s.currentPrice,
+          s.updateDttm,
+          s.uptrendPct,
+          s.uptrendAbs,
+          s.roi,
+          s.profit,
+          s.testFlg
+        )
+      )
+      .update(share)
+  }
+
+  def updateTypeCode(figis: Seq[String], typeCode: Int): ProfileAction[Int, NoStream, Effect.Write] = {
+    val (start: Instant, end: Instant) = getDayInterval
+
+    table
+      .filter(s => {
+        s.loadDttm >= start &&
+          s.loadDttm < end &&
+          s.figi.inSet(figis) &&
+          s.deletedFlg === false
+      })
+      .map(_.typeCd)
+      .update(typeCode)
   }
 
   def delete(): ProfileAction[Int, NoStream, Effect.Write] = {
     val (start: Instant, end: Instant) = getDayInterval
 
-    val query: Query[Rep[Boolean], Boolean, Seq] = for {
-      s <- table if s.loadDttm >= start &&
+    table
+      .filter(s => {
+        s.loadDttm >= start &&
         s.loadDttm < end &&
         s.deletedFlg === false
-    } yield s.deletedFlg
-    query.update(true)
+      })
+      .map(_.deletedFlg)
+      .update(true)
   }
 }

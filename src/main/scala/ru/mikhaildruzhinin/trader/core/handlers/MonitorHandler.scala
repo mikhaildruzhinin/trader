@@ -15,7 +15,7 @@ object MonitorHandler extends Handler {
                        investApiClient: BaseInvestApiClient,
                        connection: Connection): Int = {
 
-    val purchasedShares: Seq[ShareWrapper] = ShareWrapper.getPersistedShares(Purchased)
+    val purchasedShares: Seq[ShareWrapper] = wrapPersistedShares(Purchased)
 
     val (sharesToSell: Seq[ShareWrapper], sharesToKeep: Seq[ShareWrapper]) = investApiClient
       .getLastPrices(purchasedShares.map(_.figi))
@@ -28,7 +28,7 @@ object MonitorHandler extends Handler {
     Await.result(
       connection.asyncRun(
         Vector(
-          SharesTable.update(figis = sharesToSell.map(s => s.figi), Sold.code),
+          SharesTable.updateTypeCode(figis = sharesToSell.map(s => s.figi), Sold.code),
         )
       ),
       appConfig.slick.await.duration
@@ -40,7 +40,7 @@ object MonitorHandler extends Handler {
     Await.result(
       connection.asyncRun(
         Vector(
-          SharesTable.update(figis = sharesToKeep.map(s => s.figi), Kept.code),
+          SharesTable.updateTypeCode(figis = sharesToKeep.map(s => s.figi), Kept.code),
         )
       ),
       appConfig.slick.await.duration
