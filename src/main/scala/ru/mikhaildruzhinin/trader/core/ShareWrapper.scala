@@ -172,7 +172,7 @@ case class ShareWrapper private (figi: String,
     )
   }
 
-  def getShareTuple(typeCode: TypeCode): ShareType = (
+  def toShareType(typeCode: TypeCode): ShareType = (
     TypeCode.unapply(typeCode),
     figi,
     lot,
@@ -253,32 +253,12 @@ object ShareWrapper {
   def apply(share: ShareModel)
            (implicit appConfig: AppConfig): ShareWrapper = new ShareWrapper(share)
 
-  private def getFilteredShares(implicit appConfig: AppConfig,
-                                investApiClient: BaseInvestApiClient): List[Share] = {
-
-    val shares: List[Share] = investApiClient
-      .getShares
-      .filter(
-        s =>
-          appConfig.exchange.names.contains(s.getExchange) &&
-            s.getApiTradeAvailableFlag &&
-            s.getBuyAvailableFlag &&
-            s.getSellAvailableFlag
-      )
-
-    LocalDate.now.getDayOfWeek match {
-      case DayOfWeek.SATURDAY => shares.filter(_.getWeekendFlag)
-      case DayOfWeek.SUNDAY => shares.filter(_.getWeekendFlag)
-      case _ => shares
-    }
-  }
-
-  private def getUpdatedCandlePrices(shareWrapper: ShareWrapper,
-                                     from: Instant,
-                                     to: Instant,
-                                     interval: CandleInterval)
-                                    (implicit appConfig: AppConfig,
-                                     investApiClient: BaseInvestApiClient): (
+  def getUpdatedCandlePrices(shareWrapper: ShareWrapper,
+                             from: Instant,
+                             to: Instant,
+                             interval: CandleInterval)
+                            (implicit appConfig: AppConfig,
+                             investApiClient: BaseInvestApiClient): (
     scala.Option[Quotation],
       scala.Option[Quotation],
       scala.Option[Timestamp]
@@ -298,37 +278,13 @@ object ShareWrapper {
       }
   }
 
-  def getAvailableShares(implicit appConfig: AppConfig,
-                         investApiClient: BaseInvestApiClient): Seq[ShareWrapper] = {
-
-    getFilteredShares
-      .map(
-        s => {
-          val shareWrapper = ShareWrapper(s)
-
-          val (
-            startingPrice: scala.Option[Quotation],
-            _: scala.Option[Quotation],
-            updateTime: scala.Option[Timestamp]
-          ) = getUpdatedCandlePrices(
-            shareWrapper = shareWrapper,
-            from = appConfig.exchange.startInstantFrom,
-            to = appConfig.exchange.startInstantTo,
-            interval = CandleInterval.CANDLE_INTERVAL_5_MIN
-          )
-
-          ShareWrapper(shareWrapper, startingPrice, None, None, updateTime)
-        }
-      )
-  }
-
   def getPersistedShares(typeCode: TypeCode)
                         (implicit appConfig: AppConfig,
                          connection: Connection): Seq[ShareWrapper] = {
 
     val code = TypeCode.unapply(typeCode)
     val shares: Seq[ShareWrapper] = connection
-      .run(
+      .runMultiple(
         Vector(SharesTable.filterByTypeCode(code))
       )
       .flatten
