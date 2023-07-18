@@ -4,8 +4,8 @@ import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.ShareWrapper
 import ru.mikhaildruzhinin.trader.core.TypeCode._
-import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
-import ru.mikhaildruzhinin.trader.database.tables.shares.{SharesLogTable, SharesOperationsTable}
+import ru.mikhaildruzhinin.trader.database.connection.Connection
+import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 
 import scala.concurrent.Await
 
@@ -23,33 +23,31 @@ object MonitorHandler extends Handler {
       .map(x => ShareWrapper(x._2, x._1))
       .partition(_.roi <= Some(BigDecimal(0)))
 
-    val sellSharesNum: Seq[Option[Int]] = Await.result(
-      DatabaseConnection.asyncRun(
+    sharesToSell.foreach(s => log.info(s.toString))
+
+    Await.result(
+      connection.asyncRun(
         Vector(
-          SharesOperationsTable.insert(sharesToSell.map(_.getShareTuple(Sold))),
-          SharesLogTable.insert(sharesToSell.map(_.getShareTuple(Sold)))
+          SharesTable.update(figis = sharesToSell.map(s => s.figi), Sold.code),
         )
       ),
       appConfig.slick.await.duration
     )
-    log.info(s"Sell: ${sellSharesNum.headOption.flatten.getOrElse(-1).toString}")
-
-    val keepSharesNum: Int = Await
-      .result(
-        DatabaseConnection.asyncRun(
-          Vector(
-            SharesOperationsTable.insert(sharesToKeep.map(_.getShareTuple(Kept))),
-            SharesLogTable.insert(sharesToKeep.map(_.getShareTuple(Kept)))
-          )
-        ),
-        appConfig.slick.await.duration
-      )
       .headOption
-      .flatten
       .getOrElse(-1)
+    log.info(s"Sell: ${sharesToSell.length.toString}")
 
-    log.info(s"Keep: ${keepSharesNum.toString}")
+    Await.result(
+      connection.asyncRun(
+        Vector(
+          SharesTable.update(figis = sharesToKeep.map(s => s.figi), Kept.code),
+        )
+      ),
+      appConfig.slick.await.duration
+    )
 
-    keepSharesNum
+    log.info(s"Keep: ${sharesToKeep.length.toString}")
+
+    sharesToKeep.length
   }
 }

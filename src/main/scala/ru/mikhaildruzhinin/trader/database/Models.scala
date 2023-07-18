@@ -19,6 +19,7 @@ object Models {
                    roi: Option[BigDecimal],
                    profit: Option[BigDecimal],
                    testFlg: Boolean,
+                   deletedFlg: Boolean,
                    loadDttm: Instant)
 
   type ShareModel = Share

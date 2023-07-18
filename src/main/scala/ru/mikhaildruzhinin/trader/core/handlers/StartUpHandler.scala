@@ -3,7 +3,7 @@ package ru.mikhaildruzhinin.trader.core.handlers
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.database.connection.Connection
-import ru.mikhaildruzhinin.trader.database.tables.shares.{SharesLogTable, SharesOperationsTable}
+import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 
 import scala.concurrent.Await
 
@@ -16,8 +16,7 @@ object StartUpHandler extends Handler {
     Await.result(
       connection.asyncRun(
         Vector(
-          SharesOperationsTable.createIfNotExists,
-          SharesLogTable.createIfNotExists
+          SharesTable.createIfNotExists,
         )
       ),
       appConfig.slick.await.duration

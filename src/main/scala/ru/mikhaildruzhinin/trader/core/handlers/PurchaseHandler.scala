@@ -4,38 +4,37 @@ import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.ShareWrapper
 import ru.mikhaildruzhinin.trader.core.TypeCode._
-import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
-import ru.mikhaildruzhinin.trader.database.tables.shares.{SharesLogTable, SharesOperationsTable}
+import ru.mikhaildruzhinin.trader.database.connection.Connection
+import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 
 import scala.concurrent.Await
 
 object PurchaseHandler extends Handler {
 
-  private def loadAvailableShares()(implicit appConfig: AppConfig,
-                                    investApiClient: BaseInvestApiClient): Int = {
+  def loadAvailableShares()(implicit appConfig: AppConfig,
+                                    investApiClient: BaseInvestApiClient,
+                                    connection: Connection): Int = {
 
     val shares: Seq[ShareWrapper] = ShareWrapper
       .getAvailableShares
 
-    val sharesNum: Int = Await
-      .result(
-        DatabaseConnection.asyncRun(
-          Vector(
-            SharesOperationsTable.insert(shares.map(_.getShareTuple(Available))),
-            SharesLogTable.insert(shares.map(_.getShareTuple(Available)))
-          )
-        ),
-        appConfig.slick.await.duration
-      )
-      .headOption
-      .flatten
-      .getOrElse(-1)
+    shares.foreach(s => println(s.startingPrice))
 
-    log.info(s"Total: ${sharesNum.toString}")
-    sharesNum
+    val sharesNum = Await.result(
+      connection.asyncRun(
+        Vector(
+          SharesTable.delete(),
+          SharesTable.insert(shares.map(_.getShareTuple(Available))),
+        )
+      ),
+      appConfig.slick.await.duration
+    )
+
+    log.info(s"Total: ${shares.length.toString}")
+    shares.length
   }
 
-  private def attemptLoadUptrendShares(numAttempt: Int,
+  def attemptLoadUptrendShares(numAttempt: Int,
                                        maxNumAttempts: Int,
                                        fallbackNumUptrendShares: Int)
                                       (implicit appConfig: AppConfig,
@@ -63,23 +62,18 @@ object PurchaseHandler extends Handler {
       .reverse
       .take(appConfig.shares.numUptrendShares)
 
-    val uptrendSharesNum: Int = Await
-      .result(
-        DatabaseConnection.asyncRun(
-          Vector(
-            SharesOperationsTable.insert(uptrendShares.map(_.getShareTuple(Uptrend))),
-            SharesLogTable.insert(uptrendShares.map(_.getShareTuple(Uptrend)))
-          )
-        ),
-        appConfig.slick.await.duration
-      )
-      .headOption
-      .flatten
-      .getOrElse(-1)
+    Await.result(
+      connection.asyncRun(
+        Vector(
+          SharesTable.update(figis = uptrendShares.map(s => s.figi), Uptrend.code),
+        )
+      ),
+      appConfig.slick.await.duration
+    )
 
-    log.info(s"Best uptrend: ${uptrendSharesNum.toString}")
+    log.info(s"Best uptrend: ${uptrendShares.length.toString}")
 
-    uptrendSharesNum match {
+    uptrendShares.length match {
       case x if x > 0 => x
       case x => attemptLoadUptrendShares(
         numAttempt = numAttempt,
@@ -89,7 +83,7 @@ object PurchaseHandler extends Handler {
     }
   }
 
-  private def purchaseShares()(implicit appConfig: AppConfig,
+  def purchaseShares()(implicit appConfig: AppConfig,
                                connection: Connection): Int = {
 
     val purchasedShares: Seq[ShareWrapper] = ShareWrapper
@@ -104,22 +98,17 @@ object PurchaseHandler extends Handler {
         )
       )
 
-    val purchasedSharesNum: Int = Await
-      .result(
-        DatabaseConnection.asyncRun(
-          Vector(
-            SharesOperationsTable.insert(purchasedShares.map(_.getShareTuple(Purchased))),
-            SharesLogTable.insert(purchasedShares.map(_.getShareTuple(Purchased)))
-          )
-        ),
-        appConfig.slick.await.duration
-      )
-      .headOption
-      .flatten
-      .getOrElse(-1)
+    Await.result(
+      connection.asyncRun(
+        Vector(
+          SharesTable.update(figis = purchasedShares.map(s => s.figi), Purchased.code),
+        )
+      ),
+      appConfig.slick.await.duration
+    )
 
-    log.info(s"Purchased: ${purchasedSharesNum.toString}")
-    purchasedSharesNum
+    log.info(s"Purchased: ${purchasedShares.length.toString}")
+    purchasedShares.length
   }
 
   override def apply()(implicit appConfig: AppConfig,

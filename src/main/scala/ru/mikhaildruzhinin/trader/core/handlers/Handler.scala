@@ -6,7 +6,6 @@ import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 
 trait Handler {
-
   val log: Logger = Logger(getClass.getName)
 
   def apply()(implicit appConfig: AppConfig,

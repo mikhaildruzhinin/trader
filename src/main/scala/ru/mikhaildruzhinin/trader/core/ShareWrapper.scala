@@ -6,7 +6,7 @@ import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.database.Models.{ShareModel, ShareType}
 import ru.mikhaildruzhinin.trader.database.connection.Connection
-import ru.mikhaildruzhinin.trader.database.tables.shares.SharesOperationsTable
+import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.utils.DateUtils._
 import ru.tinkoff.piapi.core.utils.MapperUtils._
@@ -284,13 +284,15 @@ object ShareWrapper {
       scala.Option[Timestamp]
     ) = {
 
-    investApiClient
+    val candle: scala.Option[HistoricCandle] = investApiClient
       .getCandles(shareWrapper.figi, from, to, interval)
-      .headOption match {
-        case Some(candle) => (
-          Some(candle.getOpen),
-          Some(candle.getClose),
-          Some(candle.getTime)
+      .headOption
+
+    candle match {
+        case Some(c) => (
+          Some(c.getOpen),
+          Some(c.getClose),
+          Some(c.getTime)
         )
         case None => (None, None, None)
       }
@@ -327,7 +329,7 @@ object ShareWrapper {
     val code = TypeCode.unapply(typeCode)
     val shares: Seq[ShareWrapper] = connection
       .run(
-        Vector(SharesOperationsTable.filterByTypeCode(code))
+        Vector(SharesTable.filterByTypeCode(code))
       )
       .flatten
       .map(s => ShareWrapper(s))
