@@ -19,10 +19,11 @@ class IntegrationSuite extends AnyFunSuite with Matchers {
     AvailabilityHandler()
     UptrendHandler()
     PurchaseHandler()
-//    for (_ <- 0 until 3) {
-//      Thread.sleep(sleepMillis)
-//      MonitorHandler()
-//    }
+
+    for (_ <- 0 until 3) {
+      Thread.sleep(sleepMillis)
+      MonitorHandler()
+    }
 //    Thread.sleep(sleepMillis)
 //    val r = SellHandler()
 //

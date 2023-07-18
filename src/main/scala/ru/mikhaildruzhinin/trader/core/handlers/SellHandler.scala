@@ -15,7 +15,7 @@ object SellHandler extends Handler {
                        investApiClient: BaseInvestApiClient,
                        connection: Connection): Int = {
 
-    val sharesToSell: Seq[ShareWrapper] = wrapPersistedShares(Kept)
+    val sharesToSell: Seq[ShareWrapper] = wrapPersistedShares(Purchased)
       .map(
         s => ShareWrapper(
           shareWrapper = s,

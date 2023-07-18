@@ -9,6 +9,5 @@ object TypeCode {
   final case object Uptrend extends TypeCode(code = 2)
   final case object Purchased extends TypeCode(code = 3)
   final case object Sold extends TypeCode(code = 4)
-  final case object Kept extends TypeCode(code = 5)
 }
 

@@ -6,48 +6,42 @@ import ru.mikhaildruzhinin.trader.core.ShareWrapper
 import ru.mikhaildruzhinin.trader.core.TypeCode._
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
-
-import scala.concurrent.Await
+import slick.dbio.DBIO
 
 object MonitorHandler extends Handler {
+
+  private def splitShares(shares: Seq[ShareWrapper])
+                              (implicit appConfig: AppConfig,
+                               investApiClient: BaseInvestApiClient,
+                               connection: Connection): (Seq[ShareWrapper], Seq[ShareWrapper]) = {
+
+    investApiClient
+      .getLastPrices(shares.map(_.figi))
+      .zip(shares)
+      .map(x => ShareWrapper(shareWrapper = x._2, lastPrice = x._1))
+      .partition(_.roi <= Some(BigDecimal(0)))
+  }
 
   override def apply()(implicit appConfig: AppConfig,
                        investApiClient: BaseInvestApiClient,
                        connection: Connection): Int = {
 
     val purchasedShares: Seq[ShareWrapper] = wrapPersistedShares(Purchased)
+    val (sharesToSell: Seq[ShareWrapper], sharesToKeep: Seq[ShareWrapper]) = splitShares(purchasedShares)
 
-    val (sharesToSell: Seq[ShareWrapper], sharesToKeep: Seq[ShareWrapper]) = investApiClient
-      .getLastPrices(purchasedShares.map(_.figi))
-      .zip(purchasedShares)
-      .map(x => ShareWrapper(x._2, x._1))
-      .partition(_.roi <= Some(BigDecimal(0)))
+    val sharesToSellNum: Int = connection.run(
+      DBIO.sequence(sharesToSell.map(s => {
+        SharesTable.update(s.figi, s.toShareType(Sold))
+      }))
+    ).flatten.length
 
-    sharesToSell.foreach(s => log.info(s.toString))
-
-    Await.result(
-      connection.asyncRun(
-        Vector(
-          SharesTable.updateTypeCode(figis = sharesToSell.map(s => s.figi), Sold.code),
-        )
-      ),
-      appConfig.slick.await.duration
-    )
-      .headOption
-      .getOrElse(-1)
-    log.info(s"Sell: ${sharesToSell.length.toString}")
-
-    Await.result(
-      connection.asyncRun(
-        Vector(
-          SharesTable.updateTypeCode(figis = sharesToKeep.map(s => s.figi), Kept.code),
-        )
-      ),
-      appConfig.slick.await.duration
+    connection.run(
+      DBIO.sequence(sharesToKeep.map(s => {
+        SharesTable.update(s.figi, s.toShareType(Purchased))
+      }))
     )
 
-    log.info(s"Keep: ${sharesToKeep.length.toString}")
-
-    sharesToKeep.length
+    log.info(s"Sell: ${sharesToSellNum.toString}")
+    sharesToSellNum
   }
 }
