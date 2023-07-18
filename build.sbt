@@ -24,7 +24,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick-hikaricp" % "3.4.1",
   "javax.servlet" % "javax.servlet-api" % "4.0.1" % "provided",
   "org.postgresql" % "postgresql" % "42.6.0",
-  "ru.tinkoff.piapi" % "java-sdk-core" % "1.3"
+  "ru.tinkoff.piapi" % "java-sdk-core" % "1.3",
+  "org.scalatest" %% "scalatest" % "3.2.16" % Test
 )
 
 assembly / artifact := {
