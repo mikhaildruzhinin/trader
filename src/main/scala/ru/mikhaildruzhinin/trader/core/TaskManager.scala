@@ -23,7 +23,11 @@ object TaskManager {
       "0 10 9 * * *",
       ZoneId.of("UTC")
     )
-  ).execute((_, _) => PurchaseHandler())
+  ).execute((_, _) => {
+    AvailabilityHandler()
+    UptrendHandler()
+    PurchaseHandler()
+  })
 
   val monitorTask: RecurringTask[Void] = Tasks.recurring(
     "monitor",
