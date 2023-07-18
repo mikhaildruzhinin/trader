@@ -11,7 +11,6 @@ import slick.dbio.DBIO
 
 import java.time.{DayOfWeek, LocalDate}
 import scala.annotation.tailrec
-import scala.concurrent.Await
 
 object PurchaseHandler extends Handler {
   /**
@@ -51,8 +50,8 @@ object PurchaseHandler extends Handler {
    * @return sequence of wrapped shares
    */
   private def wrapShares(shares: Seq[Share])
-                                (implicit appConfig: AppConfig,
-                                 investApiClient: BaseInvestApiClient): Seq[ShareWrapper] = {
+                        (implicit appConfig: AppConfig,
+                         investApiClient: BaseInvestApiClient): Seq[ShareWrapper] = {
 
     shares.map(s => {
       val shareWrapper = ShareWrapper(s)
@@ -102,26 +101,28 @@ object PurchaseHandler extends Handler {
     wrappedShares.length
   }
 
-  def updateCurrentPrice(shareWrapper: ShareWrapper)
-                        (implicit appConfig: AppConfig,
-                         investApiClient: BaseInvestApiClient): ShareWrapper = {
+  private def updateCurrentPrice(shares: Seq[ShareWrapper])
+                                (implicit appConfig: AppConfig,
+                                 investApiClient: BaseInvestApiClient): Seq[ShareWrapper] = {
 
-    val candle = HistoricCandleWrapper(
-      investApiClient.getCandles(
-        figi = shareWrapper.figi,
-        from = appConfig.exchange.updateInstantFrom,
-        to = appConfig.exchange.updateInstantTo,
-        interval = CandleInterval.CANDLE_INTERVAL_5_MIN
-      ).headOption
-    )
+    shares.map(s => {
+      val candle = HistoricCandleWrapper(
+        investApiClient.getCandles(
+          figi = s.figi,
+          from = appConfig.exchange.updateInstantFrom,
+          to = appConfig.exchange.updateInstantTo,
+          interval = CandleInterval.CANDLE_INTERVAL_5_MIN
+        ).headOption
+      )
 
-    ShareWrapper(
-      shareWrapper = shareWrapper,
-      startingPrice = shareWrapper.startingPrice,
-      purchasePrice = None,
-      currentPrice = candle.close,
-      updateTime = candle.time
-    )
+      ShareWrapper(
+        shareWrapper = s,
+        startingPrice = s.startingPrice,
+        purchasePrice = None,
+        currentPrice = candle.close,
+        updateTime = candle.time
+      )
+    })
   }
 
   private def filterUptrendShares(shares: Seq[ShareWrapper])
@@ -129,8 +130,7 @@ object PurchaseHandler extends Handler {
                                   investApiClient: BaseInvestApiClient,
                                   connection: Connection): Seq[ShareWrapper] = {
 
-    shares.map(s => updateCurrentPrice(s))
-      .filter(_.uptrendPct >= Some(appConfig.shares.uptrendThresholdPct))
+    shares.filter(_.uptrendPct >= Some(appConfig.shares.uptrendThresholdPct))
       .sortBy(_.uptrendAbs)
       .reverse
       .take(appConfig.shares.numUptrendShares)
@@ -138,15 +138,16 @@ object PurchaseHandler extends Handler {
 
   @tailrec
   def persistUptrendShares(numAttempt: Int = 1)
-                               (implicit appConfig: AppConfig,
-                                investApiClient: BaseInvestApiClient,
-                                connection: Connection): Int = {
+                          (implicit appConfig: AppConfig,
+                           investApiClient: BaseInvestApiClient,
+                           connection: Connection): Int = {
 
     val maxNumAttempts: Int = 3
     log.info(s"Attempt $numAttempt of $maxNumAttempts")
 
     val shares: Seq[ShareWrapper] = wrapPersistedShares(Available)
-    val uptrendShares: Seq[ShareWrapper] = filterUptrendShares(shares)
+    val updatedShares: Seq[ShareWrapper] = updateCurrentPrice(shares)
+    val uptrendShares: Seq[ShareWrapper] = filterUptrendShares(updatedShares)
 
     connection.run(
       DBIO.sequence(uptrendShares.map(s => {
@@ -165,8 +166,8 @@ object PurchaseHandler extends Handler {
     }
   }
 
-  def purchaseShares()(implicit appConfig: AppConfig,
-                       connection: Connection): Int = {
+  def persistPurchasedShares()(implicit appConfig: AppConfig,
+                               connection: Connection): Int = {
 
     val purchasedShares: Seq[ShareWrapper] = wrapPersistedShares(Uptrend)
       .map(
@@ -179,13 +180,10 @@ object PurchaseHandler extends Handler {
         )
       )
 
-    Await.result(
-      connection.asyncRun(
-        Vector(
-          SharesTable.updateTypeCode(figis = purchasedShares.map(s => s.figi), Purchased.code),
-        )
-      ),
-      appConfig.slick.await.duration
+    connection.run(
+      DBIO.sequence(purchasedShares.map(s => {
+        SharesTable.update(s.figi, s.toShareType(Purchased))
+      }))
     )
 
     log.info(s"Purchased: ${purchasedShares.length.toString}")
@@ -198,6 +196,6 @@ object PurchaseHandler extends Handler {
 
     persistAvailableShares()
     persistUptrendShares()
-    purchaseShares()
+    persistPurchasedShares()
   }
 }
