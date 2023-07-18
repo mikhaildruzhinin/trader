@@ -6,8 +6,7 @@ import ru.mikhaildruzhinin.trader.core.ShareWrapper
 import ru.mikhaildruzhinin.trader.core.TypeCode._
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
-
-import scala.concurrent.Await
+import slick.dbio.DBIO
 
 object SellHandler extends Handler {
 
@@ -20,23 +19,20 @@ object SellHandler extends Handler {
         s => ShareWrapper(
           shareWrapper = s,
           startingPrice = s.startingPrice,
-          purchasePrice = s.currentPrice,
+          purchasePrice = s.purchasePrice,
           currentPrice = s.currentPrice,
           updateTime = s.updateTime
         )
       )
 
-    Await.result(
-      connection.asyncRun(
-        Vector(
-          SharesTable.updateTypeCode(figis = sharesToSell.map(s => s.figi), Sold.code),
-        )
-      ),
-      appConfig.slick.await.duration
-    )
+    val sharesToSellNum: Int = connection.run(
+      DBIO.sequence(sharesToSell.map(s => {
+        SharesTable.update(s.figi, s.toShareType(Sold))
+      }))
+    ).flatten.length
 
-    log.info(s"Sell: ${sharesToSell.length.toString}")
+    log.info(s"Sell: ${sharesToSellNum.toString}")
     sharesToSell.foreach(s => log.info(s.toString))
-    sharesToSell.length
+    sharesToSellNum
   }
 }

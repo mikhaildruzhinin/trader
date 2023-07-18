@@ -154,20 +154,17 @@ case class ShareWrapper private (figi: String,
     exchange,
     startingPrice match {
       case Some(s) =>
-        Some(quotationToBigDecimal(s)
-          .setScale(appConfig.shares.priceScale, RoundingMode.HALF_UP))
+        Some(quotationToBigDecimal(s))
       case _ => None
     },
     purchasePrice match {
       case Some(p) =>
-        Some(quotationToBigDecimal(p)
-          .setScale(appConfig.shares.priceScale, RoundingMode.HALF_UP))
+        Some(quotationToBigDecimal(p))
       case _ => None
     },
     currentPrice match {
       case Some(p) =>
-        Some(quotationToBigDecimal(p)
-          .setScale(appConfig.shares.priceScale, RoundingMode.HALF_UP))
+        Some(quotationToBigDecimal(p))
       case _ => None
     },
     updateTime match {

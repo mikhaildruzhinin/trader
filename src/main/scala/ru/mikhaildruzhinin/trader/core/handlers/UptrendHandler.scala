@@ -40,7 +40,8 @@ object UptrendHandler extends Handler {
                                   investApiClient: BaseInvestApiClient,
                                   connection: Connection): Seq[ShareWrapper] = {
 
-    shares.filter(_.uptrendPct >= Some(appConfig.shares.uptrendThresholdPct))
+    shares
+      .filter(_.uptrendPct >= Some(appConfig.shares.uptrendThresholdPct))
       .sortBy(_.uptrendAbs)
       .reverse
       .take(appConfig.shares.numUptrendShares)
