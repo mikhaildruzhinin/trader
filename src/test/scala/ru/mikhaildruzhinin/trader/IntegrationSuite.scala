@@ -21,18 +21,20 @@ class IntegrationSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll 
 
   test("integration test") {
     AvailabilityHandler()
-    UptrendHandler()
-    PurchaseHandler()
+    val uptrendShares: Int = UptrendHandler()
+    val purchasedShares: Int = PurchaseHandler()
 
     for (_ <- 0 until 3) {
       Thread.sleep(sleepMillis)
       MonitorHandler()
     }
     Thread.sleep(sleepMillis)
-    val r = SellHandler()
+    val soldShares = SellHandler()
 
-    r should be >= 0
-    r should be <= 10
+    soldShares should be >= 0
+    soldShares should be <= 10
+    soldShares should be >= uptrendShares
+    soldShares should be >= purchasedShares
   }
 
 
