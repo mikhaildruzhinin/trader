@@ -8,6 +8,8 @@ import ru.mikhaildruzhinin.trader.config.{AppConfig, ConfigReader}
 import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
 
+import scala.annotation.tailrec
+
 class IntegrationSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll {
   implicit val appConfig: AppConfig = ConfigReader.appConfig
   implicit val connection: Connection = DatabaseConnection
@@ -19,23 +21,31 @@ class IntegrationSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll 
 
 //  override def afterAll(): Unit = connection.run(SharesTable.delete())
 
+  def monitorShares(n: Int): Int = {
+    @tailrec
+    def monitorTailRec(acc: Int, n: Int): Int = {
+      if (n > 0) {
+        Thread.sleep(sleepMillis)
+        val soldShares = MonitorHandler()
+        monitorTailRec(acc + soldShares, n - 1)
+      } else acc
+    }
+    monitorTailRec(0, n)
+  }
+
   test("integration test") {
     AvailabilityHandler()
     val uptrendShares: Int = UptrendHandler()
     val purchasedShares: Int = PurchaseHandler()
 
-    for (_ <- 0 until 3) {
-      Thread.sleep(sleepMillis)
-      MonitorHandler()
-    }
+    val stopLossSoldShares = monitorShares(3)
+
     Thread.sleep(sleepMillis)
-    val soldShares = SellHandler()
+    val closeSoldShares = SellHandler()
 
-    soldShares should be >= 0
-    soldShares should be <= 10
-    soldShares should be <= uptrendShares
-    soldShares should be <= purchasedShares
+    uptrendShares should be (purchasedShares)
+    purchasedShares should be (stopLossSoldShares + closeSoldShares)
+    closeSoldShares should be >= 0
+    closeSoldShares should be <= 10
   }
-
-
 }
