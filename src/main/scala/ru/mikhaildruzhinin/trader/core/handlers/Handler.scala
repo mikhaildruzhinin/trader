@@ -14,13 +14,12 @@ trait Handler {
                                    (implicit appConfig: AppConfig,
                                     connection: Connection): Seq[ShareWrapper] = {
 
-    val code: Int = TypeCode.unapply(typeCode)
     val wrappedShares: Seq[ShareWrapper] = connection
-      .run(SharesTable.filterByTypeCode(code))
+      .run(SharesTable.filterByTypeCode(typeCode.code))
       .flatten
       .map(s => ShareWrapper(s))
 
-    log.info(s"Got ${wrappedShares.length} shares of type: $typeCode($code)")
+    log.info(s"Got ${wrappedShares.length} shares of type: $typeCode($typeCode.code)")
     wrappedShares
   }
 
