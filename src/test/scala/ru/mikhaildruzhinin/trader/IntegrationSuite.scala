@@ -33,8 +33,8 @@ class IntegrationSuite extends AnyFunSuite with Matchers with BeforeAndAfterAll 
 
     soldShares should be >= 0
     soldShares should be <= 10
-    soldShares should be >= uptrendShares
-    soldShares should be >= purchasedShares
+    soldShares should be <= uptrendShares
+    soldShares should be <= purchasedShares
   }
 
 

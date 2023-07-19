@@ -5,6 +5,7 @@ import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.{BaseInvestApiClient, SyncInvestApiClient}
 import ru.mikhaildruzhinin.trader.config.{AppConfig, ConfigReader}
 import ru.mikhaildruzhinin.trader.core.TaskManager
+import ru.mikhaildruzhinin.trader.core.wrappers.ShareWrapper
 
 import java.time.Instant
 

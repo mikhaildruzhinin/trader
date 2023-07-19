@@ -1,8 +1,8 @@
 package ru.mikhaildruzhinin.trader.core.handlers
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.core.{HistoricCandleWrapper, ShareWrapper}
 import ru.mikhaildruzhinin.trader.core.TypeCode._
+import ru.mikhaildruzhinin.trader.core.wrappers.{HistoricCandleWrapper, ShareWrapper}
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 import ru.tinkoff.piapi.contract.v1.CandleInterval
@@ -25,13 +25,12 @@ object UptrendHandler extends Handler {
         ).headOption
       )
 
-      ShareWrapper(
-        shareWrapper = s,
-        startingPrice = s.startingPrice,
-        purchasePrice = None,
-        currentPrice = candle.close,
-        updateTime = candle.time
-      )
+      ShareWrapper
+        .builder()
+        .fromWrapper(s)
+        .withCurrentPrice(candle.close)
+        .withUpdateTime(candle.time)
+        .build()
     })
   }
 

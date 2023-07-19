@@ -3,7 +3,8 @@ package ru.mikhaildruzhinin.trader.core.handlers
 import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.core.{ShareWrapper, TypeCode}
+import ru.mikhaildruzhinin.trader.core.TypeCode
+import ru.mikhaildruzhinin.trader.core.wrappers.ShareWrapper
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 
@@ -17,9 +18,13 @@ trait Handler {
     val wrappedShares: Seq[ShareWrapper] = connection
       .run(SharesTable.filterByTypeCode(typeCode.code))
       .flatten
-      .map(s => ShareWrapper(s))
+      .map(s => ShareWrapper
+        .builder()
+        .fromModel(s)
+        .build()
+      )
 
-    log.info(s"Got ${wrappedShares.length} shares of type: $typeCode($typeCode.code)")
+    log.info(s"Got ${wrappedShares.length} shares of type: $typeCode(${typeCode.code})")
     wrappedShares
   }
 

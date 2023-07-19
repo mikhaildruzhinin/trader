@@ -2,8 +2,8 @@ package ru.mikhaildruzhinin.trader.core.handlers
 
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.core.ShareWrapper
 import ru.mikhaildruzhinin.trader.core.TypeCode._
+import ru.mikhaildruzhinin.trader.core.wrappers.ShareWrapper
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 import slick.dbio.DBIO
@@ -16,13 +16,10 @@ object SellHandler extends Handler {
 
     val sharesToSell: Seq[ShareWrapper] = wrapPersistedShares(Purchased)
       .map(
-        s => ShareWrapper(
-          shareWrapper = s,
-          startingPrice = s.startingPrice,
-          purchasePrice = s.purchasePrice,
-          currentPrice = s.currentPrice,
-          updateTime = s.updateTime
-        )
+        s => ShareWrapper
+          .builder()
+          .fromWrapper(s)
+          .build()
       )
 
     val sharesToSellNum: Int = connection.run(

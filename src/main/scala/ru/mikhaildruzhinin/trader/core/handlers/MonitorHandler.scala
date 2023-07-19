@@ -2,8 +2,8 @@ package ru.mikhaildruzhinin.trader.core.handlers
 
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.core.ShareWrapper
 import ru.mikhaildruzhinin.trader.core.TypeCode._
+import ru.mikhaildruzhinin.trader.core.wrappers.ShareWrapper
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 import slick.dbio.DBIO
@@ -18,7 +18,13 @@ object MonitorHandler extends Handler {
     investApiClient
       .getLastPrices(shares.map(_.figi))
       .zip(shares)
-      .map(x => ShareWrapper(shareWrapper = x._2, lastPrice = x._1))
+      .map(x => ShareWrapper
+        .builder()
+        .fromWrapper(x._2)
+        .withCurrentPrice(Some(x._1.getPrice))
+        .withUpdateTime(Some(x._1.getTime))
+        .build()
+      )
       .partition(_.roi <= Some(BigDecimal(0)))
   }
 

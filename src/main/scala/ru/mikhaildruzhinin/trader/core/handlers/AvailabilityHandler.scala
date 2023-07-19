@@ -2,7 +2,7 @@ package ru.mikhaildruzhinin.trader.core.handlers
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.TypeCode._
-import ru.mikhaildruzhinin.trader.core.{HistoricCandleWrapper, ShareWrapper}
+import ru.mikhaildruzhinin.trader.core.wrappers.{HistoricCandleWrapper, ShareWrapper}
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 import ru.tinkoff.piapi.contract.v1.{CandleInterval, Share}
@@ -51,24 +51,21 @@ object AvailabilityHandler extends Handler {
                          investApiClient: BaseInvestApiClient): Seq[ShareWrapper] = {
 
     shares.map(s => {
-      val shareWrapper = ShareWrapper(s)
-
       val candle = HistoricCandleWrapper(
         investApiClient.getCandles(
-          figi = shareWrapper.figi,
+          figi = s.getFigi,
           from = appConfig.exchange.startInstantFrom,
           to = appConfig.exchange.startInstantTo,
           interval = CandleInterval.CANDLE_INTERVAL_5_MIN
         ).headOption
       )
 
-      ShareWrapper(
-        shareWrapper = shareWrapper,
-        startingPrice = candle.open,
-        purchasePrice = None,
-        currentPrice = None,
-        updateTime = candle.time
-      )
+      ShareWrapper
+        .builder()
+        .fromShare(s)
+        .withStartingPrice(candle.open)
+        .withUpdateTime(candle.time)
+        .build()
     })
   }
 

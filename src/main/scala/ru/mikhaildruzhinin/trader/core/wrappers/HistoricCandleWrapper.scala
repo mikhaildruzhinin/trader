@@ -1,4 +1,4 @@
-package ru.mikhaildruzhinin.trader.core
+package ru.mikhaildruzhinin.trader.core.wrappers
 
 import com.google.protobuf.Timestamp
 import ru.tinkoff.piapi.contract.v1.{HistoricCandle, Quotation}
