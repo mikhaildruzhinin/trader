@@ -2,38 +2,17 @@ package ru.mikhaildruzhinin.trader.core.handlers
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.TypeCode._
-import ru.mikhaildruzhinin.trader.core.wrappers.{HistoricCandleWrapper, ShareWrapper}
+import ru.mikhaildruzhinin.trader.core.wrappers.ShareWrapper
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
-import ru.tinkoff.piapi.contract.v1.CandleInterval
+import ru.tinkoff.piapi.contract.v1.Quotation
+import ru.tinkoff.piapi.core.utils.MapperUtils.quotationToBigDecimal
 import slick.dbio.DBIO
 
 import scala.annotation.tailrec
+import scala.math.BigDecimal.javaBigDecimal2bigDecimal
 
 object UptrendHandler extends Handler {
-  private def updateCurrentPrice(shares: Seq[ShareWrapper])
-                                (implicit appConfig: AppConfig,
-                                 investApiClient: BaseInvestApiClient): Seq[ShareWrapper] = {
-
-    shares.map(s => {
-      val candle = HistoricCandleWrapper(
-        investApiClient.getCandles(
-          figi = s.figi,
-          from = appConfig.exchange.updateInstantFrom,
-          to = appConfig.exchange.updateInstantTo,
-          interval = CandleInterval.CANDLE_INTERVAL_5_MIN
-        ).headOption
-      )
-
-      ShareWrapper
-        .builder()
-        .fromWrapper(s)
-        .withCurrentPrice(candle.close)
-        .withUpdateTime(candle.time)
-        .build()
-    })
-  }
-
   private def filterUptrendShares(shares: Seq[ShareWrapper])
                                  (implicit appConfig: AppConfig,
                                   investApiClient: BaseInvestApiClient,
@@ -41,6 +20,11 @@ object UptrendHandler extends Handler {
 
     shares
       .filter(_.uptrendPct >= Some(appConfig.shares.uptrendThresholdPct))
+      .filter(s => {
+        quotationToBigDecimal(
+          s.currentPrice.getOrElse(Quotation.newBuilder.build())
+        ) * s.lot <= BigDecimal(appConfig.shares.totalPriceLimit)
+      })
       .sortBy(_.uptrendAbs)
       .reverse
       .take(appConfig.shares.numUptrendShares)
@@ -56,7 +40,7 @@ object UptrendHandler extends Handler {
     log.info(s"Attempt $numAttempt of $maxNumAttempts")
 
     val shares: Seq[ShareWrapper] = wrapPersistedShares(Available)
-    val updatedShares: Seq[ShareWrapper] = updateCurrentPrice(shares)
+    val updatedShares: Seq[ShareWrapper] = updateCurrentPrices(shares)
     val uptrendShares: Seq[ShareWrapper] = filterUptrendShares(updatedShares)
 
     log.info(s"Best uptrend: ${uptrendShares.length.toString}")

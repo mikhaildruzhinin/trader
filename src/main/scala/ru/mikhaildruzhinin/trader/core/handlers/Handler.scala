@@ -28,6 +28,19 @@ trait Handler {
     wrappedShares
   }
 
+  protected def updateCurrentPrices(shares: Seq[ShareWrapper])
+                  (implicit appConfig: AppConfig,
+                   investApiClient: BaseInvestApiClient): Seq[ShareWrapper] = investApiClient
+      .getLastPrices(shares.map(_.figi))
+      .zip(shares)
+      .map(x => ShareWrapper
+        .builder()
+        .fromWrapper(x._2)
+        .withCurrentPrice(Some(x._1.getPrice))
+        .withUpdateTime(Some(x._1.getTime))
+        .build()
+      )
+
   def apply()(implicit appConfig: AppConfig,
               investApiClient: BaseInvestApiClient,
               connection: Connection): Int

@@ -9,31 +9,14 @@ import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 import slick.dbio.DBIO
 
 object MonitorHandler extends Handler {
-
-  private def splitShares(shares: Seq[ShareWrapper])
-                              (implicit appConfig: AppConfig,
-                               investApiClient: BaseInvestApiClient,
-                               connection: Connection): (Seq[ShareWrapper], Seq[ShareWrapper]) = {
-
-    investApiClient
-      .getLastPrices(shares.map(_.figi))
-      .zip(shares)
-      .map(x => ShareWrapper
-        .builder()
-        .fromWrapper(x._2)
-        .withCurrentPrice(Some(x._1.getPrice))
-        .withUpdateTime(Some(x._1.getTime))
-        .build()
-      )
-      .partition(_.roi <= Some(BigDecimal(0)))
-  }
-
   override def apply()(implicit appConfig: AppConfig,
                        investApiClient: BaseInvestApiClient,
                        connection: Connection): Int = {
 
     val purchasedShares: Seq[ShareWrapper] = wrapPersistedShares(Purchased)
-    val (sharesToSell: Seq[ShareWrapper], sharesToKeep: Seq[ShareWrapper]) = splitShares(purchasedShares)
+    val updatesShares: Seq[ShareWrapper] = updateCurrentPrices(purchasedShares)
+    val (sharesToSell: Seq[ShareWrapper], sharesToKeep: Seq[ShareWrapper]) = updatesShares
+      .partition(_.roi <= Some(BigDecimal(0)))
 
     val sharesToSellNum: Int = connection.run(
       DBIO.sequence(sharesToSell.map(s => {
