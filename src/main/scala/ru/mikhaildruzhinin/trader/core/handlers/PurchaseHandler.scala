@@ -6,7 +6,10 @@ import ru.mikhaildruzhinin.trader.core.TypeCode._
 import ru.mikhaildruzhinin.trader.core.wrappers.ShareWrapper
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
+import ru.tinkoff.piapi.contract.v1._
 import slick.dbio.DBIO
+
+import java.util.UUID
 
 object PurchaseHandler extends Handler {
   override def apply()(implicit appConfig: AppConfig,
@@ -21,6 +24,28 @@ object PurchaseHandler extends Handler {
           .withPurchasePrice(s.currentPrice)
           .build()
       )
+
+    val account: Account = appConfig.tinkoffInvestApi.api.getUserService.getAccountsSync.get(0)
+
+    purchasedShares.foreach(
+      s => {
+        val r: PostOrderResponse = appConfig
+          .tinkoffInvestApi
+          .api
+          .getOrdersService
+          .postOrderSync(
+            s.figi,
+            1L,
+            Quotation.newBuilder.build(),
+            OrderDirection.ORDER_DIRECTION_BUY,
+            account.getId,
+            OrderType.ORDER_TYPE_BESTPRICE,
+            UUID.randomUUID.toString
+          )
+
+        println(r.getExecutionReportStatus)
+      }
+    )
 
     connection.run(
       DBIO.sequence(purchasedShares.map(s => {
