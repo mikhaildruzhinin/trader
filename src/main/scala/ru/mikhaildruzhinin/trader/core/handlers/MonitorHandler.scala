@@ -16,7 +16,7 @@ object MonitorHandler extends Handler {
     val purchasedShares: Seq[ShareWrapper] = wrapPersistedShares(Purchased)
     val updatesShares: Seq[ShareWrapper] = updateCurrentPrices(purchasedShares)
     val (sharesToSell: Seq[ShareWrapper], sharesToKeep: Seq[ShareWrapper]) = updatesShares
-      .partition(_.roi <= Some(BigDecimal(0)))
+      .partition(_.roi < Some(BigDecimal(0)))
 
     val sharesToSellNum: Int = connection.run(
       DBIO.sequence(sharesToSell.map(s => {
