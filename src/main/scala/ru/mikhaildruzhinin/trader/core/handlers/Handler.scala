@@ -7,7 +7,6 @@ import ru.mikhaildruzhinin.trader.core.TypeCode
 import ru.mikhaildruzhinin.trader.core.wrappers.ShareWrapper
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
-import ru.tinkoff.piapi.core.InvestApi
 
 trait Handler {
   val log: Logger = Logger(getClass.getName)
@@ -31,7 +30,6 @@ trait Handler {
 
   protected def updateCurrentPrices(shares: Seq[ShareWrapper])
                   (implicit appConfig: AppConfig,
-                   investApi: InvestApi,
                    investApiClient: BaseInvestApiClient): Seq[ShareWrapper] = investApiClient
       .getLastPrices(shares.map(_.figi))
       .zip(shares)
@@ -44,7 +42,6 @@ trait Handler {
       )
 
   def apply()(implicit appConfig: AppConfig,
-              investApi: InvestApi,
               investApiClient: BaseInvestApiClient,
               connection: Connection): Int
 }

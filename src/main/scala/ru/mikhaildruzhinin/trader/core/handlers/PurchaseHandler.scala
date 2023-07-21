@@ -14,7 +14,6 @@ import java.util.UUID
 
 object PurchaseHandler extends Handler {
   override def apply()(implicit appConfig: AppConfig,
-                       investApi: InvestApi,
                        investApiClient: BaseInvestApiClient,
                        connection: Connection): Int = {
 

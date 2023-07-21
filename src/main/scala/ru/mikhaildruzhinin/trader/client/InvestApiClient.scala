@@ -7,22 +7,18 @@ import ru.tinkoff.piapi.core.InvestApi
 import ru.tinkoff.piapi.core.exception.ApiRuntimeException
 
 import java.time.Instant
-import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
-object SyncInvestApiClient extends BaseInvestApiClient {
+class InvestApiClient(implicit appConfig: AppConfig,
+                      investApi: InvestApi) extends BaseInvestApiClient {
+
   val log: Logger = Logger(getClass.getName)
 
-  @tailrec
   override def getCandles(figi: String,
-                 from: Instant,
-                 to: Instant,
-                 interval: CandleInterval)
-                (implicit appConfig: AppConfig,
-                 investApi: InvestApi): List[HistoricCandle] = {
-
-    Try {
+                          from: Instant,
+                          to: Instant,
+                          interval: CandleInterval): List[HistoricCandle] = Try {
       investApi.getMarketDataService
         .getCandlesSync(figi, from, to, interval)
         .asScala
@@ -37,13 +33,8 @@ object SyncInvestApiClient extends BaseInvestApiClient {
         log.error(exception.toString)
         throw exception
     }
-  }
 
-  @tailrec
-  override def getShares(implicit appConfig: AppConfig,
-                         investApi: InvestApi): List[Share] = {
-
-    Try {
+  override def getShares: List[Share] = Try {
       investApi.getInstrumentsService
         .getSharesSync(InstrumentStatus.INSTRUMENT_STATUS_BASE)
         .asScala
@@ -58,14 +49,8 @@ object SyncInvestApiClient extends BaseInvestApiClient {
         log.error(exception.toString)
         throw exception
     }
-  }
 
-  @tailrec
-  override def getLastPrices(figi: Seq[String])
-                            (implicit appConfig: AppConfig,
-                             investApi: InvestApi): Seq[LastPrice] = {
-
-    Try {
+  override def getLastPrices(figi: Seq[String]): Seq[LastPrice] = Try {
       investApi.getMarketDataService
         .getLastPricesSync(figi.asJava)
         .asScala
@@ -80,5 +65,9 @@ object SyncInvestApiClient extends BaseInvestApiClient {
         log.error(exception.toString)
         throw exception
     }
-  }
+}
+
+object InvestApiClient {
+  def apply()(implicit appConfig: AppConfig,
+            investApi: InvestApi): InvestApiClient = new InvestApiClient()
 }

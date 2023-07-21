@@ -11,7 +11,6 @@ import scala.concurrent.Await
 object StartUpHandler extends Handler {
 
   override def apply()(implicit appConfig: AppConfig,
-                       investApi: InvestApi,
                        investApiClient: BaseInvestApiClient,
                        connection: Connection): Int = {
 

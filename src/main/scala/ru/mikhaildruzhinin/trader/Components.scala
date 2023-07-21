@@ -1,6 +1,6 @@
 package ru.mikhaildruzhinin.trader
 
-import ru.mikhaildruzhinin.trader.client.{BaseInvestApiClient, SyncInvestApiClient}
+import ru.mikhaildruzhinin.trader.client.{BaseInvestApiClient, InvestApiClient}
 import ru.mikhaildruzhinin.trader.config.{AppConfig, AppConfigReader, InvestApiMode}
 import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
 import ru.tinkoff.piapi.core.InvestApi
@@ -12,6 +12,6 @@ trait Components {
     case InvestApiMode.Readonly => InvestApi.createReadonly(appConfig.tinkoffInvestApi.token)
     case InvestApiMode.Sandbox => InvestApi.createSandbox(appConfig.tinkoffInvestApi.token)
   }
-  implicit lazy val investApiClient: BaseInvestApiClient = SyncInvestApiClient
+  implicit lazy val investApiClient: BaseInvestApiClient = InvestApiClient()
   implicit lazy val connection: Connection = DatabaseConnection
 }

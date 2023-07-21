@@ -6,7 +6,6 @@ import ru.mikhaildruzhinin.trader.core.wrappers.{HistoricCandleWrapper, ShareWra
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 import ru.tinkoff.piapi.contract.v1.{CandleInterval, Share}
-import ru.tinkoff.piapi.core.InvestApi
 
 import java.time.{DayOfWeek, LocalDate}
 
@@ -44,13 +43,11 @@ object AvailabilityHandler extends Handler {
    *
    * @param shares          sequence of shares
    * @param appConfig       application configuration
-   * @param investApi       Tinkoff invest API
    * @param investApiClient Tinkoff invest API client
    * @return sequence of wrapped shares
    */
   private def wrapShares(shares: Seq[Share])
                         (implicit appConfig: AppConfig,
-                         investApi: InvestApi,
                          investApiClient: BaseInvestApiClient): Seq[ShareWrapper] = {
 
     shares.map(s => {
@@ -76,13 +73,11 @@ object AvailabilityHandler extends Handler {
    * Writes available shares data to the database.
    *
    * @param appConfig       application configuration
-   * @param investApi       Tinkoff invest API
    * @param investApiClient Tinkoff invest API client
    * @param connection      database connection
    * @return number of inserted shares
    */
   override def apply()(implicit appConfig: AppConfig,
-                       investApi: InvestApi,
                        investApiClient: BaseInvestApiClient,
                        connection: Connection): Int = {
 

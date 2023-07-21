@@ -6,21 +6,18 @@ import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.database.connection.Connection
-import ru.tinkoff.piapi.core.InvestApi
 
 import java.time.ZoneId
 
 object TaskManager {
   def getStartUpTask(implicit appConfig: AppConfig,
                      connection: Connection,
-                     investApi: InvestApi,
                      investApiClient: BaseInvestApiClient): OneTimeTask[Void] = Tasks
     .oneTime("start-up")
     .execute((_, _) => StartUpHandler())
 
   def getPurchaseTask(implicit appConfig: AppConfig,
                       connection: Connection,
-                      investApi: InvestApi,
                       investApiClient: BaseInvestApiClient): RecurringTask[Void] = Tasks
     .recurring(
       "purchase",
@@ -36,7 +33,6 @@ object TaskManager {
 
   def getMonitorTask(implicit appConfig: AppConfig,
                      connection: Connection,
-                     investApi: InvestApi,
                      investApiClient: BaseInvestApiClient): RecurringTask[Void] = Tasks
     .recurring(
       "monitor",
@@ -48,7 +44,6 @@ object TaskManager {
 
   def getSellTask(implicit appConfig: AppConfig,
                   connection: Connection,
-                  investApi: InvestApi,
                   investApiClient: BaseInvestApiClient): RecurringTask[Void] = Tasks
     .recurring(
       "sell",

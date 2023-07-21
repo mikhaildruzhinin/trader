@@ -34,9 +34,8 @@ object UptrendHandler extends Handler {
   @tailrec
   private def getUptrendShares(numAttempt: Int = 1)
                               (implicit appConfig: AppConfig,
-                           investApi: InvestApi,
-                           investApiClient: BaseInvestApiClient,
-                           connection: Connection): Seq[ShareWrapper] = {
+                               investApiClient: BaseInvestApiClient,
+                               connection: Connection): Seq[ShareWrapper] = {
 
     val maxNumAttempts: Int = 3
     log.info(s"Attempt $numAttempt of $maxNumAttempts")
@@ -57,7 +56,6 @@ object UptrendHandler extends Handler {
   }
 
   override def apply()(implicit appConfig: AppConfig,
-                       investApi: InvestApi,
                        investApiClient: BaseInvestApiClient,
                        connection: Connection): Int = {
 

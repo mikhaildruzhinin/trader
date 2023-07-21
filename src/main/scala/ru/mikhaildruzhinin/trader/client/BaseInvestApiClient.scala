@@ -6,15 +6,15 @@ import ru.tinkoff.piapi.core.InvestApi
 
 import java.time.Instant
 
-trait BaseInvestApiClient {
-  def getCandles(figi: String, from: Instant, to: Instant, interval: CandleInterval)
-                (implicit appConfig: AppConfig,
-                 investApi: InvestApi): List[HistoricCandle]
+abstract class BaseInvestApiClient(implicit appConfig: AppConfig,
+                                   investApi: InvestApi) {
 
-  def getShares(implicit appConfig: AppConfig,
-                investApi: InvestApi): List[Share]
+  def getCandles(figi: String,
+                 from: Instant,
+                 to: Instant,
+                 interval: CandleInterval): List[HistoricCandle]
 
-  def getLastPrices(figi: Seq[String])
-                   (implicit appConfig: AppConfig,
-                    investApi: InvestApi): Seq[LastPrice]
+  def getShares: List[Share]
+
+  def getLastPrices(figi: Seq[String]): Seq[LastPrice]
 }

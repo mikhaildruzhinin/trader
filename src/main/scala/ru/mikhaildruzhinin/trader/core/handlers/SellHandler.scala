@@ -12,7 +12,6 @@ import slick.dbio.DBIO
 object SellHandler extends Handler {
 
   override def apply()(implicit appConfig: AppConfig,
-                       investApi: InvestApi,
                        investApiClient: BaseInvestApiClient,
                        connection: Connection): Int = {
 
