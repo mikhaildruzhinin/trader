@@ -6,11 +6,13 @@ import ru.mikhaildruzhinin.trader.core.TypeCode._
 import ru.mikhaildruzhinin.trader.core.wrappers.ShareWrapper
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
+import ru.tinkoff.piapi.core.InvestApi
 import slick.dbio.DBIO
 
 object SellHandler extends Handler {
 
   override def apply()(implicit appConfig: AppConfig,
+                       investApi: InvestApi,
                        investApiClient: BaseInvestApiClient,
                        connection: Connection): Int = {
 

@@ -6,6 +6,7 @@ import ru.mikhaildruzhinin.trader.core.wrappers.ShareWrapper
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 import ru.tinkoff.piapi.contract.v1.Quotation
+import ru.tinkoff.piapi.core.InvestApi
 import ru.tinkoff.piapi.core.utils.MapperUtils.quotationToBigDecimal
 import slick.dbio.DBIO
 
@@ -31,8 +32,9 @@ object UptrendHandler extends Handler {
   }
 
   @tailrec
-  def getUptrendShares(numAttempt: Int = 1)
-                          (implicit appConfig: AppConfig,
+  private def getUptrendShares(numAttempt: Int = 1)
+                              (implicit appConfig: AppConfig,
+                           investApi: InvestApi,
                            investApiClient: BaseInvestApiClient,
                            connection: Connection): Seq[ShareWrapper] = {
 
@@ -55,6 +57,7 @@ object UptrendHandler extends Handler {
   }
 
   override def apply()(implicit appConfig: AppConfig,
+                       investApi: InvestApi,
                        investApiClient: BaseInvestApiClient,
                        connection: Connection): Int = {
 

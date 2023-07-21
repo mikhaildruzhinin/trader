@@ -3,6 +3,7 @@ package ru.mikhaildruzhinin.trader.client
 import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.tinkoff.piapi.contract.v1._
+import ru.tinkoff.piapi.core.InvestApi
 import ru.tinkoff.piapi.core.exception.ApiRuntimeException
 
 import java.time.Instant
@@ -18,10 +19,11 @@ object SyncInvestApiClient extends BaseInvestApiClient {
                  from: Instant,
                  to: Instant,
                  interval: CandleInterval)
-                (implicit appConfig: AppConfig): List[HistoricCandle] = {
+                (implicit appConfig: AppConfig,
+                 investApi: InvestApi): List[HistoricCandle] = {
 
     Try {
-      appConfig.tinkoffInvestApi.marketDataService
+      investApi.getMarketDataService
         .getCandlesSync(figi, from, to, interval)
         .asScala
         .toList
@@ -38,10 +40,11 @@ object SyncInvestApiClient extends BaseInvestApiClient {
   }
 
   @tailrec
-  override def getShares(implicit appConfig: AppConfig): List[Share] = {
+  override def getShares(implicit appConfig: AppConfig,
+                         investApi: InvestApi): List[Share] = {
 
     Try {
-      appConfig.tinkoffInvestApi.instrumentService
+      investApi.getInstrumentsService
         .getSharesSync(InstrumentStatus.INSTRUMENT_STATUS_BASE)
         .asScala
         .toList
@@ -59,10 +62,11 @@ object SyncInvestApiClient extends BaseInvestApiClient {
 
   @tailrec
   override def getLastPrices(figi: Seq[String])
-                   (implicit appConfig: AppConfig): Seq[LastPrice] = {
+                            (implicit appConfig: AppConfig,
+                             investApi: InvestApi): Seq[LastPrice] = {
 
     Try {
-      appConfig.tinkoffInvestApi.marketDataService
+      investApi.getMarketDataService
         .getLastPricesSync(figi.asJava)
         .asScala
         .toList
