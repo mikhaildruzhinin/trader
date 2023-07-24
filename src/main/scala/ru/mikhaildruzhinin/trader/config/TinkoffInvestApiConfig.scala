@@ -1,8 +1,6 @@
 package ru.mikhaildruzhinin.trader.config
 
-case class TinkoffInvestApiConfig(token: String,
-                                  mode: InvestApiMode,
-                                  rateLimitPauseMillis: Long)
+import java.time.temporal.ChronoUnit
 
 sealed trait InvestApiMode
 
@@ -11,3 +9,16 @@ object InvestApiMode {
   case object Readonly extends InvestApiMode
   case object Sandbox extends InvestApiMode
 }
+
+case class TinkoffInvestApiConfig(token: String,
+                                  mode: InvestApiMode,
+                                  limits: LimitsConfig)
+
+case class LimitsConfig(services: ServiceConfig,
+                        period: Int,
+                        timeUnit: ChronoUnit)
+
+case class ServiceConfig(instruments: Int,
+                         marketData: Int,
+                         orders: Int,
+                         users: Int)
