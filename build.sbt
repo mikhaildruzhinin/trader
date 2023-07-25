@@ -8,13 +8,16 @@ resolvers += "Secured Central Repository" at "https://repo.maven.apache.org/mave
 externalResolvers := Resolver.combineDefaultResolvers(resolvers.value.toVector, mavenCentral = false)
 
 lazy val root = (project in file("."))
+  .configs(IntegrationTest)
   .settings(
-    name := "trader"
+    name := "trader",
+    Defaults.itSettings
   )
 
 enablePlugins(JettyPlugin)
 
 val resilience4jVersion = "1.7.0"
+val testcontainersVersion = "1.17.6"
 
 libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.4.6",
@@ -29,7 +32,9 @@ libraryDependencies ++= Seq(
   "javax.servlet" % "javax.servlet-api" % "4.0.1" % "provided",
   "org.postgresql" % "postgresql" % "42.6.0",
   "ru.tinkoff.piapi" % "java-sdk-core" % "1.5",
-  "org.scalatest" %% "scalatest" % "3.2.16" % Test
+  "org.scalatest" %% "scalatest" % "3.2.16" % "it,test",
+  "org.testcontainers" % "postgresql" % testcontainersVersion % "it",
+  "org.testcontainers" % "testcontainers" % testcontainersVersion % "it"
 )
 
 assembly / artifact := {
@@ -50,3 +55,5 @@ assembly / assemblyShadeRules := Seq(
     .rename("shapeless.**" -> "new_shapeless.@1")
     .inAll
 )
+
+IntegrationTest / fork := true
