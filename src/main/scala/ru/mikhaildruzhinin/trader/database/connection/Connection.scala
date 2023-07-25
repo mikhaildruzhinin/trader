@@ -10,7 +10,9 @@ import scala.concurrent.{Await, Future}
 trait Connection {
   val databaseConfig: DatabaseConfig[JdbcProfile]
 
-  def asyncRun[T](actions: Vector[DBIO[T]]): Future[Vector[T]]
+  def asyncRun[T](actions: Vector[DBIO[T]]): Future[Vector[T]] = databaseConfig
+    .db
+    .run(DBIO.sequence(actions))
 
   def runMultiple[T](actions: Vector[DBIO[T]])(implicit appConfig: AppConfig): Vector[T] = Await
     .result(
