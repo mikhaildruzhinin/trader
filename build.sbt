@@ -21,7 +21,7 @@ val testcontainersVersion = "1.17.6"
 
 libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.4.6",
-  "com.github.kagkarlsson" % "db-scheduler" % "12.2.0",
+  "com.github.kagkarlsson" % "db-scheduler" % "12.4.0",
   "com.github.pureconfig" %% "pureconfig" % "0.17.2",
   "com.typesafe" % "config" % "1.4.2",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
