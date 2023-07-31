@@ -53,9 +53,13 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
     }
   }
 
-  def monitorShares(n: Int, sleepMillis: Int): Int = {
+  def monitorShares(n: Int, sleepMillis: Int)
+                   (implicit connection: Connection): Int = {
+
     @tailrec
-    def monitorTailRec(acc: Int, n: Int): Int = {
+    def monitorTailRec(acc: Int, n: Int)
+                      (implicit connection: Connection): Int = {
+
       if (n > 0) {
         Thread.sleep(sleepMillis)
         val soldShares = MonitorHandler()
