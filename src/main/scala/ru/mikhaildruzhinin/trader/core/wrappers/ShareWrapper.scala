@@ -116,20 +116,20 @@ case class ShareWrapper private (figi: String,
 
   override def toString: String = {
 
-    new StringBuilder(s"$name, ")
+    new StringBuilder(s"Sold share:\n\tName: $name\n\tRoi: ")
       .append(roi
         .getOrElse(BigDecimal(0))
         .setScale(appConfig.shares.pctScale, RoundingMode.HALF_UP))
-      .append("%, ")
+      .append("%\n\tPurchase price: ")
       .append((quotationToBigDecimal(purchasePrice.getOrElse(Quotation.newBuilder.build)) * lot)
         .setScale(appConfig.shares.priceScale, RoundingMode.HALF_UP))
-      .append(" руб., ")
+      .append(" rub.\n\tCurrent price: ")
       .append((quotationToBigDecimal(currentPrice.getOrElse(Quotation.newBuilder.build)) * lot)
         .setScale(appConfig.shares.priceScale, RoundingMode.HALF_UP))
-      .append(" руб., ")
+      .append(" rub.,\n\tProfit: ")
       .append(profit.getOrElse(BigDecimal(0))
         .setScale(appConfig.shares.priceScale, RoundingMode.HALF_UP))
-      .append(" руб., ")
+      .append(" rub.\n\tUpdate time: ")
       .append(timestampToString(updateTime.getOrElse(Timestamp.newBuilder.build)))
       .toString
   }
