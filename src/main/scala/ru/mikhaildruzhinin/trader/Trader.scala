@@ -2,7 +2,6 @@ package ru.mikhaildruzhinin.trader
 
 import com.github.kagkarlsson.scheduler.Scheduler
 import com.typesafe.scalalogging.Logger
-import ru.mikhaildruzhinin.trader.core.TaskManager
 
 import java.time.Instant
 
@@ -12,13 +11,13 @@ object Trader extends App with Components {
   val scheduler: Scheduler = Scheduler
     .create(
       appConfig.slick.db.properties.dataSource,
-      TaskManager.getStartUpTask
+      startUpTask
     )
     .tableName(appConfig.scheduler.tableName)
     .startTasks(
-      TaskManager.getPurchaseTask,
-      TaskManager.getMonitorTask,
-      TaskManager.getSellTask
+      purchaseTask,
+      monitorTask,
+      sellTask
     )
     .threads(appConfig.scheduler.numThreads)
     .registerShutdownHook()
@@ -28,7 +27,7 @@ object Trader extends App with Components {
 
   scheduler
     .schedule(
-      TaskManager.getStartUpTask.instance("1"),
+      startUpTask.instance("1"),
       Instant.now.plusSeconds(5)
     )
 
