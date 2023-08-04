@@ -14,8 +14,6 @@ lazy val root = (project in file("."))
     Defaults.itSettings
   )
 
-enablePlugins(JettyPlugin)
-
 val resilience4jVersion = "1.7.0"
 val testcontainersVersion = "1.17.6"
 
@@ -29,7 +27,6 @@ libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick-hikaricp" % "3.4.1",
   "io.github.resilience4j" % "resilience4j-ratelimiter" % resilience4jVersion,
   "io.github.resilience4j" % "resilience4j-retry" % resilience4jVersion,
-  "javax.servlet" % "javax.servlet-api" % "4.0.1" % "provided",
   "org.postgresql" % "postgresql" % "42.6.0",
   "ru.tinkoff.piapi" % "java-sdk-core" % "1.5",
   "org.scalatest" %% "scalatest" % "3.2.16" % "it,test",
