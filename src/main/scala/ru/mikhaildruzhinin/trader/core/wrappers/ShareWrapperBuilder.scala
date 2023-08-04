@@ -54,19 +54,17 @@ class ShareWrapperBuilder[State <: ShareWrapperBuilderState] private[wrappers](f
     with Currency
     with Name
     with Exchange
-  ] = {
-    new ShareWrapperBuilder(
-      shareWrapper.figi,
-      shareWrapper.lot,
-      shareWrapper.currency,
-      shareWrapper.name,
-      shareWrapper.exchange,
-      shareWrapper.startingPrice,
-      shareWrapper.purchasePrice,
-      shareWrapper.currentPrice,
-      shareWrapper.updateTime
-    )
-  }
+  ] = new ShareWrapperBuilder(
+    shareWrapper.figi,
+    shareWrapper.lot,
+    shareWrapper.currency,
+    shareWrapper.name,
+    shareWrapper.exchange,
+    shareWrapper.startingPrice,
+    shareWrapper.purchasePrice,
+    shareWrapper.currentPrice,
+    shareWrapper.updateTime
+  )
 
   def fromShare(share: Share): ShareWrapperBuilder[Empty
     with Figi
