@@ -6,7 +6,7 @@ import pureconfig.generic.ProductHint
 import pureconfig.generic.auto.exportReader
 import pureconfig.generic.semiauto.deriveEnumerationReader
 import pureconfig._
-import ru.mikhaildruzhinin.trader.client.{BaseInvestApiClient, FaultTolerance, ResilientInvestApiClient}
+import ru.mikhaildruzhinin.trader.client.{BaseInvestApiClient, ResilientInvestApiClient}
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
 import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
@@ -25,12 +25,7 @@ trait Components {
     case InvestApiMode.Sandbox => InvestApi.createSandbox(appConfig.tinkoffInvestApi.token)
   }
 
-  val faultTolerance: FaultTolerance = new FaultTolerance()
-
-  implicit lazy val investApiClient: BaseInvestApiClient = new ResilientInvestApiClient(
-    investApi,
-    faultTolerance
-  )
+  implicit lazy val investApiClient: BaseInvestApiClient = ResilientInvestApiClient(investApi)
 
   implicit lazy val connection: Connection = DatabaseConnection
 
