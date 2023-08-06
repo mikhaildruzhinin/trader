@@ -14,6 +14,10 @@ trait Connection {
     .db
     .run(DBIO.sequence(actions))
 
+  def asyncRun[T](actions: DBIO[T]): Future[T] = databaseConfig
+    .db
+    .run(actions)
+
   def runMultiple[T](actions: Vector[DBIO[T]])(implicit appConfig: AppConfig): Vector[T] = Await
     .result(
       asyncRun(actions),

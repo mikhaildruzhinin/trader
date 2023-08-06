@@ -4,6 +4,10 @@ import org.scalatest.funsuite.AnyFunSuite
 import ru.tinkoff.piapi.contract.v1.{CandleInterval, HistoricCandle}
 
 import java.time.{LocalDate, ZoneId}
+import java.util.concurrent.TimeUnit
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 
 class InvestApiClientSuite extends AnyFunSuite with Components {
   test("test rate limiter") {
@@ -15,12 +19,15 @@ class InvestApiClientSuite extends AnyFunSuite with Components {
     )
 
     (0 to 1000).foreach(i => {
-      val r: Seq[HistoricCandle] = investApiClient.getCandles(
-        "BBG001M2SC01",
-        LocalDate.now.atStartOfDay(ZoneId.of("UTC")).plusHours(15).toInstant,
-        LocalDate.now.atStartOfDay(ZoneId.of("UTC")).plusHours(16).toInstant,
-        CandleInterval.CANDLE_INTERVAL_5_MIN
-      )
+      val r: Seq[HistoricCandle] = Await.result(
+        investApiClient.getCandles(
+          "BBG001M2SC01",
+          LocalDate.now.atStartOfDay(ZoneId.of("UTC")).plusHours(15).toInstant,
+          LocalDate.now.atStartOfDay(ZoneId.of("UTC")).plusHours(16).toInstant,
+          CandleInterval.CANDLE_INTERVAL_5_MIN
+        ),
+        Duration(10, TimeUnit.SECONDS))
+
       println(r)
     })
   }

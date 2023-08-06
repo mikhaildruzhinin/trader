@@ -1,7 +1,7 @@
 package ru.mikhaildruzhinin.trader.client
 
 import io.github.resilience4j.ratelimiter.{RateLimiter, RateLimiterConfig, RateLimiterRegistry}
-import io.github.resilience4j.retry.{MaxRetriesExceeded, Retry, RetryConfig, RetryRegistry}
+import io.github.resilience4j.retry._
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.InvestApi
@@ -10,6 +10,7 @@ import ru.tinkoff.piapi.core.exception.ApiRuntimeException
 import java.time.temporal.ChronoUnit
 import java.time.{Duration, Instant}
 import java.util.concurrent.Callable
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success, Try}
 
 class ResilientInvestApiClient private (investApi: InvestApi,
@@ -42,18 +43,18 @@ class ResilientInvestApiClient private (investApi: InvestApi,
   override def getCandles(figi: String,
                           from: Instant,
                           to: Instant,
-                          interval: CandleInterval): List[HistoricCandle] = decorateRequest(
+                          interval: CandleInterval): concurrent.Future[Seq[HistoricCandle]] = decorateRequest(
     rateLimiter = marketDataRateLimiter,
     retry = retry,
     callable = () => super.getCandles(figi, from, to, interval),
-    resultOnFailure = List(HistoricCandle.newBuilder().build())
+    resultOnFailure = concurrent.Future(Seq(HistoricCandle.newBuilder().build()))
   )
 
-  override def getShares: List[Share] = decorateRequest(
+  override def getShares: concurrent.Future[Seq[Share]] = decorateRequest(
     rateLimiter = instrumentsRateLimiter,
     retry = retry,
     callable = () => super.getShares,
-    resultOnFailure = List(Share.newBuilder.build())
+    resultOnFailure = concurrent.Future(Seq(Share.newBuilder.build()))
   )
 
   override def getLastPrices(figi: Seq[String]): Seq[LastPrice] = decorateRequest(

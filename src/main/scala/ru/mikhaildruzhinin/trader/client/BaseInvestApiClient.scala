@@ -9,9 +9,9 @@ abstract class BaseInvestApiClient {
   def getCandles(figi: String,
                  from: Instant,
                  to: Instant,
-                 interval: CandleInterval): List[HistoricCandle]
+                 interval: CandleInterval): concurrent.Future[Seq[HistoricCandle]]
 
-  def getShares: List[Share]
+  def getShares: concurrent.Future[Seq[Share]]
 
   def getLastPrices(figi: Seq[String]): Seq[LastPrice]
 }
