@@ -79,7 +79,7 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
       implicit val connection: Connection = f.connection
 
       val availableShares = Await.result(
-        new AvailabilityService().getAvailableShares,
+        new AvailabilityService(investApiClient, connection).getAvailableShares,
         Duration(10, TimeUnit.SECONDS)
       )
 

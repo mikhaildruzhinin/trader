@@ -13,9 +13,9 @@ import java.time.{DayOfWeek, LocalDate}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class AvailabilityService(implicit appConfig: AppConfig,
-                          investApiClient: BaseInvestApiClient,
-                          connection: Connection) {
+class AvailabilityService(investApiClient: BaseInvestApiClient,
+                          connection: Connection)
+                         (implicit appConfig: AppConfig) {
 
   val log: Logger = Logger(getClass.getName)
 

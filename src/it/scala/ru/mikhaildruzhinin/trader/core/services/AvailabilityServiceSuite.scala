@@ -59,7 +59,7 @@ class AvailabilityServiceSuite extends FixtureAnyFunSuite with Components {
     f => {
       implicit val connection: Connection = f.connection
 
-      val service = new AvailabilityService()
+      val service = new AvailabilityService(investApiClient, connection)
       val r = Await.result(service.getAvailableShares, Duration(10, TimeUnit.SECONDS))
       println(r)
     }

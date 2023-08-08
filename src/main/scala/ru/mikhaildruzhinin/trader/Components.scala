@@ -36,7 +36,7 @@ trait Components {
 
   implicit lazy val connection: Connection = DatabaseConnection
 
-  private val availabilityService = new AvailabilityService()
+  private val availabilityService = new AvailabilityService(investApiClient, connection)
 
   val startUpTask: OneTimeTask[Void] = Tasks
     .oneTime("start-up")
@@ -50,13 +50,13 @@ trait Components {
         ZoneId.of("UTC")
       )
     ).execute((_, _) => {
-    val availableShares: Future[Option[Int]] = availabilityService
+    availabilityService
       .getAvailableShares
+      .onComplete {
+        case Success(s) => log.info(s"Total: ${s.getOrElse(0)}")
+        case Failure(exception) => exception.printStackTrace()
+      }
 
-    availableShares.onComplete {
-      case Success(s) => log.info(s"Total: ${s.getOrElse(0)}")
-      case Failure(exception) => exception.printStackTrace()
-    }
     UptrendHandler()
     PurchaseHandler()
   })
