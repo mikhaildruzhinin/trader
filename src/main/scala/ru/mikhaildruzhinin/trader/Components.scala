@@ -10,14 +10,16 @@ import pureconfig.generic.semiauto.deriveEnumerationReader
 import ru.mikhaildruzhinin.trader.client.{BaseInvestApiClient, ResilientInvestApiClient}
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
 import ru.mikhaildruzhinin.trader.core.handlers._
-import ru.mikhaildruzhinin.trader.core.services.AvailabilityService
+import ru.mikhaildruzhinin.trader.core.services.base.{BaseHistoricCandleService, BaseShareService}
+import ru.mikhaildruzhinin.trader.core.services.{HistoricCandleService, ShareService}
 import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
 import ru.tinkoff.piapi.core.InvestApi
 
 import java.time.ZoneId
+import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 trait Components {
   val log: Logger = Logger(getClass.getName)
@@ -36,7 +38,8 @@ trait Components {
 
   implicit lazy val connection: Connection = DatabaseConnection
 
-  private val availabilityService = new AvailabilityService(investApiClient, connection)
+  private val shareService: BaseShareService = new ShareService(investApiClient, connection)
+  private val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient, connection)
 
   val startUpTask: OneTimeTask[Void] = Tasks
     .oneTime("start-up")
@@ -50,12 +53,16 @@ trait Components {
         ZoneId.of("UTC")
       )
     ).execute((_, _) => {
-    availabilityService
-      .getAvailableShares
-      .onComplete {
-        case Success(s) => log.info(s"Total: ${s.getOrElse(0)}")
-        case Failure(exception) => exception.printStackTrace()
-      }
+      val numInsertedShares: Future[Option[Int]] = for {
+        shares <- shareService.getAvailableShares
+        candles <- historicCandleService.getWrappedCandles(shares)
+        updatedShares <- shareService.getUpdatedShares(shares, candles)
+        num <- shareService.persistShares(updatedShares)
+      } yield num
+
+    val r: Option[Int] = Await.result(numInsertedShares, Duration(10, TimeUnit.SECONDS))
+
+    log.info(s"Total: ${r.getOrElse(0)}")
 
     UptrendHandler()
     PurchaseHandler()
