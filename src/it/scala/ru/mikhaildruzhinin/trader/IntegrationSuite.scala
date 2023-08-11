@@ -6,7 +6,8 @@ import org.scalatest.funsuite.FixtureAnyFunSuite
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import ru.mikhaildruzhinin.trader.core.handlers._
-import ru.mikhaildruzhinin.trader.core.services.AvailabilityService
+import ru.mikhaildruzhinin.trader.core.services._
+import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -14,6 +15,7 @@ import slick.jdbc.JdbcProfile
 import java.util.concurrent.TimeUnit
 import scala.annotation.tailrec
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 class IntegrationSuite extends FixtureAnyFunSuite with Components {
@@ -78,12 +80,18 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
     f => {
       implicit val connection: Connection = f.connection
 
-      val availableShares = Await.result(
-        new AvailabilityService(investApiClient, connection).getAvailableShares,
-        Duration(10, TimeUnit.SECONDS)
-      )
+      val shareService: BaseShareService = new ShareService(investApiClient, connection)
+      val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient, connection)
 
-      log.info(s"Total: ${availableShares.getOrElse(0)}")
+      val numInsertedShares = for {
+        shares <- shareService.getAvailableShares
+        candles <- historicCandleService.getWrappedCandles(shares)
+        updatedShares <- shareService.getUpdatedShares(shares, candles)
+        num <- shareService.persistShares(updatedShares)
+      } yield num
+
+      val r = Await.result(numInsertedShares, Duration(10, TimeUnit.SECONDS))
+      log.info(s"Total: ${r.getOrElse(0)}")
 
       val uptrendShares: Int = UptrendHandler()
       val purchasedShares: Int = PurchaseHandler()
