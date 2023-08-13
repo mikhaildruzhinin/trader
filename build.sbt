@@ -14,19 +14,18 @@ lazy val root = (project in file("."))
     Defaults.itSettings
   )
 
-val resilience4jVersion = "1.7.0"
 val testcontainersVersion = "1.17.6"
 
 libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.4.6",
   "com.github.kagkarlsson" % "db-scheduler" % "12.4.0",
   "com.github.pureconfig" %% "pureconfig" % "0.17.2",
+  "com.softwaremill.retry" %% "retry" % "0.3.6",
   "com.typesafe" % "config" % "1.4.2",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
   "com.typesafe.slick" %% "slick" % "3.4.1",
   "com.typesafe.slick" %% "slick-hikaricp" % "3.4.1",
-  "io.github.resilience4j" % "resilience4j-ratelimiter" % resilience4jVersion,
-  "io.github.resilience4j" % "resilience4j-retry" % resilience4jVersion,
+  "io.github.resilience4j" % "resilience4j-ratelimiter" % "1.7.0",
   "org.postgresql" % "postgresql" % "42.6.0",
   "ru.tinkoff.piapi" % "java-sdk-core" % "1.5",
   "org.scalatest" %% "scalatest" % "3.2.16" % "it,test",

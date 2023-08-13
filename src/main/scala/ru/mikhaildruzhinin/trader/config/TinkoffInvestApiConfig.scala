@@ -12,7 +12,8 @@ object InvestApiMode {
 
 case class TinkoffInvestApiConfig(token: String,
                                   mode: InvestApiMode,
-                                  limits: LimitsConfig)
+                                  limits: LimitsConfig,
+                                  retry: RetryConfig)
 
 case class LimitsConfig(services: ServiceConfig,
                         period: Int,
@@ -22,3 +23,6 @@ case class ServiceConfig(instruments: Int,
                          marketData: Int,
                          orders: Int,
                          users: Int)
+
+case class RetryConfig(numAttempts: Int,
+                       pauseMillis: Long)

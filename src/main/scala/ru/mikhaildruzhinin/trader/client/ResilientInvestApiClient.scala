@@ -1,65 +1,65 @@
 package ru.mikhaildruzhinin.trader.client
 
 import io.github.resilience4j.ratelimiter.{RateLimiter, RateLimiterConfig, RateLimiterRegistry}
-import io.github.resilience4j.retry._
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.tinkoff.piapi.contract.v1._
+import ru.tinkoff.piapi.contract.v1.{CandleInterval, HistoricCandle, LastPrice, Share}
 import ru.tinkoff.piapi.core.InvestApi
-import ru.tinkoff.piapi.core.exception.ApiRuntimeException
 
 import java.time.temporal.ChronoUnit
 import java.time.{Duration, Instant}
 import java.util.concurrent.Callable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 class ResilientInvestApiClient private (investApi: InvestApi,
                                         instrumentsRateLimiter: RateLimiter,
                                         marketDataRateLimiter: RateLimiter,
                                         ordersRateLimiter: RateLimiter,
-                                        usersRateLimiter: RateLimiter,
-                                        retry: Retry)
+                                        usersRateLimiter: RateLimiter)
                                        (implicit appConfig: AppConfig)
   extends InvestApiClient(investApi) {
 
-   private def decorateRequest[T](rateLimiter: RateLimiter,
-                                  retry: Retry,
-                                  callable: Callable[T],
-                                  resultOnFailure: T): T = Try {
-    Retry.decorateCallable(
-      retry,
-      RateLimiter.decorateCallable(rateLimiter, callable)
-    ).call() } match {
-      case Success(response) => response
-      case Failure(exception: ApiRuntimeException) =>
-        log.error(exception.toString)
-        resultOnFailure
-      case Failure(exception: MaxRetriesExceeded) =>
-        log.error(exception.toString)
-        resultOnFailure
-      case Failure(exception) => throw exception
+  protected def limit[T](rateLimiter: RateLimiter,
+                       callable: Callable[T],
+                       resultOnFailure: T): T = RateLimiter
+    .decorateCallable(rateLimiter, callable)
+    .call()
+
+  final protected def retry[T](numAttempts: Int)(fn: => Future[T]): Future[T] = {
+    fn.transformWith {
+      case Success(x) => Future { x }
+      case Failure(exception) if numAttempts > 1 =>
+        log.error(s"Tinkoff invest API error\n\t${exception.toString}\n\tattempts left: $numAttempts")
+        Thread.sleep(appConfig.tinkoffInvestApi.retry.pauseMillis)
+        retry(numAttempts - 1)(fn)
+      case Failure(exception) =>
+        log.error(s"Tinkoff invest API error\n\t${exception.toString}\n\tattempts left: $numAttempts")
+        throw exception
     }
+  }
 
   override def getCandles(figi: String,
                           from: Instant,
                           to: Instant,
-                          interval: CandleInterval): concurrent.Future[Seq[HistoricCandle]] = decorateRequest(
+                          interval: CandleInterval): Future[Seq[HistoricCandle]] = retry(
+    appConfig.tinkoffInvestApi.retry.numAttempts
+  )(limit(
     rateLimiter = marketDataRateLimiter,
-    retry = retry,
     callable = () => super.getCandles(figi, from, to, interval),
-    resultOnFailure = concurrent.Future(Seq(HistoricCandle.newBuilder().build()))
-  )
+    resultOnFailure = Future(Seq(HistoricCandle.newBuilder().build()))
+  ))
 
-  override def getShares: concurrent.Future[Seq[Share]] = decorateRequest(
+  override def getShares: Future[Seq[Share]] = retry(
+    appConfig.tinkoffInvestApi.retry.numAttempts
+  )(limit(
     rateLimiter = instrumentsRateLimiter,
-    retry = retry,
     callable = () => super.getShares,
-    resultOnFailure = concurrent.Future(Seq(Share.newBuilder.build()))
-  )
+    resultOnFailure = Future(Seq(Share.newBuilder.build()))
+  ))
 
-  override def getLastPrices(figi: Seq[String]): Seq[LastPrice] = decorateRequest(
+  override def getLastPrices(figi: Seq[String]): Seq[LastPrice] = limit(
     rateLimiter = marketDataRateLimiter,
-    retry = retry,
     callable = () => super.getLastPrices(figi),
     resultOnFailure = List(LastPrice.newBuilder.build())
   )
@@ -108,24 +108,12 @@ object ResilientInvestApiClient {
       name = "usersRateLimiter"
     )
 
-    lazy val retry: Retry = RetryRegistry.of(
-      RetryConfig.custom()
-        .maxAttempts(3)
-        .waitDuration(Duration.of(1, ChronoUnit.MINUTES))
-        .retryOnException(_.isInstanceOf[ApiRuntimeException])
-        .failAfterMaxAttempts(true)
-        .build()
-    ).retry("retry")
-
     new ResilientInvestApiClient(
       investApi,
       instrumentsRateLimiter,
       marketDataRateLimiter,
       ordersRateLimiter,
-      usersRateLimiter,
-      retry
+      usersRateLimiter
     )
   }
-
-
 }

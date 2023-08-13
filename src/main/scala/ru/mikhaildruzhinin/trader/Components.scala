@@ -3,7 +3,7 @@ package ru.mikhaildruzhinin.trader
 import com.github.kagkarlsson.scheduler.task.helper.{OneTimeTask, RecurringTask, Tasks}
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules
 import com.typesafe.scalalogging.Logger
-import pureconfig._
+import pureconfig.{CamelCase, ConfigFieldMapping, ConfigReader, ConfigSource}
 import pureconfig.generic.ProductHint
 import pureconfig.generic.auto.exportReader
 import pureconfig.generic.semiauto.deriveEnumerationReader
