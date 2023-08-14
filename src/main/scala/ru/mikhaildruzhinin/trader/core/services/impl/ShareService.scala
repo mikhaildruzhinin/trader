@@ -1,4 +1,4 @@
-package ru.mikhaildruzhinin.trader.core.services
+package ru.mikhaildruzhinin.trader.core.services.impl
 
 import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient

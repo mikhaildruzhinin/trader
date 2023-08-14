@@ -6,8 +6,8 @@ import org.scalatest.funsuite.FixtureAnyFunSuite
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import ru.mikhaildruzhinin.trader.core.handlers._
-import ru.mikhaildruzhinin.trader.core.services._
 import ru.mikhaildruzhinin.trader.core.services.base._
+import ru.mikhaildruzhinin.trader.core.services.impl._
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile

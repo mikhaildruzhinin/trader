@@ -1,4 +1,4 @@
-package ru.mikhaildruzhinin.trader.core.services
+package ru.mikhaildruzhinin.trader.core.services.impl
 
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig

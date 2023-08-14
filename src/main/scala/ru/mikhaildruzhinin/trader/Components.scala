@@ -10,8 +10,8 @@ import pureconfig.generic.semiauto.deriveEnumerationReader
 import ru.mikhaildruzhinin.trader.client.{BaseInvestApiClient, ResilientInvestApiClient}
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
 import ru.mikhaildruzhinin.trader.core.handlers._
-import ru.mikhaildruzhinin.trader.core.services.base.{BaseHistoricCandleService, BaseShareService}
-import ru.mikhaildruzhinin.trader.core.services.{HistoricCandleService, ShareService}
+import ru.mikhaildruzhinin.trader.core.services.base._
+import ru.mikhaildruzhinin.trader.core.services.impl._
 import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
 import ru.tinkoff.piapi.core.InvestApi
 
