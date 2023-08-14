@@ -7,7 +7,7 @@ import ru.mikhaildruzhinin.trader.core.TypeCode
 import ru.mikhaildruzhinin.trader.core.services.base.BaseShareService
 import ru.mikhaildruzhinin.trader.core.wrappers.{HistoricCandleWrapper, PriceWrapper, ShareWrapper}
 import ru.mikhaildruzhinin.trader.database.connection.Connection
-import ru.mikhaildruzhinin.trader.database.tables.SharesTable
+import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.tinkoff.piapi.contract.v1.{Quotation, Share}
 import ru.tinkoff.piapi.core.utils.MapperUtils.quotationToBigDecimal
 
@@ -17,7 +17,8 @@ import scala.concurrent.Future
 import scala.math.BigDecimal.javaBigDecimal2bigDecimal
 
 class ShareService(investApiClient: BaseInvestApiClient,
-                   connection: Connection)
+                   connection: Connection,
+                   shareDAO: ShareDAO)
                   (implicit appConfig: AppConfig) extends BaseShareService {
 
   protected val log: Logger = Logger(getClass.getName)
@@ -83,7 +84,7 @@ class ShareService(investApiClient: BaseInvestApiClient,
     })
   }
 
-  override def startUp(): Unit = connection.asyncRun(SharesTable.createIfNotExists)
+  override def startUp(): Unit = connection.asyncRun(shareDAO.createIfNotExists)
 
   def getAvailableShares: Future[Seq[ShareWrapper]] = for {
     shares <- investApiClient.getShares
@@ -98,16 +99,16 @@ class ShareService(investApiClient: BaseInvestApiClient,
 
   def persistNewShares(shares: Seq[ShareWrapper],
                        typeCode: TypeCode): Future[Option[Int]] = for {
-    _ <- connection.asyncRun(SharesTable.delete())
+    _ <- connection.asyncRun(shareDAO.delete())
     insertedShares <- connection.asyncRun(
-      SharesTable.insert(
+      shareDAO.insert(
         shares.map(_.toShareType(typeCode))
       )
     )
   } yield insertedShares
 
   override def getPersistedShares(typeCode: TypeCode): Future[Seq[ShareWrapper]] = for {
-    shareModels <- connection.asyncRun(SharesTable.filterByTypeCode(typeCode.code))
+    shareModels <- connection.asyncRun(shareDAO.filterByTypeCode(typeCode.code))
     shares <- Future { shareModels.map( s => ShareWrapper.builder().fromModel(s).build()) }
   } yield shares
 
@@ -146,7 +147,7 @@ class ShareService(investApiClient: BaseInvestApiClient,
       .api
       .DBIO
       .sequence(
-        shares.map(s => SharesTable.update(s.figi, s.toShareType(typeCode)))
+        shares.map(s => shareDAO.update(s.figi, s.toShareType(typeCode)))
       )
   )
 }

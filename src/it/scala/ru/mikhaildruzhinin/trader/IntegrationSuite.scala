@@ -10,15 +10,15 @@ import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
 import ru.mikhaildruzhinin.trader.database.connection.Connection
-import ru.mikhaildruzhinin.trader.database.tables.SharesTable
+import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import java.util.concurrent.TimeUnit
 import scala.annotation.tailrec
-import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 class IntegrationSuite extends FixtureAnyFunSuite with Components {
 
@@ -49,9 +49,11 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
     postgresContainer.start()
 
     val config = updateConfig(postgresContainer.getMappedPort(5432).toString)
-    implicit val connection: Connection = createConnection(config)
+    val connection: Connection = createConnection(config)
 
-    val shareService: BaseShareService = new ShareService(investApiClient, connection)
+    val shareDAO = new ShareDAO(connection.databaseConfig.profile)
+
+    val shareService: BaseShareService = new ShareService(investApiClient, connection, shareDAO)
     val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient, connection)
     val priceService: BasePriceService = new PriceService(investApiClient, connection)
 

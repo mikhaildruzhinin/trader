@@ -15,6 +15,7 @@ import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
 import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
+import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.tinkoff.piapi.core.InvestApi
 
 import java.time.ZoneId
@@ -40,7 +41,9 @@ trait Components {
 
   implicit lazy val connection: Connection = DatabaseConnection
 
-  private val shareService: BaseShareService = new ShareService(investApiClient, connection)
+  private val shareDAO: ShareDAO = new ShareDAO(connection.databaseConfig.profile)
+
+  private val shareService: BaseShareService = new ShareService(investApiClient, connection, shareDAO)
   private val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient, connection)
   private val priceService: BasePriceService = new PriceService(investApiClient, connection)
 

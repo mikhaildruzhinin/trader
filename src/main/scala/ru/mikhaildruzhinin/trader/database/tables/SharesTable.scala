@@ -9,6 +9,7 @@ import java.time.temporal.ChronoUnit
 import java.time.{Instant, LocalDate, ZoneOffset}
 
 //noinspection MutatorLikeMethodIsParameterless
+@deprecated
 class SharesTable(tag: Tag) extends Table[Share](tag, Some("trader"), "shares") {
   def id: Rep[Long] = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
@@ -83,6 +84,7 @@ class SharesTable(tag: Tag) extends Table[Share](tag, Some("trader"), "shares") 
   ) <> (Share.tupled, Share.unapply)
 }
 
+@deprecated
 object SharesTable {
   import ru.mikhaildruzhinin.trader.database.connection.DatabaseConnection.databaseConfig.profile._
 
