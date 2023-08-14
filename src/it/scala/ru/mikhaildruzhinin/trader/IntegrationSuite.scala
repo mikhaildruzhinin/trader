@@ -54,8 +54,9 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
     val shareDAO = new ShareDAO(connection.databaseConfig.profile)
 
     val shareService: BaseShareService = new ShareService(investApiClient, connection, shareDAO)
-    val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient, connection)
-    val priceService: BasePriceService = new PriceService(investApiClient, connection)
+    val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient)
+    val priceService: BasePriceService = new PriceService(investApiClient)
+//    val accountService: BaseAccountService = new AccountService()
 
     val sleepMillis: Int = 5000
 
