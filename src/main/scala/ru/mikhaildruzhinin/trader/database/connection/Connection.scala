@@ -18,11 +18,16 @@ trait Connection {
     .db
     .run(actions)
 
-  def runMultiple[T](actions: Vector[DBIO[T]])(implicit appConfig: AppConfig): Vector[T] = Await
+  private def runMultiple[T](actions: Vector[DBIO[T]])(implicit appConfig: AppConfig): Vector[T] = Await
     .result(
       asyncRun(actions),
       appConfig.slick.await.duration
     )
 
   def run[T](action: DBIO[T])(implicit appConfig: AppConfig): Vector[T] = runMultiple(Vector(action))
+}
+
+object DatabaseConnection extends Connection {
+  override lazy val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig
+    .forConfig[JdbcProfile]("slick")
 }
