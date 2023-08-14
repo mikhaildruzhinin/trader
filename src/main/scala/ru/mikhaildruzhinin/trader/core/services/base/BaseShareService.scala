@@ -6,6 +6,8 @@ import ru.mikhaildruzhinin.trader.core.wrappers.{HistoricCandleWrapper, PriceWra
 import scala.concurrent.Future
 
 trait BaseShareService {
+  def startUp(): Unit
+
   def getAvailableShares: Future[Seq[ShareWrapper]]
 
   def getUpdatedShares(shares: Seq[ShareWrapper],

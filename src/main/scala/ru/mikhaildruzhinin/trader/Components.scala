@@ -46,7 +46,7 @@ trait Components {
 
   val startUpTask: OneTimeTask[Void] = Tasks
     .oneTime("start-up")
-    .execute((_, _) => StartUpHandler())
+    .execute((_, _) => shareService.startUp())
 
   val purchaseTask: RecurringTask[Void] = Tasks
     .recurring(

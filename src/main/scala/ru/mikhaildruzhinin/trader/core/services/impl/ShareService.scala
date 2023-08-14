@@ -83,6 +83,8 @@ class ShareService(investApiClient: BaseInvestApiClient,
     })
   }
 
+  override def startUp(): Unit = connection.asyncRun(SharesTable.createIfNotExists)
+
   def getAvailableShares: Future[Seq[ShareWrapper]] = for {
     shares <- investApiClient.getShares
     filteredShares <- filterShares(shares)

@@ -10,6 +10,7 @@ import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
 import ru.mikhaildruzhinin.trader.database.connection.Connection
+import ru.mikhaildruzhinin.trader.database.tables.SharesTable
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
@@ -21,7 +22,11 @@ import scala.concurrent.duration.Duration
 
 class IntegrationSuite extends FixtureAnyFunSuite with Components {
 
-  case class FixtureParam(connection: Connection, sleepMillis: Int)
+  case class FixtureParam(connection: Connection,
+                          shareService: BaseShareService,
+                          historicCandleService: BaseHistoricCandleService,
+                          priceService: BasePriceService,
+                          sleepMillis: Int)
 
   def updateConfig(port: String): Config = ConfigFactory
     .load()
@@ -45,15 +50,28 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
 
     val config = updateConfig(postgresContainer.getMappedPort(5432).toString)
     implicit val connection: Connection = createConnection(config)
+
+    val shareService: BaseShareService = new ShareService(investApiClient, connection)
+    val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient, connection)
+    val priceService: BasePriceService = new PriceService(investApiClient, connection)
+
     val sleepMillis: Int = 5000
 
     import connection.databaseConfig.profile.api._
 
     connection.run(sqlu"create schema trader")
-    StartUpHandler()
+    shareService.startUp()
 
     try {
-      withFixture(test.toNoArgTest(FixtureParam(connection, sleepMillis)))
+      withFixture(test.toNoArgTest(
+        FixtureParam(
+          connection,
+          shareService,
+          historicCandleService,
+          priceService,
+          sleepMillis
+        )
+      ))
     }
     finally {
       postgresContainer.stop()
@@ -81,21 +99,17 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
     f => {
       implicit val connection: Connection = f.connection
 
-      val shareService: BaseShareService = new ShareService(investApiClient, connection)
-      val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient, connection)
-      val priceService: BasePriceService = new PriceService(investApiClient, connection)
-
       val result = for {
-        shares <- shareService.getAvailableShares
-        candles <- historicCandleService.getWrappedCandles(shares)
-        updatedShares <- shareService.getUpdatedShares(shares, candles)
-        numUpdatedShares <- shareService.persistNewShares(updatedShares, Available)
+        shares <- f.shareService.getAvailableShares
+        candles <- f.historicCandleService.getWrappedCandles(shares)
+        updatedShares <- f.shareService.getUpdatedShares(shares, candles)
+        numUpdatedShares <- f.shareService.persistNewShares(updatedShares, Available)
         _ <- Future { log.info(s"Total: ${numUpdatedShares.getOrElse(0)}") }
-        persistedShares <- shareService.getPersistedShares(Available)
-        currentPrices <- priceService.getCurrentPrices(persistedShares)
-        updatedShares <- shareService.updatePrices(persistedShares, currentPrices)
-        uptrendShares <- shareService.filterUptrend(updatedShares)
-        numUptrendShares <- shareService.persistUpdatedShares(uptrendShares, Uptrend)
+        persistedShares <- f.shareService.getPersistedShares(Available)
+        currentPrices <- f.priceService.getCurrentPrices(persistedShares)
+        updatedShares <- f.shareService.updatePrices(persistedShares, currentPrices)
+        uptrendShares <- f.shareService.filterUptrend(updatedShares)
+        numUptrendShares <- f.shareService.persistUpdatedShares(uptrendShares, Uptrend)
         _ <- Future { log.info(s"Best uptrend: ${numUptrendShares.sum}") }
       } yield numUptrendShares
 
