@@ -1,4 +1,4 @@
-package ru.mikhaildruzhinin.trader.client
+package ru.mikhaildruzhinin.trader.client.impl
 
 import io.github.resilience4j.ratelimiter.{RateLimiter, RateLimiterConfig, RateLimiterRegistry}
 import ru.mikhaildruzhinin.trader.config.AppConfig

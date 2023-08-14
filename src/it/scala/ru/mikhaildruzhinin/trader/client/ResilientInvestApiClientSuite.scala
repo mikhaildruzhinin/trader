@@ -7,6 +7,8 @@ import pureconfig.generic.ProductHint
 import pureconfig.generic.auto.exportReader
 import pureconfig.generic.semiauto.deriveEnumerationReader
 import pureconfig.{CamelCase, ConfigFieldMapping, ConfigReader, ConfigSource}
+import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
+import ru.mikhaildruzhinin.trader.client.impl.ResilientInvestApiClient
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._

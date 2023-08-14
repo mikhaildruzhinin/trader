@@ -1,4 +1,4 @@
-package ru.mikhaildruzhinin.trader.client
+package ru.mikhaildruzhinin.trader.client.base
 
 import ru.tinkoff.piapi.contract.v1.{CandleInterval, HistoricCandle, LastPrice, Share}
 

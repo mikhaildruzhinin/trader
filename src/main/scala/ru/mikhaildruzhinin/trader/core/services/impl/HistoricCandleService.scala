@@ -1,6 +1,6 @@
 package ru.mikhaildruzhinin.trader.core.services.impl
 
-import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
+import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.services.base.BaseHistoricCandleService
 import ru.mikhaildruzhinin.trader.core.wrappers.{HistoricCandleWrapper, ShareWrapper}

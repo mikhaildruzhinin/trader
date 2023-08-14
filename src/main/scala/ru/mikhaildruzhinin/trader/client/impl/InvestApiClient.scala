@@ -1,8 +1,9 @@
-package ru.mikhaildruzhinin.trader.client
+package ru.mikhaildruzhinin.trader.client.impl
 
 import com.typesafe.scalalogging.Logger
+import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.tinkoff.piapi.contract.v1.{CandleInterval, HistoricCandle, InstrumentStatus, LastPrice, Share}
+import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.InvestApi
 
 import java.time.Instant

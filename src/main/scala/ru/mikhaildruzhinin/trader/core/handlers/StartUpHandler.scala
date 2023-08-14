@@ -1,6 +1,6 @@
 package ru.mikhaildruzhinin.trader.core.handlers
 
-import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
+import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
