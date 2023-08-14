@@ -52,6 +52,7 @@ class ShareService(investApiClient: BaseInvestApiClient,
    * @param shares sequence of shares
    * @return sequence of wrapped shares
    */
+  //noinspection ScalaWeakerAccess
   protected def wrapShares(shares: Seq[ShareWrapper],
                            candles: Seq[HistoricCandleWrapper]): Future[Seq[ShareWrapper]] = Future {
     shares
@@ -66,6 +67,7 @@ class ShareService(investApiClient: BaseInvestApiClient,
       })
   }
 
+  //noinspection ScalaWeakerAccess
   protected def filterShares(shares: Seq[Share]): Future[Seq[Share]] = Future {
     shares.filter(s => {
       val isAvailable: Boolean = appConfig

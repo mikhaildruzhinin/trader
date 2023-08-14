@@ -44,8 +44,8 @@ trait Components {
   private val shareDAO: ShareDAO = new ShareDAO(connection.databaseConfig.profile)
 
   private val shareService: BaseShareService = new ShareService(investApiClient, connection, shareDAO)
-  private val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient, connection)
-  private val priceService: BasePriceService = new PriceService(investApiClient, connection)
+  private val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient)
+  private val priceService: BasePriceService = new PriceService(investApiClient)
 
   val startUpTask: OneTimeTask[Void] = Tasks
     .oneTime("start-up")
