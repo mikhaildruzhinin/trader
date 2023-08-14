@@ -11,7 +11,7 @@ import java.time.{Instant, LocalDate, ZoneOffset}
 class ShareDAO(val profile: JdbcProfile) {
   import profile.api._
 
-  //noinspection MutatorLikeMethodIsParameterless
+  //noinspection MutatorLikeMethodIsParameterless,ScalaWeakerAccess
   private class SharesTable(tag: Tag) extends Table[Share](tag, Some("trader"), "shares") {
     def id: Rep[Long] = column[Long]("id", O.PrimaryKey, O.AutoInc)
 

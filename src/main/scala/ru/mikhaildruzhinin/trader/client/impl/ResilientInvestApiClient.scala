@@ -20,12 +20,14 @@ class ResilientInvestApiClient private (investApi: InvestApi,
                                        (implicit appConfig: AppConfig)
   extends InvestApiClient(investApi) {
 
+  //noinspection ScalaWeakerAccess
   protected def limit[T](rateLimiter: RateLimiter,
-                       callable: Callable[T],
-                       resultOnFailure: T): T = RateLimiter
+                         callable: Callable[T],
+                         resultOnFailure: T): T = RateLimiter
     .decorateCallable(rateLimiter, callable)
     .call()
 
+  //noinspection ScalaWeakerAccess
   final protected def retry[T](numAttempts: Int)(fn: => Future[T]): Future[T] = {
     fn.transformWith {
       case Success(x) => Future { x }
