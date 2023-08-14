@@ -58,10 +58,10 @@ class ResilientInvestApiClient private (investApi: InvestApi,
     resultOnFailure = Future(Seq(Share.newBuilder.build()))
   ))
 
-  override def getLastPrices(figi: Seq[String]): Seq[LastPrice] = limit(
+  override def getLastPrices(figi: Seq[String]): Future[Seq[LastPrice]] = limit(
     rateLimiter = marketDataRateLimiter,
     callable = () => super.getLastPrices(figi),
-    resultOnFailure = List(LastPrice.newBuilder.build())
+    resultOnFailure = Future(List(LastPrice.newBuilder.build()))
   )
 }
 

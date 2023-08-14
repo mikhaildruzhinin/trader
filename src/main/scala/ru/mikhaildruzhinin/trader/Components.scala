@@ -3,12 +3,13 @@ package ru.mikhaildruzhinin.trader
 import com.github.kagkarlsson.scheduler.task.helper.{OneTimeTask, RecurringTask, Tasks}
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules
 import com.typesafe.scalalogging.Logger
-import pureconfig.{CamelCase, ConfigFieldMapping, ConfigReader, ConfigSource}
 import pureconfig.generic.ProductHint
 import pureconfig.generic.auto.exportReader
 import pureconfig.generic.semiauto.deriveEnumerationReader
+import pureconfig.{CamelCase, ConfigFieldMapping, ConfigReader, ConfigSource}
 import ru.mikhaildruzhinin.trader.client.{BaseInvestApiClient, ResilientInvestApiClient}
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
+import ru.mikhaildruzhinin.trader.core.TypeCode.{Available, Uptrend}
 import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
@@ -17,9 +18,9 @@ import ru.tinkoff.piapi.core.InvestApi
 
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
+import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 
 trait Components {
   val log: Logger = Logger(getClass.getName)
@@ -40,6 +41,7 @@ trait Components {
 
   private val shareService: BaseShareService = new ShareService(investApiClient, connection)
   private val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient, connection)
+  private val priceService: BasePriceService = new PriceService(investApiClient, connection)
 
   val startUpTask: OneTimeTask[Void] = Tasks
     .oneTime("start-up")
@@ -53,18 +55,26 @@ trait Components {
         ZoneId.of("UTC")
       )
     ).execute((_, _) => {
-      val numInsertedShares: Future[Option[Int]] = for {
+      val result = for {
         shares <- shareService.getAvailableShares
         candles <- historicCandleService.getWrappedCandles(shares)
         updatedShares <- shareService.getUpdatedShares(shares, candles)
-        num <- shareService.persistShares(updatedShares)
-      } yield num
+        numUpdatedShares <- shareService.persistNewShares(updatedShares, Available)
+        _ <- Future {
+          log.info(s"Total: ${numUpdatedShares.getOrElse(0)}")
+        }
+        persistedShares <- shareService.getPersistedShares(Available)
+        currentPrices <- priceService.getCurrentPrices(persistedShares)
+        updatedShares <- shareService.updatePrices(persistedShares, currentPrices)
+        uptrendShares <- shareService.filterUptrend(updatedShares)
+        numUptrendShares <- shareService.persistUpdatedShares(uptrendShares, Uptrend)
+        _ <- Future {
+          log.info(s"Best uptrend: ${numUptrendShares.sum}")
+        }
+      } yield numUptrendShares
 
-    val r: Option[Int] = Await.result(numInsertedShares, Duration(10, TimeUnit.SECONDS))
+    Await.result(result, Duration(10, TimeUnit.SECONDS))
 
-    log.info(s"Total: ${r.getOrElse(0)}")
-
-    UptrendHandler()
     PurchaseHandler()
   })
 

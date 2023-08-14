@@ -1,6 +1,7 @@
 package ru.mikhaildruzhinin.trader.core.services.base
 
-import ru.mikhaildruzhinin.trader.core.wrappers.{HistoricCandleWrapper, ShareWrapper}
+import ru.mikhaildruzhinin.trader.core.TypeCode
+import ru.mikhaildruzhinin.trader.core.wrappers.{HistoricCandleWrapper, PriceWrapper, ShareWrapper}
 
 import scala.concurrent.Future
 
@@ -10,5 +11,13 @@ trait BaseShareService {
   def getUpdatedShares(shares: Seq[ShareWrapper],
                        candles: Seq[HistoricCandleWrapper]): Future[Seq[ShareWrapper]]
 
-  def persistShares(shares: Seq[ShareWrapper]): Future[Option[Int]]
+  def persistNewShares(shares: Seq[ShareWrapper], typeCode: TypeCode): Future[Option[Int]]
+
+  def getPersistedShares(typeCode: TypeCode): Future[Seq[ShareWrapper]]
+
+  def updatePrices(shares: Seq[ShareWrapper], prices: Seq[PriceWrapper]): Future[Seq[ShareWrapper]]
+
+  def filterUptrend(shares: Seq[ShareWrapper]): Future[Seq[ShareWrapper]]
+
+  def persistUpdatedShares(shares: Seq[ShareWrapper], typeCode: TypeCode): Future[Seq[Int]]
 }

@@ -3,16 +3,18 @@ package ru.mikhaildruzhinin.trader.core.services.impl
 import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.core.TypeCode._
+import ru.mikhaildruzhinin.trader.core.TypeCode
 import ru.mikhaildruzhinin.trader.core.services.base.BaseShareService
-import ru.mikhaildruzhinin.trader.core.wrappers.{HistoricCandleWrapper, ShareWrapper}
+import ru.mikhaildruzhinin.trader.core.wrappers.{HistoricCandleWrapper, PriceWrapper, ShareWrapper}
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.SharesTable
-import ru.tinkoff.piapi.contract.v1.Share
+import ru.tinkoff.piapi.contract.v1.{Quotation, Share}
+import ru.tinkoff.piapi.core.utils.MapperUtils.quotationToBigDecimal
 
 import java.time.{DayOfWeek, LocalDate}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.math.BigDecimal.javaBigDecimal2bigDecimal
 
 class ShareService(investApiClient: BaseInvestApiClient,
                    connection: Connection)
@@ -92,12 +94,57 @@ class ShareService(investApiClient: BaseInvestApiClient,
     wrappedShares <- wrapShares(shares, candles)
   } yield wrappedShares
 
-  def persistShares(shares: Seq[ShareWrapper]): Future[Option[Int]] = for {
+  def persistNewShares(shares: Seq[ShareWrapper],
+                       typeCode: TypeCode): Future[Option[Int]] = for {
     _ <- connection.asyncRun(SharesTable.delete())
     insertedShares <- connection.asyncRun(
       SharesTable.insert(
-        shares.map(_.toShareType(Available))
+        shares.map(_.toShareType(typeCode))
       )
     )
   } yield insertedShares
+
+  override def getPersistedShares(typeCode: TypeCode): Future[Seq[ShareWrapper]] = for {
+    shareModels <- connection.asyncRun(SharesTable.filterByTypeCode(typeCode.code))
+    shares <- Future { shareModels.map( s => ShareWrapper.builder().fromModel(s).build()) }
+  } yield shares
+
+  override def updatePrices(shares: Seq[ShareWrapper],
+                            prices: Seq[PriceWrapper]): Future[Seq[ShareWrapper]] = Future {
+    prices.zip(shares)
+      .map(x =>
+        ShareWrapper
+          .builder()
+          .fromWrapper(x._2)
+          .withCurrentPrice(Some(x._1.price))
+          .withUpdateTime(Some(x._1.updateTime))
+          .build()
+      )
+  }
+
+  override def filterUptrend(shares: Seq[ShareWrapper]): Future[Seq[ShareWrapper]] = Future {
+
+    shares
+      .filter(_.uptrendPct >= Some(appConfig.shares.uptrendThresholdPct))
+      .filter(s => {
+        quotationToBigDecimal(
+          s.currentPrice.getOrElse(Quotation.newBuilder.build())
+        ) * s.lot <= BigDecimal(appConfig.shares.totalPriceLimit)
+      })
+      .sortBy(_.uptrendAbs)
+      .reverse
+      .take(appConfig.shares.numUptrendShares)
+  }
+
+  override def persistUpdatedShares(shares: Seq[ShareWrapper],
+                                    typeCode: TypeCode): Future[Seq[Int]] = connection.asyncRun(
+    connection
+      .databaseConfig
+      .profile
+      .api
+      .DBIO
+      .sequence(
+        shares.map(s => SharesTable.update(s.figi, s.toShareType(typeCode)))
+      )
+  )
 }

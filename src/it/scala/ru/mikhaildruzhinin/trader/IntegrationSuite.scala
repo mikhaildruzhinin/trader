@@ -5,6 +5,7 @@ import org.scalatest.Outcome
 import org.scalatest.funsuite.FixtureAnyFunSuite
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
+import ru.mikhaildruzhinin.trader.core.TypeCode.{Available, Uptrend}
 import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
@@ -14,7 +15,7 @@ import slick.jdbc.JdbcProfile
 
 import java.util.concurrent.TimeUnit
 import scala.annotation.tailrec
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
@@ -82,18 +83,24 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
 
       val shareService: BaseShareService = new ShareService(investApiClient, connection)
       val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient, connection)
+      val priceService: BasePriceService = new PriceService(investApiClient, connection)
 
-      val numInsertedShares = for {
+      val result = for {
         shares <- shareService.getAvailableShares
         candles <- historicCandleService.getWrappedCandles(shares)
         updatedShares <- shareService.getUpdatedShares(shares, candles)
-        num <- shareService.persistShares(updatedShares)
-      } yield num
+        numUpdatedShares <- shareService.persistNewShares(updatedShares, Available)
+        _ <- Future { log.info(s"Total: ${numUpdatedShares.getOrElse(0)}") }
+        persistedShares <- shareService.getPersistedShares(Available)
+        currentPrices <- priceService.getCurrentPrices(persistedShares)
+        updatedShares <- shareService.updatePrices(persistedShares, currentPrices)
+        uptrendShares <- shareService.filterUptrend(updatedShares)
+        numUptrendShares <- shareService.persistUpdatedShares(uptrendShares, Uptrend)
+        _ <- Future { log.info(s"Best uptrend: ${numUptrendShares.sum}") }
+      } yield numUptrendShares
 
-      val r = Await.result(numInsertedShares, Duration(10, TimeUnit.SECONDS))
-      log.info(s"Total: ${r.getOrElse(0)}")
+      Await.result(result, Duration(10, TimeUnit.SECONDS))
 
-      val uptrendShares: Int = UptrendHandler()
       val purchasedShares: Int = PurchaseHandler()
 
       val stopLossSoldShares = monitorShares(3, f.sleepMillis)
