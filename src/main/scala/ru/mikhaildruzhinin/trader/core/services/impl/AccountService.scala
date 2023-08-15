@@ -13,6 +13,6 @@ class AccountService(investApiClient: BaseInvestApiClient)
 
   override def getAccount: Future[AccountWrapper] = for {
     account <- investApiClient.getAccount
-    wrappedAccount <- Future { AccountWrapper(account.getId) }
+    wrappedAccount <- Future { AccountWrapper(account) }
   } yield wrappedAccount
 }

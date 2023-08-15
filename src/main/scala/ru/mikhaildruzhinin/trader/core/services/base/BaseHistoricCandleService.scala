@@ -6,7 +6,7 @@ import ru.tinkoff.piapi.contract.v1.HistoricCandle
 import scala.concurrent.Future
 
 trait BaseHistoricCandleService {
-  def wrapCandles(candles: Seq[Option[HistoricCandle]]): Future[Seq[HistoricCandleWrapper]]
+  def wrapCandles(candles: Seq[HistoricCandle]): Future[Seq[HistoricCandleWrapper]]
 
   def getWrappedCandles(shares: Seq[ShareWrapper]): Future[Seq[HistoricCandleWrapper]]
 }

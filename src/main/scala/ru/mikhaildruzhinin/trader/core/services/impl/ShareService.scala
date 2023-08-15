@@ -61,8 +61,8 @@ class ShareService(investApiClient: BaseInvestApiClient,
         ShareWrapper
           .builder()
           .fromWrapper(x._1)
-          .withStartingPrice(x._2.open)
-          .withUpdateTime(x._2.time)
+          .withStartingPrice(Some(x._2.open))
+          .withUpdateTime(Some(x._2.time))
           .build()
       })
   }
