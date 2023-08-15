@@ -5,7 +5,7 @@ import org.scalatest.Outcome
 import org.scalatest.funsuite.FixtureAnyFunSuite
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
-import ru.mikhaildruzhinin.trader.core.TypeCode.{Available, Uptrend}
+import ru.mikhaildruzhinin.trader.core.TypeCode
 import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
@@ -26,6 +26,8 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
                           shareService: BaseShareService,
                           historicCandleService: BaseHistoricCandleService,
                           priceService: BasePriceService,
+                          accountService: BaseAccountService,
+//                          orderService: BaseOrderService,
                           sleepMillis: Int)
 
   def updateConfig(port: String): Config = ConfigFactory
@@ -51,12 +53,13 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
     val config = updateConfig(postgresContainer.getMappedPort(5432).toString)
     val connection: Connection = createConnection(config)
 
-    val shareDAO = new ShareDAO(connection.databaseConfig.profile)
+    val shareDAO: ShareDAO = new ShareDAO(connection.databaseConfig.profile)
 
     val shareService: BaseShareService = new ShareService(investApiClient, connection, shareDAO)
     val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient)
     val priceService: BasePriceService = new PriceService(investApiClient)
-//    val accountService: BaseAccountService = new AccountService()
+    val accountService: BaseAccountService = new AccountService(investApiClient)
+//    val orderService: BaseOrderService = new OrderService(investApiClient)
 
     val sleepMillis: Int = 5000
 
@@ -72,6 +75,8 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
           shareService,
           historicCandleService,
           priceService,
+          accountService,
+//          orderService,
           sleepMillis
         )
       ))
@@ -106,15 +111,20 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
         shares <- f.shareService.getAvailableShares
         candles <- f.historicCandleService.getWrappedCandles(shares)
         updatedShares <- f.shareService.getUpdatedShares(shares, candles)
-        numUpdatedShares <- f.shareService.persistNewShares(updatedShares, Available)
+        numUpdatedShares <- f.shareService.persistNewShares(updatedShares, TypeCode.Available)
         _ <- Future { log.info(s"Total: ${numUpdatedShares.getOrElse(0)}") }
-        persistedShares <- f.shareService.getPersistedShares(Available)
+
+        persistedShares <- f.shareService.getPersistedShares(TypeCode.Available)
         currentPrices <- f.priceService.getCurrentPrices(persistedShares)
         updatedShares <- f.shareService.updatePrices(persistedShares, currentPrices)
         uptrendShares <- f.shareService.filterUptrend(updatedShares)
-        numUptrendShares <- f.shareService.persistUpdatedShares(uptrendShares, Uptrend)
+        numUptrendShares <- f.shareService.persistUpdatedShares(uptrendShares, TypeCode.Uptrend)
         _ <- Future { log.info(s"Best uptrend: ${numUptrendShares.sum}") }
-      } yield numUptrendShares
+
+        account <- f.accountService.getAccount
+        sharesForPurchase <- f.shareService.getPersistedShares(TypeCode.Uptrend)
+//        orders <- Future.sequence(sharesForPurchase.map(s => f.orderService.buy(s, 1, account)))
+      } yield sharesForPurchase
 
       Await.result(result, Duration(10, TimeUnit.SECONDS))
 
