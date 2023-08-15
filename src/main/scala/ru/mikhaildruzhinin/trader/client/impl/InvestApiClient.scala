@@ -7,6 +7,7 @@ import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.InvestApi
 
 import java.time.Instant
+import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
@@ -37,4 +38,29 @@ class InvestApiClient(investApi: InvestApi)
     .getLastPrices(figi.asJava)
     .asScala
     .map(_.asScala.toSeq)
+
+  override def getAccount: Future[Account] = investApi
+    .getUserService
+    .getAccounts
+    .asScala
+    .map(_.asScala.head)
+
+  override def postOrder(figi: String,
+                         quantity: Long,
+                         price: Quotation,
+                         direction: OrderDirection,
+                         accountId: String,
+                         orderType: OrderType,
+                         orderId: UUID): Future[PostOrderResponse] = investApi
+    .getOrdersService
+    .postOrder(
+      figi,
+      quantity,
+      price,
+      direction,
+      accountId,
+      orderType,
+      orderId.toString
+    )
+    .asScala
 }

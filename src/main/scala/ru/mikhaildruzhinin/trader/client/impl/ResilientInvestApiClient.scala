@@ -2,11 +2,12 @@ package ru.mikhaildruzhinin.trader.client.impl
 
 import io.github.resilience4j.ratelimiter.{RateLimiter, RateLimiterConfig, RateLimiterRegistry}
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.tinkoff.piapi.contract.v1.{CandleInterval, HistoricCandle, LastPrice, Share}
+import ru.tinkoff.piapi.contract.v1.{Account, CandleInterval, HistoricCandle, LastPrice, OrderDirection, OrderType, PostOrderResponse, Quotation, Share}
 import ru.tinkoff.piapi.core.InvestApi
 
 import java.time.temporal.ChronoUnit
 import java.time.{Duration, Instant}
+import java.util.UUID
 import java.util.concurrent.Callable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -22,8 +23,7 @@ class ResilientInvestApiClient private (investApi: InvestApi,
 
   //noinspection ScalaWeakerAccess
   protected def limit[T](rateLimiter: RateLimiter,
-                         callable: Callable[T],
-                         resultOnFailure: T): T = RateLimiter
+                         callable: Callable[T]): T = RateLimiter
     .decorateCallable(rateLimiter, callable)
     .call()
 
@@ -48,23 +48,50 @@ class ResilientInvestApiClient private (investApi: InvestApi,
     appConfig.tinkoffInvestApi.retry.numAttempts
   )(limit(
     rateLimiter = marketDataRateLimiter,
-    callable = () => super.getCandles(figi, from, to, interval),
-    resultOnFailure = Future(Seq(HistoricCandle.newBuilder().build()))
+    callable = () => super.getCandles(figi, from, to, interval)
   ))
 
   override def getShares: Future[Seq[Share]] = retry(
     appConfig.tinkoffInvestApi.retry.numAttempts
   )(limit(
     rateLimiter = instrumentsRateLimiter,
-    callable = () => super.getShares,
-    resultOnFailure = Future(Seq(Share.newBuilder.build()))
+    callable = () => super.getShares
   ))
 
-  override def getLastPrices(figi: Seq[String]): Future[Seq[LastPrice]] = limit(
+  override def getLastPrices(figi: Seq[String]): Future[Seq[LastPrice]] = retry(
+    appConfig.tinkoffInvestApi.retry.numAttempts
+  )(limit(
     rateLimiter = marketDataRateLimiter,
-    callable = () => super.getLastPrices(figi),
-    resultOnFailure = Future(List(LastPrice.newBuilder.build()))
-  )
+    callable = () => super.getLastPrices(figi)
+  ))
+
+  override def getAccount: Future[Account] = retry(
+    appConfig.tinkoffInvestApi.retry.numAttempts
+  )(limit(
+    rateLimiter = usersRateLimiter,
+    callable = () => super.getAccount
+  ))
+
+  override def postOrder(figi: String,
+                         quantity: Long,
+                         price: Quotation,
+                         direction: OrderDirection,
+                         accountId: String,
+                         orderType: OrderType,
+                         orderId: UUID): Future[PostOrderResponse] = retry(
+    appConfig.tinkoffInvestApi.retry.numAttempts
+  )(limit(
+    rateLimiter = ordersRateLimiter,
+    callable = () => super.postOrder(
+      figi,
+      quantity,
+      price,
+      direction,
+      accountId,
+      orderType,
+      orderId
+    )
+  ))
 }
 
 object ResilientInvestApiClient {
