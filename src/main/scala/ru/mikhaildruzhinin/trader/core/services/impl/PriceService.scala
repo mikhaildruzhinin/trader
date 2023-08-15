@@ -4,13 +4,11 @@ import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.services.base.BasePriceService
 import ru.mikhaildruzhinin.trader.core.wrappers.{PriceWrapper, ShareWrapper}
-import ru.mikhaildruzhinin.trader.database.connection.Connection
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-class PriceService(investApiClient: BaseInvestApiClient,
-                   connection: Connection)
+class PriceService(investApiClient: BaseInvestApiClient)
                   (implicit appConfig: AppConfig) extends BasePriceService {
 
   override def getCurrentPrices(shares: Seq[ShareWrapper]): Future[Seq[PriceWrapper]] = for {
