@@ -116,7 +116,7 @@ case class ShareWrapper private (figi: String,
 
   override def toString: String = {
 
-    new StringBuilder(s"Sold share:\n\tName: $name\n\tRoi: ")
+    new StringBuilder(s"Share info:\n\tName: $name\n\tRoi: ")
       .append(roi
         .getOrElse(BigDecimal(0))
         .setScale(appConfig.shares.pctScale, RoundingMode.HALF_UP))
