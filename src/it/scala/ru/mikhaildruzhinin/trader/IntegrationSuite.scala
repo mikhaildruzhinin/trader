@@ -110,21 +110,24 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
       val result = for {
         shares <- f.shareService.getAvailableShares
         candles <- f.historicCandleService.getWrappedCandles(shares)
-        updatedShares <- f.shareService.getUpdatedShares(shares, candles)
-        numUpdatedShares <- f.shareService.persistNewShares(updatedShares, TypeCode.Available)
-        _ <- Future { log.info(s"Total: ${numUpdatedShares.getOrElse(0)}") }
+        availableShares <- f.shareService.getUpdatedShares(shares, candles)
+        numAvailableShares <- f.shareService.persistNewShares(availableShares, TypeCode.Available)
+        _ <- Future { log.info(s"Available: ${numAvailableShares.getOrElse(0)}") }
 
-        persistedShares <- f.shareService.getPersistedShares(TypeCode.Available)
-        currentPrices <- f.priceService.getCurrentPrices(persistedShares)
-        updatedShares <- f.shareService.updatePrices(persistedShares, currentPrices)
+//        persistedShares <- f.shareService.getPersistedShares(TypeCode.Available)
+        currentPrices <- f.priceService.getCurrentPrices(availableShares)
+        updatedShares <- f.shareService.updatePrices(availableShares, currentPrices)
+        numUpdatedShares <- f.shareService.persistUpdatedShares(updatedShares, TypeCode.Available)
+        _ <- Future { log.info(s"Updated: ${numUpdatedShares.sum}") }
+
         uptrendShares <- f.shareService.filterUptrend(updatedShares)
         numUptrendShares <- f.shareService.persistUpdatedShares(uptrendShares, TypeCode.Uptrend)
         _ <- Future { log.info(s"Best uptrend: ${numUptrendShares.sum}") }
 
         account <- f.accountService.getAccount
-        sharesForPurchase <- f.shareService.getPersistedShares(TypeCode.Uptrend)
+//        sharesForPurchase <- f.shareService.getPersistedShares(TypeCode.Uptrend)
 //        orders <- Future.sequence(sharesForPurchase.map(s => f.orderService.buy(s, 1, account)))
-      } yield sharesForPurchase
+      } yield uptrendShares
 
       Await.result(result, Duration(10, TimeUnit.SECONDS))
 
