@@ -41,4 +41,16 @@ object Models {
     Option[BigDecimal],
     Boolean
   )
+
+  case class ScheduledTaskModel(taskName: String,
+                                taskInstance: String,
+                                taskData: Option[Array[Byte]],
+                                executionTime: Instant,
+                                picked: Boolean,
+                                pickedBy: Option[String],
+                                lastSuccess: Option[Instant],
+                                lastFailure: Option[Instant],
+                                consecutiveFailures: Option[Int],
+                                lastHeartbeat: Option[Instant],
+                                version: Long)
 }
