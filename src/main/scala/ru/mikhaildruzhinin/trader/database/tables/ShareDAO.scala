@@ -1,7 +1,7 @@
 package ru.mikhaildruzhinin.trader.database.tables
 
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.database.Models.{Share, ShareType}
+import ru.mikhaildruzhinin.trader.database.Models.{ShareModel, ShareType}
 import slick.jdbc.JdbcProfile
 import slick.lifted.ProvenShape
 
@@ -12,7 +12,7 @@ class ShareDAO(val profile: JdbcProfile) {
   import profile.api._
 
   //noinspection MutatorLikeMethodIsParameterless,ScalaWeakerAccess
-  private class SharesTable(tag: Tag) extends Table[Share](tag, Some("trader"), "shares") {
+  private class SharesTable(tag: Tag) extends Table[ShareModel](tag, Some("trader"), "shares") {
     def id: Rep[Long] = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
     def typeCd: Rep[Int] = column[Int]("type_cd")
@@ -64,7 +64,7 @@ class ShareDAO(val profile: JdbcProfile) {
       O.SqlType("timestamp default now()")
     )
 
-    override def * : ProvenShape[Share] = (
+    override def * : ProvenShape[ShareModel] = (
       id,
       typeCd,
       figi,
@@ -83,7 +83,7 @@ class ShareDAO(val profile: JdbcProfile) {
       testFlg,
       deletedFlg,
       loadDttm
-    ) <> (Share.tupled, Share.unapply)
+    ) <> (ShareModel.tupled, ShareModel.unapply)
   }
 
   private lazy val table = TableQuery[SharesTable]
@@ -128,10 +128,10 @@ class ShareDAO(val profile: JdbcProfile) {
       ) ++= shares
   }
 
-  def selectAll: profile.StreamingProfileAction[Seq[Share], Share, Effect.Read] = table.result
+  def selectAll: profile.StreamingProfileAction[Seq[ShareModel], ShareModel, Effect.Read] = table.result
 
   def filterByTypeCode(typeCode: Int)
-                      (implicit appConfig: AppConfig): profile.StreamingProfileAction[Seq[Share], Share, Effect.Read] = {
+                      (implicit appConfig: AppConfig): profile.StreamingProfileAction[Seq[ShareModel], ShareModel, Effect.Read] = {
 
     val (start: Instant, end: Instant) = getDayInterval
 
