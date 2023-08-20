@@ -76,7 +76,8 @@ class ShareService(investApiClient: BaseInvestApiClient,
         .contains(s.getExchange) &&
         s.getApiTradeAvailableFlag &&
         s.getBuyAvailableFlag &&
-        s.getSellAvailableFlag
+        s.getSellAvailableFlag /*&&
+        !s.getForQualInvestorFlag */
 
       LocalDate.now.getDayOfWeek match {
         case DayOfWeek.SATURDAY => isAvailable && s.getWeekendFlag
