@@ -1,5 +1,6 @@
 package ru.mikhaildruzhinin.trader.database.connection
 
+import com.typesafe.config.Config
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIO
@@ -10,21 +11,22 @@ import scala.concurrent.{Await, Future}
 trait Connection {
   val databaseConfig: DatabaseConfig[JdbcProfile]
 
-  def asyncRun[T](actions: Vector[DBIO[T]]): Future[Vector[T]] = databaseConfig
-    .db
-    .run(DBIO.sequence(actions))
-
   def asyncRun[T](actions: DBIO[T]): Future[T] = databaseConfig
     .db
     .run(actions)
 
-  private def runMultiple[T](actions: Vector[DBIO[T]])(implicit appConfig: AppConfig): Vector[T] = Await
+  def run[T](action: DBIO[T])(implicit appConfig: AppConfig): Vector[T] = Await
     .result(
-      asyncRun(actions),
+      databaseConfig.db.run(DBIO.sequence(Vector(action))),
       appConfig.slick.await.duration
     )
+}
 
-  def run[T](action: DBIO[T])(implicit appConfig: AppConfig): Vector[T] = runMultiple(Vector(action))
+object Connection {
+  def apply(path: String, config: Config): Connection = new Connection {
+    override val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig
+      .forConfig[JdbcProfile](path, config)
+  }
 }
 
 object DatabaseConnection extends Connection {

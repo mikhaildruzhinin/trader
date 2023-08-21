@@ -5,21 +5,17 @@ import org.scalatest.Outcome
 import org.scalatest.funsuite.FixtureAnyFunSuite
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
-import ru.mikhaildruzhinin.trader.core.TypeCode
 import ru.mikhaildruzhinin.trader.core.executables.PurchaseExecutable
 import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
 
 import java.util.concurrent.TimeUnit
 import scala.annotation.tailrec
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 
 class IntegrationSuite extends FixtureAnyFunSuite with Components {
 
@@ -38,11 +34,6 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
       ConfigValueFactory.fromAnyRef(port)
     )
 
-  def createConnection(config: Config): Connection = new Connection {
-    override val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig
-      .forConfig[JdbcProfile]("slick", config)
-  }
-
   override def withFixture(test: OneArgTest): Outcome = {
     val postgresContainer: PostgreSQLContainer[_] = new PostgreSQLContainer(
       DockerImageName.parse("postgres:14.1-alpine"))
@@ -52,7 +43,7 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
     postgresContainer.start()
 
     val config = updateConfig(postgresContainer.getMappedPort(5432).toString)
-    val connection: Connection = createConnection(config)
+    val connection: Connection = Connection("slick", config)
 
     val shareDAO: ShareDAO = new ShareDAO(connection.databaseConfig.profile)
 
