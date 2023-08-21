@@ -24,29 +24,6 @@ class ShareService(investApiClient: BaseInvestApiClient,
   protected val log: Logger = Logger(getClass.getName)
 
   /**
-   * Filters shares based on availability filters.
-   *
-   * @param share sequence of shares
-   * @return sequence of filtered shares
-   */
-  protected def filterAvailableShares(share: Share): Boolean = {
-
-    val isAvailable: Boolean = appConfig
-      .exchange
-      .names
-      .contains(share.getExchange) &&
-      share.getApiTradeAvailableFlag &&
-      share.getBuyAvailableFlag &&
-      share.getSellAvailableFlag
-
-    LocalDate.now.getDayOfWeek match {
-      case DayOfWeek.SATURDAY => isAvailable && share.getWeekendFlag
-      case DayOfWeek.SUNDAY => isAvailable && share.getWeekendFlag
-      case _ => isAvailable
-    }
-  }
-
-  /**
    * Wraps each share in a sequence in an instance of ShareWrapper class.
    *
    * @param shares sequence of shares
@@ -115,8 +92,8 @@ class ShareService(investApiClient: BaseInvestApiClient,
     shares <- Future { shareModels.map( s => ShareWrapper.builder().fromModel(s).build()) }
   } yield shares
 
-  override def updatePrices(shares: Seq[ShareWrapper],
-                            prices: Seq[PriceWrapper]): Future[Seq[ShareWrapper]] = Future {
+  override def updateCurrentPrices(shares: Seq[ShareWrapper],
+                                   prices: Seq[PriceWrapper]): Future[Seq[ShareWrapper]] = Future {
     prices.zip(shares)
       .map(x =>
         ShareWrapper
@@ -126,6 +103,18 @@ class ShareService(investApiClient: BaseInvestApiClient,
           .withUpdateTime(Some(x._1.updateTime))
           .build()
       )
+  }
+
+  override def updatePurchasePrices(shares: Seq[ShareWrapper],
+                                    prices: Seq[Option[Quotation]]): Future[Seq[ShareWrapper]] = Future {
+    shares.zip(prices)
+      .map(
+      x => ShareWrapper
+        .builder()
+        .fromWrapper(x._1)
+        .withPurchasePrice(x._2)
+        .build()
+    )
   }
 
   override def filterUptrend(shares: Seq[ShareWrapper]): Future[Seq[ShareWrapper]] = Future {

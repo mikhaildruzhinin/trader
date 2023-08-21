@@ -6,6 +6,7 @@ import org.scalatest.funsuite.FixtureAnyFunSuite
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import ru.mikhaildruzhinin.trader.core.TypeCode
+import ru.mikhaildruzhinin.trader.core.executables.PurchaseExecutable
 import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
@@ -107,35 +108,16 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
     f => {
       implicit val connection: Connection = f.connection
 
-      val result = for {
-        shares <- f.shareService.getAvailableShares
-        candles <- f.historicCandleService.getWrappedCandles(shares)
-        availableShares <- f.shareService.getUpdatedShares(shares, candles)
-        numAvailableShares <- f.shareService.persistNewShares(availableShares, TypeCode.Available)
-        _ <- Future { log.info(s"Available: ${numAvailableShares.getOrElse(0)}") }
-
-//        persistedShares <- f.shareService.getPersistedShares(TypeCode.Available)
-        currentPrices <- f.priceService.getCurrentPrices(availableShares)
-        updatedShares <- f.shareService.updatePrices(availableShares, currentPrices)
-        numUpdatedShares <- f.shareService.persistUpdatedShares(updatedShares, TypeCode.Available)
-        _ <- Future { log.info(s"Updated: ${numUpdatedShares.sum}") }
-
-        uptrendShares <- f.shareService.filterUptrend(updatedShares)
-        numUptrendShares <- f.shareService.persistUpdatedShares(uptrendShares, TypeCode.Uptrend)
-        _ <- Future { log.info(s"Best uptrend: ${numUptrendShares.sum}") }
-
-        account <- f.accountService.getAccount
-//        sharesForPurchase <- f.shareService.getPersistedShares(TypeCode.Uptrend)
-//        orders <- Future.sequence(sharesForPurchase.map(s => f.orderService.buy(s, 1, account)))
-        numPurchasedShares <- f.shareService.persistUpdatedShares(uptrendShares, TypeCode.Purchased)
-        _ <- Future { log.info(s"Purchased: ${numPurchasedShares.sum}") }
-      } yield numPurchasedShares
+      val result = PurchaseExecutable(
+        f.shareService,
+        f.historicCandleService,
+        f.priceService,
+        f.accountService
+      )
 
       Await.result(result, Duration(10, TimeUnit.SECONDS))
 
-//      val purchasedShares: Int = PurchaseHandler()
-
-      val stopLossSoldShares = monitorShares(3, f.sleepMillis)
+//      val stopLossSoldShares = monitorShares(3, f.sleepMillis)
 
       Thread.sleep(f.sleepMillis)
       val closeSoldShares = SellHandler()

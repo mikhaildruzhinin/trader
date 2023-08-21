@@ -10,7 +10,8 @@ import pureconfig.{CamelCase, ConfigFieldMapping, ConfigReader, ConfigSource}
 import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.client.impl.ResilientInvestApiClient
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
-import ru.mikhaildruzhinin.trader.core.TypeCode.{Available, Uptrend}
+import ru.mikhaildruzhinin.trader.core.TypeCode
+import ru.mikhaildruzhinin.trader.core.executables.PurchaseExecutable
 import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
@@ -19,10 +20,8 @@ import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.tinkoff.piapi.core.InvestApi
 
 import java.time.ZoneId
-import java.util.concurrent.TimeUnit
-import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
+import scala.concurrent.Future
 
 trait Components {
   val log: Logger = Logger(getClass.getName)
@@ -46,6 +45,7 @@ trait Components {
   private val shareService: BaseShareService = new ShareService(investApiClient, connection, shareDAO)
   private val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient)
   private val priceService: BasePriceService = new PriceService(investApiClient)
+  private val accountService: BaseAccountService = new AccountService(investApiClient)
 
   val startUpTask: OneTimeTask[Void] = Tasks
     .oneTime("start-up")
@@ -58,29 +58,13 @@ trait Components {
         "0 10 9 * * *",
         ZoneId.of("UTC")
       )
-    ).execute((_, _) => {
-      val result = for {
-        shares <- shareService.getAvailableShares
-        candles <- historicCandleService.getWrappedCandles(shares)
-        updatedShares <- shareService.getUpdatedShares(shares, candles)
-        numUpdatedShares <- shareService.persistNewShares(updatedShares, Available)
-        _ <- Future {
-          log.info(s"Total: ${numUpdatedShares.getOrElse(0)}")
-        }
-        persistedShares <- shareService.getPersistedShares(Available)
-        currentPrices <- priceService.getCurrentPrices(persistedShares)
-        updatedShares <- shareService.updatePrices(persistedShares, currentPrices)
-        uptrendShares <- shareService.filterUptrend(updatedShares)
-        numUptrendShares <- shareService.persistUpdatedShares(uptrendShares, Uptrend)
-        _ <- Future {
-          log.info(s"Best uptrend: ${numUptrendShares.sum}")
-        }
-      } yield numUptrendShares
-
-    Await.result(result, Duration(10, TimeUnit.SECONDS))
-
-    PurchaseHandler()
-  })
+    ).execute((_, _) => PurchaseExecutable(
+      shareService,
+      historicCandleService,
+      priceService,
+      accountService
+    )
+  )
 
   val monitorTask: RecurringTask[Void] = Tasks
     .recurring(
