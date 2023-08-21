@@ -32,11 +32,11 @@ class ResilientInvestApiClient private (investApi: InvestApi,
     fn.transformWith {
       case Success(x) => Future { x }
       case Failure(exception) if numAttempts > 1 =>
-        log.error(s"Tinkoff invest API error\n\t${exception.toString}\n\tattempts left: $numAttempts")
+        log.error(s"Tinkoff invest API error\n\t${exception.toString}\n\tattempts left: ${numAttempts - 1}")
         Thread.sleep(appConfig.tinkoffInvestApi.retry.pauseMillis)
         retry(numAttempts - 1)(fn)
       case Failure(exception) =>
-        log.error(s"Tinkoff invest API error\n\t${exception.toString}\n\tattempts left: $numAttempts")
+        log.error(s"Tinkoff invest API error\n\t${exception.toString}\n\tattempts left: ${numAttempts - 1}")
         throw exception
     }
   }

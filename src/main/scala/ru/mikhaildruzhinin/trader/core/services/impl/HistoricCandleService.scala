@@ -12,22 +12,20 @@ import scala.concurrent.Future
 class HistoricCandleService(investApiClient: BaseInvestApiClient)
                            (implicit appConfig: AppConfig) extends BaseHistoricCandleService {
 
-  protected def getCandles(shares: Seq[ShareWrapper]): Future[Seq[HistoricCandle]] = Future
+  protected def getCandles(shares: Seq[ShareWrapper]): Future[Seq[Seq[HistoricCandle]]] = Future
     .sequence(
       shares.map(s => investApiClient.getCandles(
-        figi = s.figi,
-        from = appConfig.exchange.startInstantFrom,
-        to = appConfig.exchange.startInstantTo,
-        interval = CandleInterval.CANDLE_INTERVAL_5_MIN
-      ).map(_.head))
+          figi = s.figi,
+          from = appConfig.exchange.startInstantFrom,
+          to = appConfig.exchange.startInstantTo,
+          interval = CandleInterval.CANDLE_INTERVAL_5_MIN
+        ))
     )
-
-  override def wrapCandles(candles: Seq[HistoricCandle]): Future[Seq[HistoricCandleWrapper]] = Future {
-    candles.map(c => HistoricCandleWrapper(c))
-  }
 
   override def getWrappedCandles(shares: Seq[ShareWrapper]): Future[Seq[HistoricCandleWrapper]] = for {
     candles <- getCandles(shares)
-    wrappedCandles <- wrapCandles(candles)
+//    _ <- Future { shares.zip(candles).foreach(x => println(x._1.name, x._2.length)) }
+    firstCandles <- Future { candles.map(_.headOption) }
+    wrappedCandles <- Future { firstCandles.map (c => HistoricCandleWrapper(c)) }
   } yield wrappedCandles
 }

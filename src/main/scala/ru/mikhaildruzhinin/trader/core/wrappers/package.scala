@@ -10,16 +10,22 @@ package object wrappers {
     def apply(account: Account) = new AccountWrapper(account.getId)
   }
 
-  case class HistoricCandleWrapper(open: Quotation,
-                                   close: Quotation,
-                                   time: Timestamp)
+  case class HistoricCandleWrapper(open: Option[Quotation],
+                                   close: Option[Quotation],
+                                   time: Option[Timestamp])
 
   object HistoricCandleWrapper {
-    def apply(historicCandle: HistoricCandle) = new HistoricCandleWrapper(
-      historicCandle.getOpen,
-      historicCandle.getClose,
-      historicCandle.getTime
-    )
+    def apply(historicCandle: Option[HistoricCandle]): HistoricCandleWrapper = historicCandle match {
+      case Some(c) => new HistoricCandleWrapper(
+        Some(c.getOpen),
+        Some(c.getClose),
+        Some(c.getTime)
+      )
+      case None => HistoricCandleWrapper(None, None, None)
+    }
+
+
+
   }
 
   case class PriceWrapper(price: Quotation,

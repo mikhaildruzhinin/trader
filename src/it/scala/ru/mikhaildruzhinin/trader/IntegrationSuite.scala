@@ -127,11 +127,13 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
         account <- f.accountService.getAccount
 //        sharesForPurchase <- f.shareService.getPersistedShares(TypeCode.Uptrend)
 //        orders <- Future.sequence(sharesForPurchase.map(s => f.orderService.buy(s, 1, account)))
-      } yield uptrendShares
+        numPurchasedShares <- f.shareService.persistUpdatedShares(uptrendShares, TypeCode.Purchased)
+        _ <- Future { log.info(s"Purchased: ${numPurchasedShares.sum}") }
+      } yield numPurchasedShares
 
       Await.result(result, Duration(10, TimeUnit.SECONDS))
 
-      val purchasedShares: Int = PurchaseHandler()
+//      val purchasedShares: Int = PurchaseHandler()
 
       val stopLossSoldShares = monitorShares(3, f.sleepMillis)
 
