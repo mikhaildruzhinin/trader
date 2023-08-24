@@ -10,18 +10,14 @@ import pureconfig.{CamelCase, ConfigFieldMapping, ConfigReader, ConfigSource}
 import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.client.impl.ResilientInvestApiClient
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
-import ru.mikhaildruzhinin.trader.core.TypeCode
 import ru.mikhaildruzhinin.trader.core.executables.PurchaseExecutable
 import ru.mikhaildruzhinin.trader.core.handlers._
-import ru.mikhaildruzhinin.trader.core.services.base._
-import ru.mikhaildruzhinin.trader.core.services.impl._
+import ru.mikhaildruzhinin.trader.core.services.Services
 import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.tinkoff.piapi.core.InvestApi
 
 import java.time.ZoneId
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 trait Components {
   val log: Logger = Logger(getClass.getName)
@@ -37,19 +33,13 @@ trait Components {
   }
 
   implicit lazy val investApiClient: BaseInvestApiClient = ResilientInvestApiClient(investApi)
-
   implicit lazy val connection: Connection = DatabaseConnection
-
   private val shareDAO: ShareDAO = new ShareDAO(connection.databaseConfig.profile)
-
-  private val shareService: BaseShareService = new ShareService(investApiClient, connection, shareDAO)
-  private val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient)
-  private val priceService: BasePriceService = new PriceService(investApiClient)
-  private val accountService: BaseAccountService = new AccountService(investApiClient)
+  private val services = Services(investApiClient, connection, shareDAO)
 
   val startUpTask: OneTimeTask[Void] = Tasks
     .oneTime("start-up")
-    .execute((_, _) => shareService.startUp())
+    .execute((_, _) => services.shareService.startUp())
 
   val purchaseTask: RecurringTask[Void] = Tasks
     .recurring(
@@ -58,12 +48,7 @@ trait Components {
         "0 10 9 * * *",
         ZoneId.of("UTC")
       )
-    ).execute((_, _) => PurchaseExecutable(
-      shareService,
-      historicCandleService,
-      priceService,
-      accountService
-    )
+    ).execute((_, _) => PurchaseExecutable(services)
   )
 
   val monitorTask: RecurringTask[Void] = Tasks

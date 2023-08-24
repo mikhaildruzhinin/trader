@@ -5,26 +5,23 @@ import org.scalatest.Outcome
 import org.scalatest.funsuite.FixtureAnyFunSuite
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
+import ru.mikhaildruzhinin.trader.core.TypeCode
 import ru.mikhaildruzhinin.trader.core.executables.PurchaseExecutable
 import ru.mikhaildruzhinin.trader.core.handlers._
-import ru.mikhaildruzhinin.trader.core.services.base._
-import ru.mikhaildruzhinin.trader.core.services.impl._
+import ru.mikhaildruzhinin.trader.core.services.Services
 import ru.mikhaildruzhinin.trader.database.connection.Connection
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 
 import java.util.concurrent.TimeUnit
 import scala.annotation.tailrec
-import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 class IntegrationSuite extends FixtureAnyFunSuite with Components {
 
   case class FixtureParam(connection: Connection,
-                          shareService: BaseShareService,
-                          historicCandleService: BaseHistoricCandleService,
-                          priceService: BasePriceService,
-                          accountService: BaseAccountService,
-//                          orderService: BaseOrderService,
+                          services: Services,
                           sleepMillis: Int)
 
   def updateConfig(port: String): Config = ConfigFactory
@@ -47,28 +44,25 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
 
     val shareDAO: ShareDAO = new ShareDAO(connection.databaseConfig.profile)
 
-    val shareService: BaseShareService = new ShareService(investApiClient, connection, shareDAO)
-    val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient)
-    val priceService: BasePriceService = new PriceService(investApiClient)
-    val accountService: BaseAccountService = new AccountService(investApiClient)
+    val services = Services(investApiClient, connection, shareDAO)
+
 //    val orderService: BaseOrderService = new OrderService(investApiClient)
 
     val sleepMillis: Int = 5000
 
     import connection.databaseConfig.profile.api._
 
-    connection.run(sqlu"create schema trader")
-    shareService.startUp()
+    Await.result(
+      connection.asyncRun(sqlu"create schema trader"),
+      Duration(10, TimeUnit.SECONDS)
+    )
+    services.shareService.startUp()
 
     try {
       withFixture(test.toNoArgTest(
         FixtureParam(
           connection,
-          shareService,
-          historicCandleService,
-          priceService,
-          accountService,
-//          orderService,
+          services,
           sleepMillis
         )
       ))
@@ -99,12 +93,9 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
     f => {
       implicit val connection: Connection = f.connection
 
-      val result = PurchaseExecutable(
-        f.shareService,
-        f.historicCandleService,
-        f.priceService,
-        f.accountService
-      )
+      val result = for {
+        _ <- PurchaseExecutable(f.services)
+      } yield ()
 
       Await.result(result, Duration(10, TimeUnit.SECONDS))
 
