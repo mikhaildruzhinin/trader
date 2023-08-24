@@ -13,7 +13,7 @@ import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
 import ru.mikhaildruzhinin.trader.core.executables.PurchaseExecutable
 import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.core.services.Services
-import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
+import ru.mikhaildruzhinin.trader.database.{Connection, DatabaseConnection}
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.tinkoff.piapi.core.InvestApi
 

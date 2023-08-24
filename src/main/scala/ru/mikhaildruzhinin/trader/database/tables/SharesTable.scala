@@ -2,7 +2,7 @@ package ru.mikhaildruzhinin.trader.database.tables
 
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.database.Models.{ShareModel, ShareType}
-import ru.mikhaildruzhinin.trader.database.connection.DatabaseConnection.databaseConfig.profile.api._
+import ru.mikhaildruzhinin.trader.database.DatabaseConnection.databaseConfig.profile.api._
 import slick.lifted.ProvenShape
 
 import java.time.temporal.ChronoUnit
@@ -86,7 +86,7 @@ class SharesTable(tag: Tag) extends Table[ShareModel](tag, Some("trader"), "shar
 
 @deprecated
 object SharesTable {
-  import ru.mikhaildruzhinin.trader.database.connection.DatabaseConnection.databaseConfig.profile._
+  import ru.mikhaildruzhinin.trader.database.DatabaseConnection.databaseConfig.profile._
 
   private lazy val table = TableQuery[SharesTable]
 

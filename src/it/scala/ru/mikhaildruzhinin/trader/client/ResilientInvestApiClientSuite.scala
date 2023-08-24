@@ -12,7 +12,7 @@ import ru.mikhaildruzhinin.trader.client.impl.ResilientInvestApiClient
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
-import ru.mikhaildruzhinin.trader.database.connection.{Connection, DatabaseConnection}
+import ru.mikhaildruzhinin.trader.database.{Connection, DatabaseConnection}
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.tinkoff.piapi.core.InvestApi
 

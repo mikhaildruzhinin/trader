@@ -1,4 +1,4 @@
-package ru.mikhaildruzhinin.trader.database.connection
+package ru.mikhaildruzhinin.trader.database
 
 import com.typesafe.config.Config
 import ru.mikhaildruzhinin.trader.config.AppConfig
