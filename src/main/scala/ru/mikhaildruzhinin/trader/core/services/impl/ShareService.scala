@@ -141,4 +141,14 @@ class ShareService(investApiClient: BaseInvestApiClient,
         shares.map(s => shareDAO.update(s.figi, s.toShareType(typeCode)))
       )
   )
+
+  override def enrichShares(shares: Seq[ShareWrapper]): Future[Seq[EnrichedShareWrapper]] = Future {
+    shares.zip(shares.map(_.roi))
+  }
+
+  override def partitionEnrichedSharesShares(enrichedShares: Seq[EnrichedShareWrapper]): Future[(Seq[EnrichedShareWrapper], Seq[EnrichedShareWrapper])] = Future {
+    enrichedShares.partition(s =>
+      s._1.roi <= Some(BigDecimal(0)) && s._1.roi < s._2
+    )
+  }
 }

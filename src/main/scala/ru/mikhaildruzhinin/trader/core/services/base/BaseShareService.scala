@@ -7,6 +7,8 @@ import ru.tinkoff.piapi.contract.v1.Quotation
 import scala.concurrent.Future
 
 trait BaseShareService {
+  type EnrichedShareWrapper = (ShareWrapper, Option[BigDecimal])
+
   def startUp(): Unit
 
   def getAvailableShares: Future[Seq[ShareWrapper]]
@@ -25,4 +27,8 @@ trait BaseShareService {
   def filterUptrend(shares: Seq[ShareWrapper]): Future[Seq[ShareWrapper]]
 
   def persistUpdatedShares(shares: Seq[ShareWrapper], typeCode: TypeCode): Future[Seq[Int]]
+
+  def enrichShares(shares: Seq[ShareWrapper]): Future[Seq[EnrichedShareWrapper]]
+
+  def partitionEnrichedSharesShares(enrichedShares: Seq[EnrichedShareWrapper]): Future[(Seq[EnrichedShareWrapper], Seq[EnrichedShareWrapper])]
 }
