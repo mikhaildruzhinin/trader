@@ -5,8 +5,7 @@ import org.scalatest.Outcome
 import org.scalatest.funsuite.FixtureAnyFunSuite
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
-import ru.mikhaildruzhinin.trader.core.TypeCode
-import ru.mikhaildruzhinin.trader.core.executables.PurchaseExecutable
+import ru.mikhaildruzhinin.trader.core.Purchase
 import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.core.services.Services
 import ru.mikhaildruzhinin.trader.database.Connection
@@ -14,9 +13,9 @@ import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 
 import java.util.concurrent.TimeUnit
 import scala.annotation.tailrec
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 
 class IntegrationSuite extends FixtureAnyFunSuite with Components {
 
@@ -94,7 +93,7 @@ class IntegrationSuite extends FixtureAnyFunSuite with Components {
       implicit val connection: Connection = f.connection
 
       val result = for {
-        _ <- PurchaseExecutable(f.services)
+        _ <- Purchase(f.services)
       } yield ()
 
       Await.result(result, Duration(10, TimeUnit.SECONDS))

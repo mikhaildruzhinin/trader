@@ -1,13 +1,12 @@
-package ru.mikhaildruzhinin.trader.core.executables
+package ru.mikhaildruzhinin.trader.core
 
 import com.typesafe.scalalogging.Logger
-import ru.mikhaildruzhinin.trader.core.TypeCode
 import ru.mikhaildruzhinin.trader.core.services.Services
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-object PurchaseExecutable {
+object Purchase {
   val log: Logger = Logger(getClass.getName)
 
   def apply(services: Services): Future[Int] = for {

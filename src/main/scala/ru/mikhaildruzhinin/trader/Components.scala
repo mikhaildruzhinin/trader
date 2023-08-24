@@ -10,7 +10,7 @@ import pureconfig.{CamelCase, ConfigFieldMapping, ConfigReader, ConfigSource}
 import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.client.impl.ResilientInvestApiClient
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
-import ru.mikhaildruzhinin.trader.core.executables.PurchaseExecutable
+import ru.mikhaildruzhinin.trader.core.Purchase
 import ru.mikhaildruzhinin.trader.core.handlers._
 import ru.mikhaildruzhinin.trader.core.services.Services
 import ru.mikhaildruzhinin.trader.database.{Connection, DatabaseConnection}
@@ -48,7 +48,7 @@ trait Components {
         "0 10 9 * * *",
         ZoneId.of("UTC")
       )
-    ).execute((_, _) => PurchaseExecutable(services)
+    ).execute((_, _) => Purchase(services)
   )
 
   val monitorTask: RecurringTask[Void] = Tasks
