@@ -1,5 +1,6 @@
 package ru.mikhaildruzhinin.trader
 
+import com.github.kagkarlsson.scheduler.Scheduler
 import com.github.kagkarlsson.scheduler.task.helper.{OneTimeTask, RecurringTask, Tasks}
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules
 import com.typesafe.scalalogging.Logger
@@ -41,7 +42,7 @@ trait Components {
     .oneTime("start-up")
     .execute((_, _) => services.shareService.startUp())
 
-  val purchaseTask: RecurringTask[Void] = Tasks
+  private val purchaseTask: RecurringTask[Void] = Tasks
     .recurring(
       "purchase",
       Schedules.cron(
@@ -51,7 +52,7 @@ trait Components {
     ).execute((_, _) => Purchase(services)
   )
 
-  val monitorTask: RecurringTask[Void] = Tasks
+  private val monitorTask: RecurringTask[Void] = Tasks
     .recurring(
       "monitor",
       Schedules.cron(
@@ -60,7 +61,7 @@ trait Components {
       )
     ).execute((_, _) => MonitorHandler())
 
-  val sellTask: RecurringTask[Void] = Tasks
+  private val sellTask: RecurringTask[Void] = Tasks
     .recurring(
       "sell",
       Schedules.cron(
@@ -68,4 +69,19 @@ trait Components {
         ZoneId.of("UTC")
       )
     ).execute((_, _) => SellHandler())
+
+  val scheduler: Scheduler = Scheduler
+    .create(
+      appConfig.slick.db.properties.dataSource,
+      startUpTask
+    )
+    .tableName(appConfig.scheduler.tableName)
+    .startTasks(
+      purchaseTask,
+      monitorTask,
+      sellTask
+    )
+    .threads(appConfig.scheduler.numThreads)
+    .registerShutdownHook()
+    .build()
 }
