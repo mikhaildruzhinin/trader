@@ -1,5 +1,11 @@
+import com.typesafe.config.ConfigFactory
+
+val conf = ConfigFactory
+  .parseFile(new File("src/main/resources/application.conf"))
+  .resolve()
+
 ThisBuild / scalaVersion     := "2.13.10"
-ThisBuild / version          := "0.1.0-SNAPSHOT"
+ThisBuild / version          := conf.getString("app.version")
 ThisBuild / organization     := "ru.mikhaildruzhinin"
 ThisBuild / organizationName := "mikhaildruzhinin"
 
