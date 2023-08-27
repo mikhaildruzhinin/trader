@@ -3,7 +3,7 @@ package ru.mikhaildruzhinin.trader.core.wrappers
 import com.google.protobuf.Timestamp
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.TypeCode
-import ru.mikhaildruzhinin.trader.database.Models.ShareType
+import ru.mikhaildruzhinin.trader.database.tables.ShareDAO.ShareType
 import ru.tinkoff.piapi.contract.v1.Quotation
 import ru.tinkoff.piapi.core.utils.DateUtils._
 import ru.tinkoff.piapi.core.utils.MapperUtils._
@@ -81,9 +81,16 @@ case class ShareWrapper private (figi: String,
   }
 
   def toShareType(typeCode: TypeCode): ShareType = (
-    typeCode.code,
-    figi,
+    updateTime match {
+      case Some(t) =>
+        Some(java.sql.Timestamp.from(timestampToInstant(t)))
+      case _ => None
+    },
     lot,
+    1, // TODO: quantity as param
+    typeCode.code.toShort,
+    appConfig.testFlg,
+    figi,
     currency,
     name,
     exchange,
@@ -102,16 +109,10 @@ case class ShareWrapper private (figi: String,
         Some(quotationToBigDecimal(p))
       case _ => None
     },
-    updateTime match {
-      case Some(t) =>
-        Some(timestampToInstant(t))
-      case _ => None
-    },
     uptrendPct,
     uptrendAbs,
     roi,
-    profit,
-    appConfig.testFlg
+    profit
   )
 
   override def toString: String = {

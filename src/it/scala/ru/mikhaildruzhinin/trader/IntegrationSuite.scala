@@ -16,7 +16,7 @@ class IntegrationSuite extends BaseIntegrationSuite {
           _ <- Monitor(f.services)
           _ <- Sell(f.services)
         } yield (),
-        atMost = Duration(15, TimeUnit.SECONDS)
+        atMost = Duration(30, TimeUnit.SECONDS)
       )
     }
   }

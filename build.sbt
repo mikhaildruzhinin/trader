@@ -35,6 +35,7 @@ libraryDependencies ++= Seq(
   "org.postgresql" % "postgresql" % "42.6.0",
   "ru.tinkoff.piapi" % "java-sdk-core" % "1.5",
   "org.scalatest" %% "scalatest" % "3.2.16" % "it,test",
+  "org.flywaydb" % "flyway-core" % "9.16.0" % "it",
   "org.testcontainers" % "postgresql" % testcontainersVersion % "it",
   "org.testcontainers" % "testcontainers" % testcontainersVersion % "it"
 )
@@ -59,3 +60,28 @@ assembly / assemblyShadeRules := Seq(
 )
 
 IntegrationTest / fork := true
+
+enablePlugins(FlywayPlugin)
+
+val host = conf.getString("slick.db.properties.serverName")
+val port = conf.getString("slick.db.properties.portNumber")
+val db = conf.getString("slick.db.properties.databaseName")
+val dbUrl = s"jdbc:postgresql://$host:$port/$db"
+val user = conf.getString("slick.db.properties.user")
+val password = conf.getString("slick.db.properties.password")
+
+flywayUrl := dbUrl
+flywayUser := user
+flywayPassword := password
+flywaySchemas := Seq("trader")
+
+enablePlugins(CodegenPlugin)
+
+slickCodegenDatabaseUrl := dbUrl
+slickCodegenDatabaseUser := user
+slickCodegenDatabasePassword := password
+slickCodegenDriver :=  slick.jdbc.PostgresProfile
+slickCodegenJdbcDriver := "org.postgresql.Driver"
+slickCodegenOutputPackage := "ru.mikhaildruzhinin.trader.database.tables.codegen"
+slickCodegenOutputDir := (sourceDirectory).value / "main" / "scala"
+slickCodegenOutputToMultipleFiles := true

@@ -2,7 +2,6 @@ package ru.mikhaildruzhinin.trader.core.wrappers
 
 import com.google.protobuf.Timestamp
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.database.Models.ShareModel
 import ru.tinkoff.piapi.contract.v1.{Quotation, Share}
 import ru.tinkoff.piapi.core.utils.DateUtils.instantToTimestamp
 import ru.tinkoff.piapi.core.utils.MapperUtils.bigDecimalToQuotation
@@ -26,7 +25,7 @@ class ShareWrapperBuilder[State <: ShareWrapperBuilderState] private[wrappers](f
                                                                                updateTime: Option[Timestamp] = None)
                                                                               (implicit appConfig: AppConfig) {
 
-  type FullShareWrapper = Empty with Figi with Lot with Currency with Name with Exchange
+  private type FullShareWrapper = Empty with Figi with Lot with Currency with Name with Exchange
 
   private def copy(figi: String = this.figi,
                    lot: Int = this.lot,
@@ -80,41 +79,48 @@ class ShareWrapperBuilder[State <: ShareWrapperBuilderState] private[wrappers](f
     exchange = share.getExchange
   )
 
-  def fromModel(shareModel: ShareModel): ShareWrapperBuilder[Empty
+  def fromRowParams(figi: String,
+                    lot: Int,
+                    currency: String,
+                    name: String,
+                    exchange: String,
+                    startingPrice: Option[BigDecimal],
+                    purchasePrice: Option[BigDecimal],
+                    currentPrice: Option[BigDecimal],
+                    exchangeUpdateDttm: Option[java.sql.Timestamp]): ShareWrapperBuilder[Empty
     with Figi
     with Lot
     with Currency
     with Name
     with Exchange
   ] = {
-
-    val startingPrice = shareModel.startingPrice match {
+    val convertedStartingPrice: Option[Quotation] = startingPrice match {
       case Some(s) => Some(bigDecimalToQuotation(s.bigDecimal))
       case _ => None
     }
-    val purchasePrice = shareModel.purchasePrice match {
+    val convertedPurchasePrice: Option[Quotation] = purchasePrice match {
       case Some(p) => Some(bigDecimalToQuotation(p.bigDecimal))
       case _ => None
     }
-    val currentPrice = shareModel.currentPrice match {
+    val convertedCurrentPrice: Option[Quotation] = currentPrice match {
       case Some(p) => Some(bigDecimalToQuotation(p.bigDecimal))
       case _ => None
     }
-    val updateTime = shareModel.updateDttm match {
-      case Some(t) => Some(instantToTimestamp(t))
+    val convertedExchangeUpdateTime: Option[Timestamp] = exchangeUpdateDttm match {
+      case Some(t) => Some(instantToTimestamp(t.toInstant))
       case _ => None
     }
 
     new ShareWrapperBuilder(
-      shareModel.figi,
-      shareModel.lot,
-      shareModel.currency,
-      shareModel.name,
-      shareModel.exchange,
-      startingPrice,
-      purchasePrice,
-      currentPrice,
-      updateTime
+      figi,
+      lot,
+      currency,
+      name,
+      exchange,
+      convertedStartingPrice,
+      convertedPurchasePrice,
+      convertedCurrentPrice,
+      convertedExchangeUpdateTime
     )
   }
 

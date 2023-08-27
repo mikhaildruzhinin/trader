@@ -2,6 +2,8 @@ package ru.mikhaildruzhinin.trader
 
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import com.typesafe.scalalogging.Logger
+import org.flywaydb.core.Flyway
+import org.postgresql.ds.PGSimpleDataSource
 import org.scalatest.Outcome
 import org.scalatest.funsuite.FixtureAnyFunSuite
 import org.testcontainers.containers.PostgreSQLContainer
@@ -17,10 +19,6 @@ import ru.mikhaildruzhinin.trader.core.services.Services
 import ru.mikhaildruzhinin.trader.database.Connection
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.tinkoff.piapi.core.InvestApi
-
-import java.util.concurrent.TimeUnit
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 
 abstract class BaseIntegrationSuite extends FixtureAnyFunSuite {
 
@@ -59,19 +57,24 @@ abstract class BaseIntegrationSuite extends FixtureAnyFunSuite {
     postgresContainer.withDatabaseName(appConfig.slick.db.properties.databaseName)
     postgresContainer.start()
 
-    val config = updateConfig(postgresContainer.getMappedPort(5432).toString)
+    val port: Int = postgresContainer.getMappedPort(appConfig.slick.db.properties.portNumber)
+
+    val config = updateConfig(port.toString)
     val connection: Connection = Connection("slick", config)
     val shareDAO: ShareDAO = new ShareDAO(connection.databaseConfig.profile)
     val services = Services(investApiClient, connection, shareDAO)
     val sleepMillis: Int = 5000
 
-    import connection.databaseConfig.profile.api._
+    val dataSource: PGSimpleDataSource = appConfig.slick.db.properties.dataSource
+    dataSource.setPortNumbers(Array(port))
 
-    Await.result(
-      connection.asyncRun(sqlu"create schema trader"),
-      Duration(10, TimeUnit.SECONDS)
-    )
-    services.shareService.startUp()
+    val flyway: Flyway = Flyway
+      .configure()
+      .dataSource(dataSource)
+      .schemas("trader")
+      .load()
+
+    flyway.migrate()
 
     try {
       withFixture(test.toNoArgTest(

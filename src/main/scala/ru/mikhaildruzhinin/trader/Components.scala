@@ -12,6 +12,7 @@ import ru.mikhaildruzhinin.trader.core.services.Services
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.mikhaildruzhinin.trader.database.{Connection, DatabaseConnection}
 import ru.tinkoff.piapi.core.InvestApi
+import slick.jdbc.JdbcProfile
 
 trait Components {
   private implicit def hint[A]: ProductHint[A] = ProductHint[A](ConfigFieldMapping(CamelCase, CamelCase))
@@ -26,10 +27,8 @@ trait Components {
 
   lazy val investApiClient: BaseInvestApiClient = ResilientInvestApiClient(investApi)
   lazy val connection: Connection = DatabaseConnection
-  private lazy val shareDAO: ShareDAO = new ShareDAO(connection.databaseConfig.profile)
+  lazy val profile: JdbcProfile = connection.databaseConfig.profile
+  private lazy val shareDAO: ShareDAO = new ShareDAO(profile)
   private lazy val services = Services(investApiClient, connection, shareDAO)
   lazy val scheduler: Scheduler = SchedulerFactory(services)
-
-  // TODO: move startUp to flyway migrations
-  services.shareService.startUp()
 }

@@ -1,155 +1,86 @@
 package ru.mikhaildruzhinin.trader.database.tables
 
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.database.Models.{ShareModel, ShareType}
+import ru.mikhaildruzhinin.trader.core.wrappers.ShareWrapper
+import ru.mikhaildruzhinin.trader.database.tables.ShareDAO.ShareType
+import ru.mikhaildruzhinin.trader.database.tables.codegen.{SharesTable, Tables}
 import slick.jdbc.JdbcProfile
-import slick.lifted.ProvenShape
 
+import java.sql.Timestamp
+import java.time.LocalDate
 import java.time.temporal.ChronoUnit
-import java.time.{Instant, LocalDate, ZoneOffset}
 
-class ShareDAO(val profile: JdbcProfile) {
+class ShareDAO(val profile: JdbcProfile) extends SharesTable with Tables {
   import profile.api._
 
-  //noinspection MutatorLikeMethodIsParameterless,ScalaWeakerAccess
-  private class SharesTable(tag: Tag) extends Table[ShareModel](tag, Some("trader"), "shares") {
-    def id: Rep[Long] = column[Long]("id", O.PrimaryKey, O.AutoInc)
-
-    def typeCd: Rep[Int] = column[Int]("type_cd")
-
-    def figi: Rep[String] = column[String]("figi")
-
-    def lot: Rep[Int] = column[Int]("lot")
-
-    def currency: Rep[String] = column[String]("currency", O.Length(3))
-
-    def name: Rep[String] = column[String]("name")
-
-    def exchange: Rep[String] = column[String]("exchange")
-
-    def startingPrice: Rep[Option[BigDecimal]] = column[Option[BigDecimal]](
-      "starting_price",
-      O.SqlType("decimal(15,9)")
-    )
-
-    def purchasePrice: Rep[Option[BigDecimal]] = column[Option[BigDecimal]](
-      "purchase_price",
-      O.SqlType("decimal(15,9)")
-    )
-
-    def currentPrice: Rep[Option[BigDecimal]] = column[Option[BigDecimal]](
-      "current_price",
-      O.SqlType("decimal(15,9)")
-    )
-
-    def updateDttm: Rep[Option[Instant]] = column[Option[Instant]](
-      "update_dttm",
-      O.SqlType("timestamp")
-    )
-
-    def uptrendPct: Rep[Option[BigDecimal]] = column[Option[BigDecimal]]("uptrend_pct")
-
-    def uptrendAbs: Rep[Option[BigDecimal]] = column[Option[BigDecimal]]("uptrend_abs")
-
-    def roi: Rep[Option[BigDecimal]] = column[Option[BigDecimal]]("roi")
-
-    def profit: Rep[Option[BigDecimal]] = column[Option[BigDecimal]]("profit")
-
-    def testFlg: Rep[Boolean] = column[Boolean]("test_flg")
-
-    def deletedFlg: Rep[Boolean] = column[Boolean]("deleted_flg", O.Default(false))
-
-    def loadDttm: Rep[Instant] = column[Instant](
+  class SS(_tableTag: Tag) extends Shares(_tableTag) {
+    override val loadDttm: Rep[java.sql.Timestamp] = column[java.sql.Timestamp](
       "load_dttm",
       O.SqlType("timestamp default now()")
     )
-
-    override def * : ProvenShape[ShareModel] = (
-      id,
-      typeCd,
-      figi,
-      lot,
-      currency,
-      name,
-      exchange,
-      startingPrice,
-      purchasePrice,
-      currentPrice,
-      updateDttm,
-      uptrendPct,
-      uptrendAbs,
-      roi,
-      profit,
-      testFlg,
-      deletedFlg,
-      loadDttm
-    ) <> (ShareModel.tupled, ShareModel.unapply)
   }
 
-  private lazy val table = TableQuery[SharesTable]
+  private lazy val table = TableQuery[SS]
 
-  private def getDayInterval: (Instant, Instant) = {
-    val start: Instant = LocalDate
-      .now
-      .atStartOfDay
-      .toInstant(ZoneOffset.UTC)
+  private def getDayInterval: (Timestamp, Timestamp) = {
+    val start: Timestamp = Timestamp.valueOf(LocalDate.now.atStartOfDay)
+//      .toInstant(ZoneOffset.UTC)
 
-    val end: Instant = LocalDate
-      .now
-      .plus(1, ChronoUnit.DAYS)
-      .atStartOfDay
-      .toInstant(ZoneOffset.UTC)
+    val end: Timestamp = Timestamp.valueOf(
+      LocalDate.now.plus(1, ChronoUnit.DAYS).atStartOfDay
+    )
 
     (start, end)
   }
 
-  def createIfNotExists: profile.ProfileAction[Unit, NoStream, Effect.Schema] = table.schema.createIfNotExists
+  def createIfNotExists = table.schema.createIfNotExists
 
-  def insert(shares: Seq[ShareType]): profile.ProfileAction[Option[Int], NoStream, Effect.Write] = {
+  def insert(shares: Seq[ShareType]) = {
     table
       .map(
         s => (
-          s.typeCd,
-          s.figi,
+          s.exchangeUpdateDttm,
           s.lot,
+          s.quantity,
+          s.typeCd,
+          s.testFlg,
+          s.figi,
           s.currency,
           s.name,
           s.exchange,
           s.startingPrice,
           s.purchasePrice,
           s.currentPrice,
-          s.updateDttm,
           s.uptrendPct,
           s.uptrendAbs,
           s.roi,
-          s.profit,
-          s.testFlg
+          s.profit
         )
       ) ++= shares
   }
 
-  def selectAll: profile.StreamingProfileAction[Seq[ShareModel], ShareModel, Effect.Read] = table.result
+  def selectAll = table.result
 
   def filterByTypeCode(typeCode: Int)
-                      (implicit appConfig: AppConfig): profile.StreamingProfileAction[Seq[ShareModel], ShareModel, Effect.Read] = {
+                      (implicit appConfig: AppConfig) = {
 
-    val (start: Instant, end: Instant) = getDayInterval
+    val (start: Timestamp, end: Timestamp) = getDayInterval
 
     table
       .filter(s =>
         s.loadDttm >= start &&
           s.loadDttm < end &&
           s.testFlg === appConfig.testFlg &&
-          s.typeCd === typeCode &&
+          s.typeCd === typeCode.toShort &&
           s.deletedFlg === false
       )
       .result
   }
 
   def update(figi: String,
-             share: ShareType): profile.ProfileAction[Int, NoStream, Effect.Write] = {
+             share: ShareType) = {
 
-    val (start: Instant, end: Instant) = getDayInterval
+    val (start: Timestamp, end: Timestamp) = getDayInterval
 
     table
       .filter(s => {
@@ -160,28 +91,29 @@ class ShareDAO(val profile: JdbcProfile) {
       })
       .map(
         s => (
-          s.typeCd,
-          s.figi,
+          s.exchangeUpdateDttm,
           s.lot,
+          s.quantity,
+          s.typeCd,
+          s.testFlg,
+          s.figi,
           s.currency,
           s.name,
           s.exchange,
           s.startingPrice,
           s.purchasePrice,
           s.currentPrice,
-          s.updateDttm,
           s.uptrendPct,
           s.uptrendAbs,
           s.roi,
-          s.profit,
-          s.testFlg
+          s.profit
         )
       )
       .update(share)
   }
 
-  def updateTypeCode(figis: Seq[String], typeCode: Int): profile.ProfileAction[Int, NoStream, Effect.Write] = {
-    val (start: Instant, end: Instant) = getDayInterval
+  def updateTypeCode(figis: Seq[String], typeCode: Int) = {
+    val (start: Timestamp, end: Timestamp) = getDayInterval
 
     table
       .filter(s => {
@@ -191,11 +123,11 @@ class ShareDAO(val profile: JdbcProfile) {
           s.deletedFlg === false
       })
       .map(_.typeCd)
-      .update(typeCode)
+      .update(typeCode.toShort)
   }
 
-  def delete(): profile.ProfileAction[Int, NoStream, Effect.Write] = {
-    val (start: Instant, end: Instant) = getDayInterval
+  def delete() = {
+    val (start: Timestamp, end: Timestamp) = getDayInterval
 
     table
       .filter(s => {
@@ -206,4 +138,40 @@ class ShareDAO(val profile: JdbcProfile) {
       .map(_.deletedFlg)
       .update(true)
   }
+
+  def toDTO(sharesRow: SharesRow)
+           (implicit appConfig: AppConfig): ShareWrapper = ShareWrapper
+    .builder()
+    .fromRowParams(
+      sharesRow.figi,
+      sharesRow.lot,
+      sharesRow.currency,
+      sharesRow.name,
+      sharesRow.exchange,
+      sharesRow.startingPrice,
+      sharesRow.purchasePrice,
+      sharesRow.currentPrice,
+      sharesRow.exchangeUpdateDttm
+    ).build()
+}
+
+object ShareDAO {
+  type ShareType = (
+    Option[java.sql.Timestamp],
+      Int,
+      Int,
+      Short,
+      Boolean,
+      String,
+      String,
+      String,
+      String,
+      Option[scala.math.BigDecimal],
+      Option[scala.math.BigDecimal],
+      Option[scala.math.BigDecimal],
+      Option[scala.math.BigDecimal],
+      Option[scala.math.BigDecimal],
+      Option[scala.math.BigDecimal],
+      Option[scala.math.BigDecimal]
+    )
 }

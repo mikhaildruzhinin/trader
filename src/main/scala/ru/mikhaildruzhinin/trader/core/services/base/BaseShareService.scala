@@ -9,8 +9,6 @@ import scala.concurrent.Future
 trait BaseShareService {
   type EnrichedShareWrapper = (ShareWrapper, Option[BigDecimal])
 
-  def startUp(): Unit
-
   def getAvailableShares: Future[Seq[ShareWrapper]]
 
   def getUpdatedShares(shares: Seq[ShareWrapper],

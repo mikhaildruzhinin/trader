@@ -1,0 +1,23 @@
+create table trader.shares (
+	id bigserial not null,
+	exchange_update_dttm timestamp,
+	load_dttm timestamp not null default now(),
+	lot int4 not null,
+	quantity int4 not null,
+	type_cd int2 not null,
+	schema_version int2 not null default 1,
+	test_flg bool not null,
+	deleted_flg bool not null default false,
+	figi varchar(12) not null,
+	currency varchar(3) not null,
+	name varchar not null,
+	exchange varchar(30) not null,
+	starting_price numeric(15, 9),
+	purchase_price numeric(15, 9),
+	current_price numeric(15, 9),
+	uptrend_pct numeric(15, 9),
+	uptrend_abs numeric(15, 9),
+	roi numeric(15, 9),
+	profit numeric(15, 9),
+	constraint shares_pkey primary key (id)
+);
