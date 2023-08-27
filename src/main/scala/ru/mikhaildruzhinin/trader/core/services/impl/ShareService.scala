@@ -5,7 +5,7 @@ import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.TypeCode
 import ru.mikhaildruzhinin.trader.core.services.base.BaseShareService
-import ru.mikhaildruzhinin.trader.core.wrappers.{HistoricCandleWrapper, PriceWrapper, ShareWrapper}
+import ru.mikhaildruzhinin.trader.core.dto.{HistoricCandleDTO, PriceDTO, ShareDTO}
 import ru.mikhaildruzhinin.trader.database.Connection
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.tinkoff.piapi.contract.v1.{Quotation, Share}
@@ -24,18 +24,18 @@ class ShareService(investApiClient: BaseInvestApiClient,
   protected val log: Logger = Logger(getClass.getName)
 
   /**
-   * Wraps each share in a sequence in an instance of ShareWrapper class.
+   * Wraps each share in a sequence in an instance of ShareDTO class.
    *
    * @param shares sequence of shares
    * @return sequence of wrapped shares
    */
   //noinspection ScalaWeakerAccess
-  protected def wrapShares(shares: Seq[ShareWrapper],
-                           candles: Seq[HistoricCandleWrapper]): Future[Seq[ShareWrapper]] = Future {
+  protected def wrapShares(shares: Seq[ShareDTO],
+                           candles: Seq[HistoricCandleDTO]): Future[Seq[ShareDTO]] = Future {
     shares
       .zip(candles)
       .map(x => {
-        ShareWrapper
+        ShareDTO
           .builder()
           .fromWrapper(x._1)
           .withStartingPrice(x._2.open)
@@ -64,18 +64,18 @@ class ShareService(investApiClient: BaseInvestApiClient,
     })
   }
 
-  override def getAvailableShares: Future[Seq[ShareWrapper]] = for {
+  override def getAvailableShares: Future[Seq[ShareDTO]] = for {
     shares <- investApiClient.getShares
     filteredShares <- filterShares(shares)
-    wrappedShares <- Future { filteredShares.map(s => ShareWrapper.builder().fromShare(s).build()) }
+    wrappedShares <- Future { filteredShares.map(s => ShareDTO.builder().fromShare(s).build()) }
   } yield wrappedShares
 
-  override def getUpdatedShares(shares: Seq[ShareWrapper],
-                       candles: Seq[HistoricCandleWrapper]): Future[Seq[ShareWrapper]] = for {
+  override def getUpdatedShares(shares: Seq[ShareDTO],
+                                candles: Seq[HistoricCandleDTO]): Future[Seq[ShareDTO]] = for {
     wrappedShares <- wrapShares(shares, candles)
   } yield wrappedShares
 
-  override def persistNewShares(shares: Seq[ShareWrapper],
+  override def persistNewShares(shares: Seq[ShareDTO],
                                 typeCode: TypeCode): Future[Option[Int]] = for {
     _ <- connection.asyncRun(shareDAO.delete())
     insertedShares <- connection.asyncRun(
@@ -85,16 +85,16 @@ class ShareService(investApiClient: BaseInvestApiClient,
     )
   } yield insertedShares
 
-  override def getPersistedShares(typeCode: TypeCode): Future[Seq[ShareWrapper]] = for {
+  override def getPersistedShares(typeCode: TypeCode): Future[Seq[ShareDTO]] = for {
     shareModels <- connection.asyncRun(shareDAO.filterByTypeCode(typeCode.code))
     shares <- Future { shareModels.map( s => shareDAO.toDTO(s)) }
   } yield shares
 
-  override def updateCurrentPrices(shares: Seq[ShareWrapper],
-                                   prices: Seq[PriceWrapper]): Future[Seq[ShareWrapper]] = Future {
+  override def updateCurrentPrices(shares: Seq[ShareDTO],
+                                   prices: Seq[PriceDTO]): Future[Seq[ShareDTO]] = Future {
     prices.zip(shares)
       .map(x =>
-        ShareWrapper
+        ShareDTO
           .builder()
           .fromWrapper(x._2)
           .withCurrentPrice(Some(x._1.price))
@@ -103,11 +103,11 @@ class ShareService(investApiClient: BaseInvestApiClient,
       )
   }
 
-  override def updatePurchasePrices(shares: Seq[ShareWrapper],
-                                    prices: Seq[Option[Quotation]]): Future[Seq[ShareWrapper]] = Future {
+  override def updatePurchasePrices(shares: Seq[ShareDTO],
+                                    prices: Seq[Option[Quotation]]): Future[Seq[ShareDTO]] = Future {
     shares.zip(prices)
       .map(
-      x => ShareWrapper
+      x => ShareDTO
         .builder()
         .fromWrapper(x._1)
         .withPurchasePrice(x._2)
@@ -115,7 +115,7 @@ class ShareService(investApiClient: BaseInvestApiClient,
     )
   }
 
-  override def filterUptrend(shares: Seq[ShareWrapper]): Future[Seq[ShareWrapper]] = Future {
+  override def filterUptrend(shares: Seq[ShareDTO]): Future[Seq[ShareDTO]] = Future {
 
     shares
       .filter(_.uptrendPct >= Some(appConfig.shares.uptrendThresholdPct))
@@ -129,7 +129,7 @@ class ShareService(investApiClient: BaseInvestApiClient,
       .take(appConfig.shares.numUptrendShares)
   }
 
-  override def persistUpdatedShares(shares: Seq[ShareWrapper],
+  override def persistUpdatedShares(shares: Seq[ShareDTO],
                                     typeCode: TypeCode): Future[Seq[Int]] = connection.asyncRun(
     connection.databaseConfig
       .profile
@@ -140,7 +140,7 @@ class ShareService(investApiClient: BaseInvestApiClient,
       )
   )
 
-  override def enrichShares(shares: Seq[ShareWrapper]): Future[Seq[EnrichedShareWrapper]] = Future {
+  override def enrichShares(shares: Seq[ShareDTO]): Future[Seq[EnrichedShareWrapper]] = Future {
     shares.zip(shares.map(_.roi))
   }
 

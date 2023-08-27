@@ -1,4 +1,4 @@
-package ru.mikhaildruzhinin.trader.core.wrappers
+package ru.mikhaildruzhinin.trader.core.dto
 
 import com.google.protobuf.Timestamp
 import ru.mikhaildruzhinin.trader.config.AppConfig
@@ -14,16 +14,16 @@ sealed trait Currency extends ShareWrapperBuilderState
 sealed trait Name extends ShareWrapperBuilderState
 sealed trait Exchange extends ShareWrapperBuilderState
 
-class ShareWrapperBuilder[State <: ShareWrapperBuilderState] private[wrappers](figi: String = "empty",
-                                                                               lot: Int = -1,
-                                                                               currency: String = "empty",
-                                                                               name: String = "empty",
-                                                                               exchange: String = "empty",
-                                                                               startingPrice: Option[Quotation] = None,
-                                                                               purchasePrice: Option[Quotation] = None,
-                                                                               currentPrice: Option[Quotation] = None,
-                                                                               updateTime: Option[Timestamp] = None)
-                                                                              (implicit appConfig: AppConfig) {
+class ShareWrapperBuilder[State <: ShareWrapperBuilderState] private[dto](figi: String = "empty",
+                                                                          lot: Int = -1,
+                                                                          currency: String = "empty",
+                                                                          name: String = "empty",
+                                                                          exchange: String = "empty",
+                                                                          startingPrice: Option[Quotation] = None,
+                                                                          purchasePrice: Option[Quotation] = None,
+                                                                          currentPrice: Option[Quotation] = None,
+                                                                          updateTime: Option[Timestamp] = None)
+                                                                         (implicit appConfig: AppConfig) {
 
   private type FullShareWrapper = Empty with Figi with Lot with Currency with Name with Exchange
 
@@ -47,7 +47,7 @@ class ShareWrapperBuilder[State <: ShareWrapperBuilderState] private[wrappers](f
     updateTime
   )
 
-  def fromWrapper(shareWrapper: ShareWrapper): ShareWrapperBuilder[Empty
+  def fromWrapper(shareWrapper: ShareDTO): ShareWrapperBuilder[Empty
     with Figi
     with Lot
     with Currency
@@ -140,7 +140,7 @@ class ShareWrapperBuilder[State <: ShareWrapperBuilderState] private[wrappers](f
     updateTime = updateTime
   )
 
-  def build()(implicit ev: State =:= FullShareWrapper): ShareWrapper = ShareWrapper(
+  def build()(implicit ev: State =:= FullShareWrapper): ShareDTO = ShareDTO(
     figi,
     lot,
     currency,

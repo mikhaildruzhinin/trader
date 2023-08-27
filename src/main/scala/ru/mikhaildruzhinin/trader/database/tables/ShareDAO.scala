@@ -1,10 +1,11 @@
 package ru.mikhaildruzhinin.trader.database.tables
 
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.core.wrappers.ShareWrapper
+import ru.mikhaildruzhinin.trader.core.dto.ShareDTO
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO.ShareType
 import ru.mikhaildruzhinin.trader.database.tables.codegen.{SharesTable, Tables}
 import slick.jdbc.JdbcProfile
+import slick.sql.{FixedSqlAction, FixedSqlStreamingAction}
 
 import java.sql.Timestamp
 import java.time.LocalDate
@@ -33,9 +34,9 @@ class ShareDAO(val profile: JdbcProfile) extends SharesTable with Tables {
     (start, end)
   }
 
-  def createIfNotExists = table.schema.createIfNotExists
+  def createIfNotExists: FixedSqlAction[Unit, NoStream, Effect.Schema] = table.schema.createIfNotExists
 
-  def insert(shares: Seq[ShareType]) = {
+  def insert(shares: Seq[ShareType]): FixedSqlAction[Option[Int], NoStream, Effect.Write] = {
     table
       .map(
         s => (
@@ -59,10 +60,10 @@ class ShareDAO(val profile: JdbcProfile) extends SharesTable with Tables {
       ) ++= shares
   }
 
-  def selectAll = table.result
+  def selectAll: FixedSqlStreamingAction[Seq[SharesRow], SharesRow, Effect.Read] = table.result
 
   def filterByTypeCode(typeCode: Int)
-                      (implicit appConfig: AppConfig) = {
+                      (implicit appConfig: AppConfig): FixedSqlStreamingAction[Seq[SharesRow], SharesRow, Effect.Read] = {
 
     val (start: Timestamp, end: Timestamp) = getDayInterval
 
@@ -78,7 +79,7 @@ class ShareDAO(val profile: JdbcProfile) extends SharesTable with Tables {
   }
 
   def update(figi: String,
-             share: ShareType) = {
+             share: ShareType): FixedSqlAction[Int, NoStream, Effect.Write] = {
 
     val (start: Timestamp, end: Timestamp) = getDayInterval
 
@@ -112,7 +113,7 @@ class ShareDAO(val profile: JdbcProfile) extends SharesTable with Tables {
       .update(share)
   }
 
-  def updateTypeCode(figis: Seq[String], typeCode: Int) = {
+  def updateTypeCode(figis: Seq[String], typeCode: Int): FixedSqlAction[Int, NoStream, Effect.Write] = {
     val (start: Timestamp, end: Timestamp) = getDayInterval
 
     table
@@ -126,7 +127,7 @@ class ShareDAO(val profile: JdbcProfile) extends SharesTable with Tables {
       .update(typeCode.toShort)
   }
 
-  def delete() = {
+  def delete(): FixedSqlAction[Int, NoStream, Effect.Write] = {
     val (start: Timestamp, end: Timestamp) = getDayInterval
 
     table
@@ -140,7 +141,7 @@ class ShareDAO(val profile: JdbcProfile) extends SharesTable with Tables {
   }
 
   def toDTO(sharesRow: SharesRow)
-           (implicit appConfig: AppConfig): ShareWrapper = ShareWrapper
+           (implicit appConfig: AppConfig): ShareDTO = ShareDTO
     .builder()
     .fromRowParams(
       sharesRow.figi,

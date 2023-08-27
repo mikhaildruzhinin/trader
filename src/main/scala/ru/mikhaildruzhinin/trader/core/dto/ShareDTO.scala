@@ -1,4 +1,4 @@
-package ru.mikhaildruzhinin.trader.core.wrappers
+package ru.mikhaildruzhinin.trader.core.dto
 
 import com.google.protobuf.Timestamp
 import ru.mikhaildruzhinin.trader.config.AppConfig
@@ -10,16 +10,16 @@ import ru.tinkoff.piapi.core.utils.MapperUtils._
 
 import scala.math.BigDecimal.{RoundingMode, javaBigDecimal2bigDecimal}
 
-case class ShareWrapper private (figi: String,
-                                 lot: Int,
-                                 currency: String,
-                                 name: String,
-                                 exchange: String,
-                                 startingPrice: Option[Quotation] = None,
-                                 purchasePrice: Option[Quotation] = None,
-                                 currentPrice: Option[Quotation] = None,
-                                 updateTime: Option[Timestamp] = None)
-                                 (implicit appConfig: AppConfig) {
+case class ShareDTO private(figi: String,
+                            lot: Int,
+                            currency: String,
+                            name: String,
+                            exchange: String,
+                            startingPrice: Option[Quotation] = None,
+                            purchasePrice: Option[Quotation] = None,
+                            currentPrice: Option[Quotation] = None,
+                            updateTime: Option[Timestamp] = None)
+                           (implicit appConfig: AppConfig) {
 
   lazy val uptrendPct: Option[BigDecimal] = {
     val uptrendPctNoTax: Option[BigDecimal] = (startingPrice, currentPrice) match {
@@ -136,6 +136,6 @@ case class ShareWrapper private (figi: String,
   }
 }
 
-object ShareWrapper {
+object ShareDTO {
   def builder()(implicit appConfig: AppConfig): ShareWrapperBuilder[Empty] = new ShareWrapperBuilder()
 }
