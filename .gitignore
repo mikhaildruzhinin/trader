@@ -42,5 +42,5 @@ bin/
 
 # project-specific
 .env
-db/
+pg/
 jars/
