@@ -9,7 +9,7 @@ import scala.concurrent.Future
 object Monitor {
   val log: Logger = Logger(getClass.getName)
 
-  def apply(services: Services): Future[Unit] = for {
+  def apply(services: Services): Future[Int] = for {
     shares <- services.shareService.getPersistedShares(TypeCode.Purchased)
     prices <- services.priceService.getCurrentPrices(shares)
     updatedShares <- services.shareService.updateCurrentPrices(shares, prices)
@@ -18,5 +18,5 @@ object Monitor {
     soldSharesNum <- services.shareService.persistUpdatedShares(sell.map(_._1), TypeCode.Sold)
     _ <- Future(log.info(s"Sold: ${soldSharesNum.sum}"))
     _ <- services.shareService.persistUpdatedShares(keep.map(_._1), TypeCode.Purchased)
-  } yield ()
+  } yield soldSharesNum.sum
 }
