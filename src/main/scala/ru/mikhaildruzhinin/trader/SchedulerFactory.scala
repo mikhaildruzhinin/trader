@@ -1,13 +1,13 @@
 package ru.mikhaildruzhinin.trader
 
 import com.github.kagkarlsson.scheduler.Scheduler
-import com.github.kagkarlsson.scheduler.task.helper.{OneTimeTask, RecurringTask, Tasks}
+import com.github.kagkarlsson.scheduler.task.helper.{RecurringTask, Tasks}
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules
 import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.core.{Monitor, Purchase}
 import ru.mikhaildruzhinin.trader.core.handlers.SellHandler
 import ru.mikhaildruzhinin.trader.core.services.Services
+import ru.mikhaildruzhinin.trader.core.{Monitor, Purchase}
 import ru.mikhaildruzhinin.trader.database.Connection
 
 import java.time.ZoneId
@@ -17,10 +17,9 @@ object SchedulerFactory {
            (implicit appConfig: AppConfig,
             investApiClient: BaseInvestApiClient,
             connection: Connection): Scheduler = {
-
-    val startUpTask: OneTimeTask[Void] = Tasks
-      .oneTime("start-up")
-      .execute((_, _) => services.shareService.startUp())
+//    val startUpTask: OneTimeTask[Void] = Tasks
+//      .oneTime("start-up")
+//      .execute((_, _) => services.shareService.startUp())
 
     val purchaseTask: RecurringTask[Void] = Tasks
       .recurring(
@@ -51,10 +50,7 @@ object SchedulerFactory {
       ).execute((_, _) => SellHandler())
 
     Scheduler
-      .create(
-        appConfig.slick.db.properties.dataSource,
-        startUpTask
-      )
+      .create(appConfig.slick.db.properties.dataSource)
       .tableName(appConfig.scheduler.tableName)
       .startTasks(
         purchaseTask,

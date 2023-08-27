@@ -29,4 +29,7 @@ trait Components {
   private lazy val shareDAO: ShareDAO = new ShareDAO(connection.databaseConfig.profile)
   private lazy val services = Services(investApiClient, connection, shareDAO)
   lazy val scheduler: Scheduler = SchedulerFactory(services)
+
+  // TODO: move startUp to flyway migrations
+  services.shareService.startUp()
 }
