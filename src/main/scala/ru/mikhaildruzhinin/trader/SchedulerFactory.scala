@@ -3,23 +3,15 @@ package ru.mikhaildruzhinin.trader
 import com.github.kagkarlsson.scheduler.Scheduler
 import com.github.kagkarlsson.scheduler.task.helper.{RecurringTask, Tasks}
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules
-import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.core.handlers.SellHandler
 import ru.mikhaildruzhinin.trader.core.services.Services
-import ru.mikhaildruzhinin.trader.core.{Monitor, Purchase}
-import ru.mikhaildruzhinin.trader.database.Connection
+import ru.mikhaildruzhinin.trader.core.{Monitor, Purchase, Sell}
 
 import java.time.ZoneId
 
 object SchedulerFactory {
   def apply(services: Services)
-           (implicit appConfig: AppConfig,
-            investApiClient: BaseInvestApiClient,
-            connection: Connection): Scheduler = {
-//    val startUpTask: OneTimeTask[Void] = Tasks
-//      .oneTime("start-up")
-//      .execute((_, _) => services.shareService.startUp())
+           (implicit appConfig: AppConfig): Scheduler = {
 
     val purchaseTask: RecurringTask[Void] = Tasks
       .recurring(
@@ -47,7 +39,7 @@ object SchedulerFactory {
           "0 0 13 * * *",
           ZoneId.of("UTC")
         )
-      ).execute((_, _) => SellHandler())
+      ).execute((_, _) => Sell(services))
 
     Scheduler
       .create(appConfig.slick.db.properties.dataSource)

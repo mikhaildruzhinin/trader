@@ -24,8 +24,8 @@ trait Components {
     case InvestApiMode.Sandbox => InvestApi.createSandbox(appConfig.tinkoffInvestApi.token)
   }
 
-  implicit lazy val investApiClient: BaseInvestApiClient = ResilientInvestApiClient(investApi)
-  implicit lazy val connection: Connection = DatabaseConnection
+  lazy val investApiClient: BaseInvestApiClient = ResilientInvestApiClient(investApi)
+  lazy val connection: Connection = DatabaseConnection
   private lazy val shareDAO: ShareDAO = new ShareDAO(connection.databaseConfig.profile)
   private lazy val services = Services(investApiClient, connection, shareDAO)
   lazy val scheduler: Scheduler = SchedulerFactory(services)
