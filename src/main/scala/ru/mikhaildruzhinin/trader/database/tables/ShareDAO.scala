@@ -14,18 +14,18 @@ import java.time.temporal.ChronoUnit
 class ShareDAO(val profile: JdbcProfile) extends SharesTable with Tables {
   import profile.api._
 
-  class SS(_tableTag: Tag) extends Shares(_tableTag) {
+  //noinspection ScalaWeakerAccess
+  class S(_tableTag: Tag) extends Shares(_tableTag) {
     override val loadDttm: Rep[java.sql.Timestamp] = column[java.sql.Timestamp](
       "load_dttm",
       O.SqlType("timestamp default now()")
     )
   }
 
-  private lazy val table = TableQuery[SS]
+  private lazy val table = TableQuery[S]
 
   private def getDayInterval: (Timestamp, Timestamp) = {
     val start: Timestamp = Timestamp.valueOf(LocalDate.now.atStartOfDay)
-//      .toInstant(ZoneOffset.UTC)
 
     val end: Timestamp = Timestamp.valueOf(
       LocalDate.now.plus(1, ChronoUnit.DAYS).atStartOfDay
@@ -158,7 +158,7 @@ class ShareDAO(val profile: JdbcProfile) extends SharesTable with Tables {
 
 object ShareDAO {
   type ShareType = (
-    Option[java.sql.Timestamp],
+    Option[Timestamp],
       Int,
       Int,
       Short,
@@ -167,12 +167,12 @@ object ShareDAO {
       String,
       String,
       String,
-      Option[scala.math.BigDecimal],
-      Option[scala.math.BigDecimal],
-      Option[scala.math.BigDecimal],
-      Option[scala.math.BigDecimal],
-      Option[scala.math.BigDecimal],
-      Option[scala.math.BigDecimal],
-      Option[scala.math.BigDecimal]
+      Option[BigDecimal],
+      Option[BigDecimal],
+      Option[BigDecimal],
+      Option[BigDecimal],
+      Option[BigDecimal],
+      Option[BigDecimal],
+      Option[BigDecimal]
     )
 }
