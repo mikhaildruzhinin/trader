@@ -15,4 +15,5 @@ case class SharesConfig(pctScale: Int,
                         uptrendThresholdPct: Int,
                         numUptrendShares: Int,
                         incomeTaxPct: Int,
-                        totalPriceLimit: Int)
+                        totalPriceLimit: Int,
+                        stopLossPct: Int)

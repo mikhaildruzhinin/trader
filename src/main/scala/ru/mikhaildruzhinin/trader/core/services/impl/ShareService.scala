@@ -146,7 +146,7 @@ class ShareService(investApiClient: BaseInvestApiClient,
 
   override def partitionEnrichedSharesShares(enrichedShares: Seq[EnrichedShareWrapper]): Future[(Seq[EnrichedShareWrapper], Seq[EnrichedShareWrapper])] = Future {
     enrichedShares.partition(s =>
-      s._1.roi <= Some(BigDecimal(0)) && s._1.roi < s._2
+      s._1.roi <= Some(BigDecimal(appConfig.shares.stopLossPct)) && s._1.roi < s._2
     )
   }
 }

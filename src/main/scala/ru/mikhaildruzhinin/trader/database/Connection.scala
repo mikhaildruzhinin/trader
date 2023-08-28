@@ -1,12 +1,11 @@
 package ru.mikhaildruzhinin.trader.database
 
 import com.typesafe.config.Config
-import ru.mikhaildruzhinin.trader.config.AppConfig
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIO
 import slick.jdbc.JdbcProfile
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 trait Connection {
   val databaseConfig: DatabaseConfig[JdbcProfile]
