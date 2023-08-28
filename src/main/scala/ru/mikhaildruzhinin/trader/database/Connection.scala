@@ -11,15 +11,9 @@ import scala.concurrent.{Await, Future}
 trait Connection {
   val databaseConfig: DatabaseConfig[JdbcProfile]
 
-  def asyncRun[T](actions: DBIO[T]): Future[T] = databaseConfig
+  def run[T](actions: DBIO[T]): Future[T] = databaseConfig
     .db
     .run(actions)
-
-  def run[T](action: DBIO[T])(implicit appConfig: AppConfig): Vector[T] = Await
-    .result(
-      databaseConfig.db.run(DBIO.sequence(Vector(action))),
-      appConfig.slick.await.duration
-    )
 }
 
 object Connection {
