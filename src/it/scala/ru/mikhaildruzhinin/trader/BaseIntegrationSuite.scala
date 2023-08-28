@@ -68,13 +68,11 @@ abstract class BaseIntegrationSuite extends FixtureAnyFunSuite {
     val dataSource: PGSimpleDataSource = appConfig.slick.db.properties.dataSource
     dataSource.setPortNumbers(Array(port))
 
-    val flyway: Flyway = Flyway
-      .configure()
+    Flyway.configure()
       .dataSource(dataSource)
       .schemas("trader")
       .load()
-
-    flyway.migrate()
+      .migrate()
 
     try {
       withFixture(test.toNoArgTest(

@@ -1,4 +1,6 @@
 import com.typesafe.config.ConfigFactory
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 
 val conf = ConfigFactory
   .parseFile(new File("src/main/resources/application.conf"))
@@ -32,12 +34,12 @@ libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick" % "3.4.1",
   "com.typesafe.slick" %% "slick-hikaricp" % "3.4.1",
   "io.github.resilience4j" % "resilience4j-ratelimiter" % "1.7.0",
+  "org.flywaydb" % "flyway-core" % "9.16.0",
   "org.postgresql" % "postgresql" % "42.6.0",
-  "ru.tinkoff.piapi" % "java-sdk-core" % "1.5",
   "org.scalatest" %% "scalatest" % "3.2.16" % "it,test",
-  "org.flywaydb" % "flyway-core" % "9.16.0" % "it",
   "org.testcontainers" % "postgresql" % testcontainersVersion % "it",
-  "org.testcontainers" % "testcontainers" % testcontainersVersion % "it"
+  "org.testcontainers" % "testcontainers" % testcontainersVersion % "it",
+  "ru.tinkoff.piapi" % "java-sdk-core" % "1.5"
 )
 
 assembly / artifact := {
@@ -80,8 +82,8 @@ enablePlugins(CodegenPlugin)
 slickCodegenDatabaseUrl := dbUrl
 slickCodegenDatabaseUser := user
 slickCodegenDatabasePassword := password
-slickCodegenDriver :=  slick.jdbc.PostgresProfile
+slickCodegenDriver := DatabaseConfig.forConfig[JdbcProfile]("slick", conf).profile
 slickCodegenJdbcDriver := "org.postgresql.Driver"
 slickCodegenOutputPackage := "ru.mikhaildruzhinin.trader.database.tables.codegen"
-slickCodegenOutputDir := (sourceDirectory).value / "main" / "scala"
+slickCodegenOutputDir := sourceDirectory.value / "main" / "scala"
 slickCodegenOutputToMultipleFiles := true
