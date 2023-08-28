@@ -29,7 +29,6 @@ libraryDependencies ++= Seq(
   "com.github.kagkarlsson" % "db-scheduler" % "12.4.0",
   "com.github.pureconfig" %% "pureconfig" % "0.17.2",
   "com.softwaremill.macwire" % "macros_2.13" % "2.5.9",
-  "com.softwaremill.retry" %% "retry" % "0.3.6",
   "com.typesafe" % "config" % "1.4.2",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
   "com.typesafe.slick" %% "slick" % "3.4.1",
