@@ -44,10 +44,10 @@ object Purchase {
     _ <- Future(log.info(s"Purchased: ${numPurchasedShares.sum}"))
   } yield (purchasedShares, numPurchasedShares.sum)
 
-  def apply(services: Services): Future[Unit] = for {
+  def apply(services: Services): Future[Int] = for {
     (availableShares, _) <- persistAvailableShares(services)
     (updatedShares, _) <- persistUpdatedShares(services, availableShares)
     (uptrendShares, _) <- persistUptrendShares(services, updatedShares)
-    (purchasedShares, numPurchasedShares) <- persistPurchasedShares(services, uptrendShares)
+    (_, numPurchasedShares) <- persistPurchasedShares(services, uptrendShares)
   } yield numPurchasedShares
 }
