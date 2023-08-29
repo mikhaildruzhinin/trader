@@ -16,4 +16,5 @@ case class SharesConfig(pctScale: Int,
                         numUptrendShares: Int,
                         incomeTaxPct: Int,
                         totalPriceLimit: Int,
-                        stopLossPct: Int)
+                        stopLossPct: Int,
+                        takeProfitPct: Int)
