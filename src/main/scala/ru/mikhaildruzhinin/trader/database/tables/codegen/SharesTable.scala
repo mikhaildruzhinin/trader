@@ -15,10 +15,10 @@ trait SharesTable {
    *  @param lot Database column lot SqlType(int4)
    *  @param quantity Database column quantity SqlType(int4)
    *  @param typeCd Database column type_cd SqlType(int2)
-   *  @param schemaVersion Database column schema_version SqlType(int2), Default(1)
+   *  @param schemaVersion Database column schema_version SqlType(int2), Default(2)
    *  @param testFlg Database column test_flg SqlType(bool)
    *  @param deletedFlg Database column deleted_flg SqlType(bool), Default(false)
-   *  @param figi Database column figi SqlType(varchar), Length(12,true)
+   *  @param figi Database column figi SqlType(bpchar), Length(12,false)
    *  @param currency Database column currency SqlType(varchar), Length(3,true)
    *  @param name Database column name SqlType(varchar)
    *  @param exchange Database column exchange SqlType(varchar), Length(30,true)
@@ -29,7 +29,7 @@ trait SharesTable {
    *  @param uptrendAbs Database column uptrend_abs SqlType(numeric), Default(None)
    *  @param roi Database column roi SqlType(numeric), Default(None)
    *  @param profit Database column profit SqlType(numeric), Default(None) */
-  case class SharesRow(id: Long, exchangeUpdateDttm: Option[java.sql.Timestamp] = None, loadDttm: java.sql.Timestamp, lot: Int, quantity: Int, typeCd: Short, schemaVersion: Short = 1, testFlg: Boolean, deletedFlg: Boolean = false, figi: String, currency: String, name: String, exchange: String, startingPrice: Option[scala.math.BigDecimal] = None, purchasePrice: Option[scala.math.BigDecimal] = None, currentPrice: Option[scala.math.BigDecimal] = None, uptrendPct: Option[scala.math.BigDecimal] = None, uptrendAbs: Option[scala.math.BigDecimal] = None, roi: Option[scala.math.BigDecimal] = None, profit: Option[scala.math.BigDecimal] = None)
+  case class SharesRow(id: Long, exchangeUpdateDttm: Option[java.sql.Timestamp] = None, loadDttm: java.sql.Timestamp, lot: Int, quantity: Int, typeCd: Short, schemaVersion: Short = 2, testFlg: Boolean, deletedFlg: Boolean = false, figi: String, currency: String, name: String, exchange: String, startingPrice: Option[scala.math.BigDecimal] = None, purchasePrice: Option[scala.math.BigDecimal] = None, currentPrice: Option[scala.math.BigDecimal] = None, uptrendPct: Option[scala.math.BigDecimal] = None, uptrendAbs: Option[scala.math.BigDecimal] = None, roi: Option[scala.math.BigDecimal] = None, profit: Option[scala.math.BigDecimal] = None)
   /** GetResult implicit for fetching SharesRow objects using plain SQL queries */
   implicit def GetResultSharesRow(implicit e0: GR[Long], e1: GR[Option[java.sql.Timestamp]], e2: GR[java.sql.Timestamp], e3: GR[Int], e4: GR[Short], e5: GR[Boolean], e6: GR[String], e7: GR[Option[scala.math.BigDecimal]]): GR[SharesRow] = GR{
     prs => import prs._
@@ -53,14 +53,14 @@ trait SharesTable {
     val quantity: Rep[Int] = column[Int]("quantity")
     /** Database column type_cd SqlType(int2) */
     val typeCd: Rep[Short] = column[Short]("type_cd")
-    /** Database column schema_version SqlType(int2), Default(1) */
-    val schemaVersion: Rep[Short] = column[Short]("schema_version", O.Default(1))
+    /** Database column schema_version SqlType(int2), Default(2) */
+    val schemaVersion: Rep[Short] = column[Short]("schema_version", O.Default(2))
     /** Database column test_flg SqlType(bool) */
     val testFlg: Rep[Boolean] = column[Boolean]("test_flg")
     /** Database column deleted_flg SqlType(bool), Default(false) */
     val deletedFlg: Rep[Boolean] = column[Boolean]("deleted_flg", O.Default(false))
-    /** Database column figi SqlType(varchar), Length(12,true) */
-    val figi: Rep[String] = column[String]("figi", O.Length(12,varying=true))
+    /** Database column figi SqlType(bpchar), Length(12,false) */
+    val figi: Rep[String] = column[String]("figi", O.Length(12,varying=false))
     /** Database column currency SqlType(varchar), Length(3,true) */
     val currency: Rep[String] = column[String]("currency", O.Length(3,varying=true))
     /** Database column name SqlType(varchar) */
