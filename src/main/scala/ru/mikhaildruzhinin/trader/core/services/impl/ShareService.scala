@@ -78,12 +78,11 @@ class ShareService(investApiClient: BaseInvestApiClient,
   override def persistNewShares(shares: Seq[ShareDTO],
                                 typeCode: TypeCode): Future[Option[Int]] = for {
     _ <- shareDAO.delete()
-    insertedShares <- shareDAO.insert(shares.map(_.toShareType(typeCode)))
+    insertedShares <- shareDAO.insert(shares, typeCode)
   } yield insertedShares
 
   override def getPersistedShares(typeCode: TypeCode): Future[Seq[ShareDTO]] = for {
-    shareModels <- shareDAO.filterByTypeCode(typeCode.code, appConfig.testFlg)
-    shares <- Future { shareModels.map( s => shareDAO.toDTO(s)) }
+    shares <- shareDAO.filterByTypeCode(typeCode.code, appConfig.testFlg)
   } yield shares
 
   override def updateCurrentPrices(shares: Seq[ShareDTO],

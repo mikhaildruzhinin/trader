@@ -6,14 +6,18 @@ import ru.mikhaildruzhinin.trader.core.dto.ShareDTO
 import ru.mikhaildruzhinin.trader.database.Connection
 import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO
 import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO.ShareType
+import ru.mikhaildruzhinin.trader.database.tables.codegen.{SharesTable, Tables}
 import slick.jdbc.JdbcProfile
 
 import java.sql.Timestamp
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ShareDAO(val connection: Connection) extends BaseShareDAO {
+final class ShareDAO(val connection: Connection)
+              (implicit appConfig: AppConfig) extends BaseShareDAO with SharesTable with Tables {
+
   override val profile: JdbcProfile = connection.databaseConfig.profile
 
   import connection.databaseConfig.profile.api._
@@ -40,31 +44,36 @@ class ShareDAO(val connection: Connection) extends BaseShareDAO {
 
   override def createIfNotExists: Future[Unit] = connection.run(table.schema.createIfNotExists)
 
-  override def insert(shares: Seq[ShareType]): Future[Option[Int]] = connection.run(
-    table.map(s => (
-      s.exchangeUpdateDttm,
-      s.lot,
-      s.quantity,
-      s.typeCd,
-      s.testFlg,
-      s.figi,
-      s.currency,
-      s.name,
-      s.exchange,
-      s.startingPrice,
-      s.purchasePrice,
-      s.currentPrice,
-      s.uptrendPct,
-      s.uptrendAbs,
-      s.roi,
-      s.profit
-    )) ++= shares
+  override def insert(shares: Seq[ShareDTO],
+                      typeCode: TypeCode): Future[Option[Int]] = {
+    connection.run(
+      table.map(s => (
+        s.exchangeUpdateDttm,
+        s.lot,
+        s.quantity,
+        s.typeCd,
+        s.testFlg,
+        s.figi,
+        s.currency,
+        s.name,
+        s.exchange,
+        s.startingPrice,
+        s.purchasePrice,
+        s.currentPrice,
+        s.uptrendPct,
+        s.uptrendAbs,
+        s.roi,
+        s.profit
+      )) ++= shares.map(_.toShareType(typeCode))
     )
+  }
 
-  override def selectAll: Future[Seq[SharesRow]] = connection.run(table.result)
+  override def selectAll: Future[Seq[ShareDTO]] = connection
+    .run(table.result)
+    .map(f => f.map(s => toDTO(s)))
 
   override def filterByTypeCode(typeCode: Int,
-                       testFlg: Boolean): Future[Seq[SharesRow]] = {
+                                testFlg: Boolean): Future[Seq[ShareDTO]] = {
 
     val (start: Timestamp, end: Timestamp) = getDayInterval
 
@@ -76,7 +85,7 @@ class ShareDAO(val connection: Connection) extends BaseShareDAO {
           s.typeCd === typeCode.toShort &&
           s.deletedFlg === false
       ).result
-    )
+    ).map(f => f.map(s => toDTO(s)))
   }
 
   private def updateRow(figi: String,
@@ -151,8 +160,7 @@ class ShareDAO(val connection: Connection) extends BaseShareDAO {
     )
   }
 
-  override def toDTO(sharesRow: SharesRow)
-           (implicit appConfig: AppConfig): ShareDTO = ShareDTO
+  private def toDTO(sharesRow: SharesRow): ShareDTO = ShareDTO
     .builder()
     .fromRowParams(
       sharesRow.figi,

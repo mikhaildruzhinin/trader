@@ -36,6 +36,7 @@ libraryDependencies ++= Seq(
   "io.github.resilience4j" % "resilience4j-ratelimiter" % "1.7.0",
   "org.flywaydb" % "flyway-core" % "9.16.0",
   "org.postgresql" % "postgresql" % "42.6.0",
+  "org.scalamock" %% "scalamock" % "5.2.0" % "test",
   "org.scalatest" %% "scalatest" % "3.2.16" % "it,test",
   "org.testcontainers" % "postgresql" % testcontainersVersion % "it",
   "org.testcontainers" % "testcontainers" % testcontainersVersion % "it",
@@ -60,6 +61,8 @@ assembly / assemblyShadeRules := Seq(
     .rename("shapeless.**" -> "new_shapeless.@1")
     .inAll
 )
+
+//assembly / test := (Test / test).value
 
 IntegrationTest / fork := true
 
