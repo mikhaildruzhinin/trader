@@ -2,23 +2,13 @@ package ru.mikhaildruzhinin.trader.config
 
 import org.postgresql.ds.PGSimpleDataSource
 
-import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.{Duration, FiniteDuration}
-
 case class SlickConfig(profile: String,
-                       db: DatabaseConfig,
-                       await: AwaitDurationConfig)
+                       db: DatabaseConfig)
 
 case class DatabaseConfig(connectionPool: String,
                           dataSourceClass: String,
                           properties: PropertiesConfig,
-                          numThreads: Int = 10)
-
-case class AwaitDurationConfig(length: Int,
-                               timeUnit: TimeUnit) {
-
-  val duration: FiniteDuration = Duration(length, timeUnit)
-}
+                          numThreads: Int)
 
 case class PropertiesConfig(serverName: String,
                             portNumber: Int,
