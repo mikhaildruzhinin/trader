@@ -62,8 +62,8 @@ class ShareDAO(val profile: JdbcProfile) extends SharesTable with Tables {
 
   def selectAll: FixedSqlStreamingAction[Seq[SharesRow], SharesRow, Effect.Read] = table.result
 
-  def filterByTypeCode(typeCode: Int)
-                      (implicit appConfig: AppConfig): FixedSqlStreamingAction[Seq[SharesRow], SharesRow, Effect.Read] = {
+  def filterByTypeCode(typeCode: Int,
+                       testFlg: Boolean): FixedSqlStreamingAction[Seq[SharesRow], SharesRow, Effect.Read] = {
 
     val (start: Timestamp, end: Timestamp) = getDayInterval
 
@@ -71,7 +71,7 @@ class ShareDAO(val profile: JdbcProfile) extends SharesTable with Tables {
       .filter(s =>
         s.loadDttm >= start &&
           s.loadDttm < end &&
-          s.testFlg === appConfig.testFlg &&
+          s.testFlg === testFlg &&
           s.typeCd === typeCode.toShort &&
           s.deletedFlg === false
       )

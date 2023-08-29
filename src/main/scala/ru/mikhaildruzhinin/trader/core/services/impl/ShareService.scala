@@ -86,7 +86,7 @@ class ShareService(investApiClient: BaseInvestApiClient,
   } yield insertedShares
 
   override def getPersistedShares(typeCode: TypeCode): Future[Seq[ShareDTO]] = for {
-    shareModels <- connection.run(shareDAO.filterByTypeCode(typeCode.code))
+    shareModels <- connection.run(shareDAO.filterByTypeCode(typeCode.code, appConfig.testFlg))
     shares <- Future { shareModels.map( s => shareDAO.toDTO(s)) }
   } yield shares
 
