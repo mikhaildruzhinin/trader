@@ -43,6 +43,8 @@ libraryDependencies ++= Seq(
   "ru.tinkoff.piapi" % "java-sdk-core" % "1.5"
 )
 
+Test / fork := true
+
 assembly / artifact := {
   val art = (assembly / artifact).value
   art.withClassifier(Some("assembly"))
@@ -62,7 +64,7 @@ assembly / assemblyShadeRules := Seq(
     .inAll
 )
 
-//assembly / test := (Test / test).value
+assembly / test := (Test / test).value
 
 IntegrationTest / fork := true
 
