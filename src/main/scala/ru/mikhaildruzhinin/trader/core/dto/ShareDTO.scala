@@ -137,5 +137,5 @@ case class ShareDTO private(figi: String,
 }
 
 object ShareDTO {
-  def builder()(implicit appConfig: AppConfig): ShareWrapperBuilder[Empty] = new ShareWrapperBuilder()
+  def builder()(implicit appConfig: AppConfig): ShareDTOBuilder[Empty] = new ShareDTOBuilder()
 }

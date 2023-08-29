@@ -14,16 +14,16 @@ sealed trait Currency extends ShareWrapperBuilderState
 sealed trait Name extends ShareWrapperBuilderState
 sealed trait Exchange extends ShareWrapperBuilderState
 
-class ShareWrapperBuilder[State <: ShareWrapperBuilderState] private[dto](figi: String = "empty",
-                                                                          lot: Int = -1,
-                                                                          currency: String = "empty",
-                                                                          name: String = "empty",
-                                                                          exchange: String = "empty",
-                                                                          startingPrice: Option[Quotation] = None,
-                                                                          purchasePrice: Option[Quotation] = None,
-                                                                          currentPrice: Option[Quotation] = None,
-                                                                          updateTime: Option[Timestamp] = None)
-                                                                         (implicit appConfig: AppConfig) {
+class ShareDTOBuilder[State <: ShareWrapperBuilderState] private[dto](figi: String = "empty",
+                                                                      lot: Int = -1,
+                                                                      currency: String = "empty",
+                                                                      name: String = "empty",
+                                                                      exchange: String = "empty",
+                                                                      startingPrice: Option[Quotation] = None,
+                                                                      purchasePrice: Option[Quotation] = None,
+                                                                      currentPrice: Option[Quotation] = None,
+                                                                      updateTime: Option[Timestamp] = None)
+                                                                     (implicit appConfig: AppConfig) {
 
   private type FullShareWrapper = Empty with Figi with Lot with Currency with Name with Exchange
 
@@ -35,7 +35,7 @@ class ShareWrapperBuilder[State <: ShareWrapperBuilderState] private[dto](figi: 
                    startingPrice: Option[Quotation] = this.startingPrice,
                    purchasePrice: Option[Quotation] = this.purchasePrice,
                    currentPrice: Option[Quotation] = this.currentPrice,
-                   updateTime: Option[Timestamp] = this.updateTime): ShareWrapperBuilder[State] = new ShareWrapperBuilder(
+                   updateTime: Option[Timestamp] = this.updateTime): ShareDTOBuilder[State] = new ShareDTOBuilder(
     figi,
     lot,
     currency,
@@ -47,13 +47,13 @@ class ShareWrapperBuilder[State <: ShareWrapperBuilderState] private[dto](figi: 
     updateTime
   )
 
-  def fromWrapper(shareWrapper: ShareDTO): ShareWrapperBuilder[Empty
+  def fromWrapper(shareWrapper: ShareDTO): ShareDTOBuilder[Empty
     with Figi
     with Lot
     with Currency
     with Name
     with Exchange
-  ] = new ShareWrapperBuilder(
+  ] = new ShareDTOBuilder(
     shareWrapper.figi,
     shareWrapper.lot,
     shareWrapper.currency,
@@ -65,13 +65,13 @@ class ShareWrapperBuilder[State <: ShareWrapperBuilderState] private[dto](figi: 
     shareWrapper.updateTime
   )
 
-  def fromShare(share: Share): ShareWrapperBuilder[Empty
+  def fromShare(share: Share): ShareDTOBuilder[Empty
     with Figi
     with Lot
     with Currency
     with Name
     with Exchange
-  ] = new ShareWrapperBuilder(
+  ] = new ShareDTOBuilder(
     figi = share.getFigi,
     lot = share.getLot,
     currency = share.getCurrency,
@@ -87,7 +87,7 @@ class ShareWrapperBuilder[State <: ShareWrapperBuilderState] private[dto](figi: 
                     startingPrice: Option[BigDecimal],
                     purchasePrice: Option[BigDecimal],
                     currentPrice: Option[BigDecimal],
-                    exchangeUpdateDttm: Option[java.sql.Timestamp]): ShareWrapperBuilder[Empty
+                    exchangeUpdateDttm: Option[java.sql.Timestamp]): ShareDTOBuilder[Empty
     with Figi
     with Lot
     with Currency
@@ -111,7 +111,7 @@ class ShareWrapperBuilder[State <: ShareWrapperBuilderState] private[dto](figi: 
       case _ => None
     }
 
-    new ShareWrapperBuilder(
+    new ShareDTOBuilder(
       figi,
       lot,
       currency,
@@ -124,19 +124,19 @@ class ShareWrapperBuilder[State <: ShareWrapperBuilderState] private[dto](figi: 
     )
   }
 
-  def withStartingPrice(startingPrice: Option[Quotation]): ShareWrapperBuilder[State] = copy(
+  def withStartingPrice(startingPrice: Option[Quotation]): ShareDTOBuilder[State] = copy(
     startingPrice = startingPrice
   )
 
-  def withPurchasePrice(purchasePrice: Option[Quotation]): ShareWrapperBuilder[State] = copy(
+  def withPurchasePrice(purchasePrice: Option[Quotation]): ShareDTOBuilder[State] = copy(
     purchasePrice = purchasePrice
   )
 
-  def withCurrentPrice(currentPrice: Option[Quotation]): ShareWrapperBuilder[State] = copy(
+  def withCurrentPrice(currentPrice: Option[Quotation]): ShareDTOBuilder[State] = copy(
     currentPrice = currentPrice
   )
 
-  def withUpdateTime(updateTime: Option[Timestamp]): ShareWrapperBuilder[State] = copy(
+  def withUpdateTime(updateTime: Option[Timestamp]): ShareDTOBuilder[State] = copy(
     updateTime = updateTime
   )
 

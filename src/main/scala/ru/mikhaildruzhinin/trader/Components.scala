@@ -14,7 +14,6 @@ import ru.mikhaildruzhinin.trader.core.services.impl._
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.mikhaildruzhinin.trader.database.{Connection, DatabaseConnection}
 import ru.tinkoff.piapi.core.InvestApi
-import slick.jdbc.JdbcProfile
 
 trait Components {
   import com.softwaremill.macwire.wire
@@ -31,7 +30,6 @@ trait Components {
 
   lazy val investApiClient: BaseInvestApiClient = wire[ResilientInvestApiClient]
   lazy val connection: Connection = DatabaseConnection
-  lazy val profile: JdbcProfile = connection.databaseConfig.profile
   lazy val shareDAO: ShareDAO = wire[ShareDAO]
   lazy val shareService: BaseShareService = wire[ShareService]
   lazy val historicCandleService: BaseHistoricCandleService = wire[HistoricCandleService]

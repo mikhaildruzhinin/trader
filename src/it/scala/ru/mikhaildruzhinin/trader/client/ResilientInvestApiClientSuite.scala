@@ -40,7 +40,7 @@ class ResilientInvestApiClientSuite extends FixtureAnyFunSuite {
 
     implicit lazy val connection: Connection = DatabaseConnection
 
-    val shareDAO: ShareDAO = new ShareDAO(connection.databaseConfig.profile)
+    val shareDAO: ShareDAO = new ShareDAO(connection)
 
     val shareService: BaseShareService = new ShareService(investApiClient, connection, shareDAO)
     val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient)

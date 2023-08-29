@@ -21,7 +21,6 @@ import ru.mikhaildruzhinin.trader.core.services.impl._
 import ru.mikhaildruzhinin.trader.database.Connection
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.tinkoff.piapi.core.InvestApi
-import slick.jdbc.JdbcProfile
 
 abstract class BaseIntegrationSuite extends FixtureAnyFunSuite {
 
@@ -65,7 +64,6 @@ abstract class BaseIntegrationSuite extends FixtureAnyFunSuite {
     lazy val investApiClient: BaseInvestApiClient = wire[ResilientInvestApiClient]
     lazy val config = updateConfig(port.toString)
     lazy val connection: Connection = Connection("slick", config)
-    lazy val profile: JdbcProfile = connection.databaseConfig.profile
     lazy val shareDAO: ShareDAO = wire[ShareDAO]
     lazy val shareService: BaseShareService = wire[ShareService]
     lazy val historicCandleService: BaseHistoricCandleService = wire[HistoricCandleService]

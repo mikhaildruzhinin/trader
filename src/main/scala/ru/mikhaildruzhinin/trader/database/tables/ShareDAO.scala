@@ -1,18 +1,22 @@
 package ru.mikhaildruzhinin.trader.database.tables
 
 import ru.mikhaildruzhinin.trader.config.AppConfig
+import ru.mikhaildruzhinin.trader.core.TypeCode
 import ru.mikhaildruzhinin.trader.core.dto.ShareDTO
+import ru.mikhaildruzhinin.trader.database.Connection
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO.ShareType
 import ru.mikhaildruzhinin.trader.database.tables.codegen.{SharesTable, Tables}
 import slick.jdbc.JdbcProfile
-import slick.sql.{FixedSqlAction, FixedSqlStreamingAction}
 
 import java.sql.Timestamp
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import scala.concurrent.Future
 
-class ShareDAO(val profile: JdbcProfile) extends SharesTable with Tables {
-  import profile.api._
+class ShareDAO(val connection: Connection) extends SharesTable with Tables {
+  override val profile: JdbcProfile = connection.databaseConfig.profile
+
+  import connection.databaseConfig.profile.api._
 
   //noinspection ScalaWeakerAccess
   class S(_tableTag: Tag) extends Shares(_tableTag) {
@@ -34,110 +38,117 @@ class ShareDAO(val profile: JdbcProfile) extends SharesTable with Tables {
     (start, end)
   }
 
-  def createIfNotExists: FixedSqlAction[Unit, NoStream, Effect.Schema] = table.schema.createIfNotExists
+  def createIfNotExists: Future[Unit] = connection.run(table.schema.createIfNotExists)
 
-  def insert(shares: Seq[ShareType]): FixedSqlAction[Option[Int], NoStream, Effect.Write] = {
-    table
-      .map(
-        s => (
-          s.exchangeUpdateDttm,
-          s.lot,
-          s.quantity,
-          s.typeCd,
-          s.testFlg,
-          s.figi,
-          s.currency,
-          s.name,
-          s.exchange,
-          s.startingPrice,
-          s.purchasePrice,
-          s.currentPrice,
-          s.uptrendPct,
-          s.uptrendAbs,
-          s.roi,
-          s.profit
-        )
-      ) ++= shares
-  }
+  def insert(shares: Seq[ShareType]): Future[Option[Int]] = connection.run(
+    table.map(s => (
+      s.exchangeUpdateDttm,
+      s.lot,
+      s.quantity,
+      s.typeCd,
+      s.testFlg,
+      s.figi,
+      s.currency,
+      s.name,
+      s.exchange,
+      s.startingPrice,
+      s.purchasePrice,
+      s.currentPrice,
+      s.uptrendPct,
+      s.uptrendAbs,
+      s.roi,
+      s.profit
+    )) ++= shares
+    )
 
-  def selectAll: FixedSqlStreamingAction[Seq[SharesRow], SharesRow, Effect.Read] = table.result
+  def selectAll: Future[Seq[SharesRow]] = connection.run(table.result)
 
   def filterByTypeCode(typeCode: Int,
-                       testFlg: Boolean): FixedSqlStreamingAction[Seq[SharesRow], SharesRow, Effect.Read] = {
+                       testFlg: Boolean): Future[Seq[SharesRow]] = {
 
     val (start: Timestamp, end: Timestamp) = getDayInterval
 
-    table
-      .filter(s =>
+    connection.run(
+      table.filter(s =>
         s.loadDttm >= start &&
           s.loadDttm < end &&
           s.testFlg === testFlg &&
           s.typeCd === typeCode.toShort &&
           s.deletedFlg === false
-      )
-      .result
+      ).result
+    )
   }
 
-  def update(figi: String,
-             share: ShareType): FixedSqlAction[Int, NoStream, Effect.Write] = {
+  private def updateRow(figi: String,
+                        share: ShareType,
+                        start: Timestamp,
+                        end: Timestamp) = table
+    .filter(s => {
+      s.loadDttm >= start &&
+        s.loadDttm < end &&
+        s.figi === figi &&
+        s.deletedFlg === false
+    }).map(s => (
+      s.exchangeUpdateDttm,
+      s.lot,
+      s.quantity,
+      s.typeCd,
+      s.testFlg,
+      s.figi,
+      s.currency,
+      s.name,
+      s.exchange,
+      s.startingPrice,
+      s.purchasePrice,
+      s.currentPrice,
+      s.uptrendPct,
+      s.uptrendAbs,
+      s.roi,
+      s.profit
+    )).update(share)
+
+  def update(shares: Seq[ShareDTO],
+             typeCode: TypeCode): Future[Seq[Int]] = {
 
     val (start: Timestamp, end: Timestamp) = getDayInterval
 
-    table
-      .filter(s => {
-        s.loadDttm >= start &&
-          s.loadDttm < end &&
-          s.figi === figi &&
-          s.deletedFlg === false
-      })
-      .map(
-        s => (
-          s.exchangeUpdateDttm,
-          s.lot,
-          s.quantity,
-          s.typeCd,
-          s.testFlg,
-          s.figi,
-          s.currency,
-          s.name,
-          s.exchange,
-          s.startingPrice,
-          s.purchasePrice,
-          s.currentPrice,
-          s.uptrendPct,
-          s.uptrendAbs,
-          s.roi,
-          s.profit
+    connection.run(
+      connection.databaseConfig
+        .profile
+        .api
+        .DBIO
+        .sequence(
+          shares.map(s => updateRow(s.figi, s.toShareType(typeCode), start, end))
         )
-      )
-      .update(share)
+    )
   }
 
-  def updateTypeCode(figis: Seq[String], typeCode: Int): FixedSqlAction[Int, NoStream, Effect.Write] = {
+  def updateTypeCode(figis: Seq[String], typeCode: Int): Future[Int] = {
     val (start: Timestamp, end: Timestamp) = getDayInterval
 
-    table
-      .filter(s => {
+    connection.run(
+      table.filter(s => {
         s.loadDttm >= start &&
           s.loadDttm < end &&
           s.figi.inSet(figis) &&
           s.deletedFlg === false
-      })
-      .map(_.typeCd)
-      .update(typeCode.toShort)
+      }).map(_.typeCd)
+        .update(typeCode.toShort)
+    )
+
   }
 
-  def delete(): FixedSqlAction[Int, NoStream, Effect.Write] = {
+  def delete(): Future[Int] = {
     val (start: Timestamp, end: Timestamp) = getDayInterval
 
-    table
-      .filter(s => {
+    connection.run(
+      table.filter(s => {
         s.loadDttm >= start &&
           s.loadDttm < end &&
           s.deletedFlg === false
-      })
-      .map(_.deletedFlg)
-      .update(true)
+      }).map(_.deletedFlg)
+        .update(true)
+    )
   }
 
   def toDTO(sharesRow: SharesRow)

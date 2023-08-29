@@ -77,16 +77,12 @@ class ShareService(investApiClient: BaseInvestApiClient,
 
   override def persistNewShares(shares: Seq[ShareDTO],
                                 typeCode: TypeCode): Future[Option[Int]] = for {
-    _ <- connection.run(shareDAO.delete())
-    insertedShares <- connection.run(
-      shareDAO.insert(
-        shares.map(_.toShareType(typeCode))
-      )
-    )
+    _ <- shareDAO.delete()
+    insertedShares <- shareDAO.insert(shares.map(_.toShareType(typeCode)))
   } yield insertedShares
 
   override def getPersistedShares(typeCode: TypeCode): Future[Seq[ShareDTO]] = for {
-    shareModels <- connection.run(shareDAO.filterByTypeCode(typeCode.code, appConfig.testFlg))
+    shareModels <- shareDAO.filterByTypeCode(typeCode.code, appConfig.testFlg)
     shares <- Future { shareModels.map( s => shareDAO.toDTO(s)) }
   } yield shares
 
@@ -130,15 +126,7 @@ class ShareService(investApiClient: BaseInvestApiClient,
   }
 
   override def persistUpdatedShares(shares: Seq[ShareDTO],
-                                    typeCode: TypeCode): Future[Seq[Int]] = connection.run(
-    connection.databaseConfig
-      .profile
-      .api
-      .DBIO
-      .sequence(
-        shares.map(s => shareDAO.update(s.figi, s.toShareType(typeCode)))
-      )
-  )
+                                    typeCode: TypeCode): Future[Seq[Int]] = shareDAO.update(shares, typeCode)
 
   override def enrichShares(shares: Seq[ShareDTO]): Future[Seq[EnrichedShareWrapper]] = Future {
     shares.zip(shares.map(_.roi))
