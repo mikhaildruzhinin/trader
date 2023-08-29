@@ -5,8 +5,8 @@ import ru.mikhaildruzhinin.trader.core.TypeCode
 import ru.mikhaildruzhinin.trader.core.dto.ShareDTO
 import ru.mikhaildruzhinin.trader.database.Connection
 import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO
-import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO.ShareType
 import ru.mikhaildruzhinin.trader.database.tables.codegen.{SharesTable, Tables}
+import ru.mikhaildruzhinin.trader.database.tables.impl.ShareDAO.ShareType
 import slick.jdbc.JdbcProfile
 
 import java.sql.Timestamp
@@ -16,7 +16,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 final class ShareDAO(val connection: Connection)
-              (implicit appConfig: AppConfig) extends BaseShareDAO with SharesTable with Tables {
+                    (implicit appConfig: AppConfig)
+  extends BaseShareDAO with SharesTable with Tables {
 
   override val profile: JdbcProfile = connection.databaseConfig.profile
 
@@ -173,4 +174,25 @@ final class ShareDAO(val connection: Connection)
       sharesRow.currentPrice,
       sharesRow.exchangeUpdateDttm
     ).build()
+}
+
+object ShareDAO {
+  type ShareType = (
+    Option[Timestamp],
+      Int,
+      Int,
+      Short,
+      Boolean,
+      String,
+      String,
+      String,
+      String,
+      Option[BigDecimal],
+      Option[BigDecimal],
+      Option[BigDecimal],
+      Option[BigDecimal],
+      Option[BigDecimal],
+      Option[BigDecimal],
+      Option[BigDecimal]
+    )
 }

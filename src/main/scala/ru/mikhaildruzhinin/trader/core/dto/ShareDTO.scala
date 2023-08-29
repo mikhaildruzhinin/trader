@@ -3,7 +3,7 @@ package ru.mikhaildruzhinin.trader.core.dto
 import com.google.protobuf.Timestamp
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.TypeCode
-import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO.ShareType
+import ru.mikhaildruzhinin.trader.database.tables.impl.ShareDAO.ShareType
 import ru.tinkoff.piapi.contract.v1.Quotation
 import ru.tinkoff.piapi.core.utils.DateUtils._
 import ru.tinkoff.piapi.core.utils.MapperUtils._
