@@ -12,8 +12,9 @@ import ru.mikhaildruzhinin.trader.client.impl.ResilientInvestApiClient
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
+import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO
+import ru.mikhaildruzhinin.trader.database.tables.impl.ShareDAO
 import ru.mikhaildruzhinin.trader.database.{Connection, DatabaseConnection}
-import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.tinkoff.piapi.core.InvestApi
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -40,7 +41,7 @@ class ResilientInvestApiClientSuite extends FixtureAnyFunSuite {
 
     implicit lazy val connection: Connection = DatabaseConnection
 
-    val shareDAO: ShareDAO = new ShareDAO(connection)
+    val shareDAO: BaseShareDAO = new ShareDAO(connection)
 
     val shareService: BaseShareService = new ShareService(investApiClient, connection, shareDAO)
     val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient)

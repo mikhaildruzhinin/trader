@@ -19,7 +19,8 @@ import ru.mikhaildruzhinin.trader.core.services.Services
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
 import ru.mikhaildruzhinin.trader.database.Connection
-import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
+import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO
+import ru.mikhaildruzhinin.trader.database.tables.impl.ShareDAO
 import ru.tinkoff.piapi.core.InvestApi
 
 abstract class BaseIntegrationSuite extends FixtureAnyFunSuite {
@@ -27,8 +28,6 @@ abstract class BaseIntegrationSuite extends FixtureAnyFunSuite {
   val log: Logger = Logger(getClass.getName)
 
   case class FixtureParam(appConfig: AppConfig,
-                          investApiClient: BaseInvestApiClient,
-                          connection: Connection,
                           services: Services)
 
   def updateConfig(port: String): Config = ConfigFactory
@@ -64,7 +63,7 @@ abstract class BaseIntegrationSuite extends FixtureAnyFunSuite {
     lazy val investApiClient: BaseInvestApiClient = wire[ResilientInvestApiClient]
     lazy val config = updateConfig(port.toString)
     lazy val connection: Connection = Connection("slick", config)
-    lazy val shareDAO: ShareDAO = wire[ShareDAO]
+    lazy val shareDAO: BaseShareDAO = wire[ShareDAO]
     lazy val shareService: BaseShareService = wire[ShareService]
     lazy val historicCandleService: BaseHistoricCandleService = wire[HistoricCandleService]
     lazy val priceService: BasePriceService = wire[PriceService]

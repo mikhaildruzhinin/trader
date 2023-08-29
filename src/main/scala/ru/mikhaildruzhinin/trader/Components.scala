@@ -11,7 +11,8 @@ import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
 import ru.mikhaildruzhinin.trader.core.services.Services
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
-import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
+import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO
+import ru.mikhaildruzhinin.trader.database.tables.impl.ShareDAO
 import ru.mikhaildruzhinin.trader.database.{Connection, DatabaseConnection}
 import ru.tinkoff.piapi.core.InvestApi
 
@@ -30,7 +31,7 @@ trait Components {
 
   lazy val investApiClient: BaseInvestApiClient = wire[ResilientInvestApiClient]
   lazy val connection: Connection = DatabaseConnection
-  lazy val shareDAO: ShareDAO = wire[ShareDAO]
+  lazy val shareDAO: BaseShareDAO = wire[ShareDAO]
   lazy val shareService: BaseShareService = wire[ShareService]
   lazy val historicCandleService: BaseHistoricCandleService = wire[HistoricCandleService]
   lazy val priceService: BasePriceService = wire[PriceService]

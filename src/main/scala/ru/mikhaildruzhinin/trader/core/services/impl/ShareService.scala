@@ -4,10 +4,10 @@ import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.TypeCode
-import ru.mikhaildruzhinin.trader.core.services.base.BaseShareService
 import ru.mikhaildruzhinin.trader.core.dto.{HistoricCandleDTO, PriceDTO, ShareDTO}
+import ru.mikhaildruzhinin.trader.core.services.base.BaseShareService
 import ru.mikhaildruzhinin.trader.database.Connection
-import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
+import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO
 import ru.tinkoff.piapi.contract.v1.{Quotation, Share}
 import ru.tinkoff.piapi.core.utils.MapperUtils.quotationToBigDecimal
 
@@ -18,7 +18,7 @@ import scala.math.BigDecimal.javaBigDecimal2bigDecimal
 
 class ShareService(investApiClient: BaseInvestApiClient,
                    connection: Connection,
-                   shareDAO: ShareDAO)
+                   shareDAO: BaseShareDAO)
                   (implicit appConfig: AppConfig) extends BaseShareService {
 
   protected val log: Logger = Logger(getClass.getName)
