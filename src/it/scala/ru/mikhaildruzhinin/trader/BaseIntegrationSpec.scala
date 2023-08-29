@@ -5,7 +5,7 @@ import com.typesafe.scalalogging.Logger
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
 import org.scalatest.Outcome
-import org.scalatest.funsuite.FixtureAnyFunSuite
+import org.scalatest.featurespec.FixtureAnyFeatureSpec
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import pureconfig.generic.ProductHint
@@ -23,7 +23,7 @@ import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO
 import ru.mikhaildruzhinin.trader.database.tables.impl.ShareDAO
 import ru.tinkoff.piapi.core.InvestApi
 
-abstract class BaseIntegrationSuite extends FixtureAnyFunSuite {
+abstract class BaseIntegrationSpec extends FixtureAnyFeatureSpec {
 
   val log: Logger = Logger(getClass.getName)
 
