@@ -17,6 +17,7 @@ object Monitor {
     (sell, keep) <- services.shareService.partitionEnrichedSharesShares(enrichedShares)
     soldSharesNum <- services.shareService.persistUpdatedShares(sell.map(_._1), TypeCode.Sold)
     _ <- Future(log.info(s"Sold: ${soldSharesNum.sum}"))
+    _ <- Future(sell.foreach(s => log.info(s.toString)))
     _ <- services.shareService.persistUpdatedShares(keep.map(_._1), TypeCode.Purchased)
   } yield soldSharesNum.sum
 }
