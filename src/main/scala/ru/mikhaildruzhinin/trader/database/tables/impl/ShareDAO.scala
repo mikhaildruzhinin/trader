@@ -166,6 +166,7 @@ final class ShareDAO(val connection: Connection)
     .fromRowParams(
       sharesRow.figi,
       sharesRow.lot,
+      sharesRow.quantity,
       sharesRow.currency,
       sharesRow.name,
       sharesRow.exchange,
@@ -180,7 +181,7 @@ object ShareDAO {
   type ShareType = (
     Option[Timestamp],
       Int,
-      Int,
+      Option[Int],
       Short,
       Boolean,
       String,

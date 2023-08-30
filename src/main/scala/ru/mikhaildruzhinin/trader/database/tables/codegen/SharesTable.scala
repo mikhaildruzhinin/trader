@@ -13,9 +13,9 @@ trait SharesTable {
    *  @param exchangeUpdateDttm Database column exchange_update_dttm SqlType(timestamp), Default(None)
    *  @param loadDttm Database column load_dttm SqlType(timestamp)
    *  @param lot Database column lot SqlType(int4)
-   *  @param quantity Database column quantity SqlType(int4)
+   *  @param quantity Database column quantity SqlType(int4), Default(None)
    *  @param typeCd Database column type_cd SqlType(int2)
-   *  @param schemaVersion Database column schema_version SqlType(int2), Default(2)
+   *  @param schemaVersion Database column schema_version SqlType(int2), Default(4)
    *  @param testFlg Database column test_flg SqlType(bool)
    *  @param deletedFlg Database column deleted_flg SqlType(bool), Default(false)
    *  @param figi Database column figi SqlType(bpchar), Length(12,false)
@@ -29,17 +29,17 @@ trait SharesTable {
    *  @param uptrendAbs Database column uptrend_abs SqlType(numeric), Default(None)
    *  @param roi Database column roi SqlType(numeric), Default(None)
    *  @param profit Database column profit SqlType(numeric), Default(None) */
-  case class SharesRow(id: Long, exchangeUpdateDttm: Option[java.sql.Timestamp] = None, loadDttm: java.sql.Timestamp, lot: Int, quantity: Int, typeCd: Short, schemaVersion: Short = 2, testFlg: Boolean, deletedFlg: Boolean = false, figi: String, currency: String, name: String, exchange: String, startingPrice: Option[scala.math.BigDecimal] = None, purchasePrice: Option[scala.math.BigDecimal] = None, currentPrice: Option[scala.math.BigDecimal] = None, uptrendPct: Option[scala.math.BigDecimal] = None, uptrendAbs: Option[scala.math.BigDecimal] = None, roi: Option[scala.math.BigDecimal] = None, profit: Option[scala.math.BigDecimal] = None)
+  case class SharesRow(id: Long, exchangeUpdateDttm: Option[java.sql.Timestamp] = None, loadDttm: java.sql.Timestamp, lot: Int, quantity: Option[Int] = None, typeCd: Short, schemaVersion: Short = 4, testFlg: Boolean, deletedFlg: Boolean = false, figi: String, currency: String, name: String, exchange: String, startingPrice: Option[scala.math.BigDecimal] = None, purchasePrice: Option[scala.math.BigDecimal] = None, currentPrice: Option[scala.math.BigDecimal] = None, uptrendPct: Option[scala.math.BigDecimal] = None, uptrendAbs: Option[scala.math.BigDecimal] = None, roi: Option[scala.math.BigDecimal] = None, profit: Option[scala.math.BigDecimal] = None)
   /** GetResult implicit for fetching SharesRow objects using plain SQL queries */
-  implicit def GetResultSharesRow(implicit e0: GR[Long], e1: GR[Option[java.sql.Timestamp]], e2: GR[java.sql.Timestamp], e3: GR[Int], e4: GR[Short], e5: GR[Boolean], e6: GR[String], e7: GR[Option[scala.math.BigDecimal]]): GR[SharesRow] = GR{
+  implicit def GetResultSharesRow(implicit e0: GR[Long], e1: GR[Option[java.sql.Timestamp]], e2: GR[java.sql.Timestamp], e3: GR[Int], e4: GR[Option[Int]], e5: GR[Short], e6: GR[Boolean], e7: GR[String], e8: GR[Option[scala.math.BigDecimal]]): GR[SharesRow] = GR{
     prs => import prs._
-    SharesRow.tupled((<<[Long], <<?[java.sql.Timestamp], <<[java.sql.Timestamp], <<[Int], <<[Int], <<[Short], <<[Short], <<[Boolean], <<[Boolean], <<[String], <<[String], <<[String], <<[String], <<?[scala.math.BigDecimal], <<?[scala.math.BigDecimal], <<?[scala.math.BigDecimal], <<?[scala.math.BigDecimal], <<?[scala.math.BigDecimal], <<?[scala.math.BigDecimal], <<?[scala.math.BigDecimal]))
+    SharesRow.tupled((<<[Long], <<?[java.sql.Timestamp], <<[java.sql.Timestamp], <<[Int], <<?[Int], <<[Short], <<[Short], <<[Boolean], <<[Boolean], <<[String], <<[String], <<[String], <<[String], <<?[scala.math.BigDecimal], <<?[scala.math.BigDecimal], <<?[scala.math.BigDecimal], <<?[scala.math.BigDecimal], <<?[scala.math.BigDecimal], <<?[scala.math.BigDecimal], <<?[scala.math.BigDecimal]))
   }
   /** Table description of table shares. Objects of this class serve as prototypes for rows in queries. */
   class Shares(_tableTag: Tag) extends profile.api.Table[SharesRow](_tableTag, Some("trader"), "shares") {
     def * = (id, exchangeUpdateDttm, loadDttm, lot, quantity, typeCd, schemaVersion, testFlg, deletedFlg, figi, currency, name, exchange, startingPrice, purchasePrice, currentPrice, uptrendPct, uptrendAbs, roi, profit) <> (SharesRow.tupled, SharesRow.unapply)
     /** Maps whole row to an option. Useful for outer joins. */
-    def ? = ((Rep.Some(id), exchangeUpdateDttm, Rep.Some(loadDttm), Rep.Some(lot), Rep.Some(quantity), Rep.Some(typeCd), Rep.Some(schemaVersion), Rep.Some(testFlg), Rep.Some(deletedFlg), Rep.Some(figi), Rep.Some(currency), Rep.Some(name), Rep.Some(exchange), startingPrice, purchasePrice, currentPrice, uptrendPct, uptrendAbs, roi, profit)).shaped.<>({r=>import r._; _1.map(_=> SharesRow.tupled((_1.get, _2, _3.get, _4.get, _5.get, _6.get, _7.get, _8.get, _9.get, _10.get, _11.get, _12.get, _13.get, _14, _15, _16, _17, _18, _19, _20)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+    def ? = ((Rep.Some(id), exchangeUpdateDttm, Rep.Some(loadDttm), Rep.Some(lot), quantity, Rep.Some(typeCd), Rep.Some(schemaVersion), Rep.Some(testFlg), Rep.Some(deletedFlg), Rep.Some(figi), Rep.Some(currency), Rep.Some(name), Rep.Some(exchange), startingPrice, purchasePrice, currentPrice, uptrendPct, uptrendAbs, roi, profit)).shaped.<>({r=>import r._; _1.map(_=> SharesRow.tupled((_1.get, _2, _3.get, _4.get, _5, _6.get, _7.get, _8.get, _9.get, _10.get, _11.get, _12.get, _13.get, _14, _15, _16, _17, _18, _19, _20)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
     /** Database column id SqlType(bigserial), AutoInc, PrimaryKey */
     val id: Rep[Long] = column[Long]("id", O.AutoInc, O.PrimaryKey)
@@ -49,12 +49,12 @@ trait SharesTable {
     val loadDttm: Rep[java.sql.Timestamp] = column[java.sql.Timestamp]("load_dttm")
     /** Database column lot SqlType(int4) */
     val lot: Rep[Int] = column[Int]("lot")
-    /** Database column quantity SqlType(int4) */
-    val quantity: Rep[Int] = column[Int]("quantity")
+    /** Database column quantity SqlType(int4), Default(None) */
+    val quantity: Rep[Option[Int]] = column[Option[Int]]("quantity", O.Default(None))
     /** Database column type_cd SqlType(int2) */
     val typeCd: Rep[Short] = column[Short]("type_cd")
-    /** Database column schema_version SqlType(int2), Default(2) */
-    val schemaVersion: Rep[Short] = column[Short]("schema_version", O.Default(2))
+    /** Database column schema_version SqlType(int2), Default(4) */
+    val schemaVersion: Rep[Short] = column[Short]("schema_version", O.Default(4))
     /** Database column test_flg SqlType(bool) */
     val testFlg: Rep[Boolean] = column[Boolean]("test_flg")
     /** Database column deleted_flg SqlType(bool), Default(false) */

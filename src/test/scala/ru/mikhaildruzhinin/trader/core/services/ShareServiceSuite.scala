@@ -50,6 +50,7 @@ class ShareServiceSuite extends FixtureAnyFunSuite with MockFactory {
 
     figi = figi,
     lot = 1,
+    quantity = Some(1),
     currency = Random.alphanumeric.take(3).mkString,
     name = Random.alphanumeric.take(12).mkString,
     exchange = Random.alphanumeric.take(4).mkString,

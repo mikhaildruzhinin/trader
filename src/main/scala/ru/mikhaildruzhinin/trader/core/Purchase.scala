@@ -3,6 +3,8 @@ package ru.mikhaildruzhinin.trader.core
 import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.core.services.Services
 import ru.mikhaildruzhinin.trader.core.dto.ShareDTO
+import ru.tinkoff.piapi.contract.v1.Quotation
+import ru.tinkoff.piapi.core.utils.MapperUtils.quotationToBigDecimal
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -39,7 +41,8 @@ object Purchase {
                                      uptrendShares: Seq[ShareDTO]): Future[(Seq[ShareDTO], Int)] = for {
     account <- services.accountService.getAccount
     mockPurchasePrices <- Future(uptrendShares.map(_.currentPrice))
-    purchasedShares <- services.shareService.updatePurchasePrices(uptrendShares, mockPurchasePrices)
+    quantities <- services.shareService.calculateQuantities(uptrendShares)
+    purchasedShares <- services.shareService.updatePurchasePrices(uptrendShares, mockPurchasePrices, quantities)
     numPurchasedShares <- services.shareService.persistUpdatedShares(purchasedShares, TypeCode.Purchased)
     _ <- Future(log.info(s"Purchased: ${numPurchasedShares.sum}"))
   } yield (purchasedShares, numPurchasedShares.sum)

@@ -12,6 +12,7 @@ import scala.math.BigDecimal.{RoundingMode, javaBigDecimal2bigDecimal}
 
 case class ShareDTO private(figi: String,
                             lot: Int,
+                            quantity: Option[Int],
                             currency: String,
                             name: String,
                             exchange: String,
@@ -23,15 +24,11 @@ case class ShareDTO private(figi: String,
 
   lazy val uptrendPct: Option[BigDecimal] = {
     val uptrendPctNoTax: Option[BigDecimal] = (startingPrice, currentPrice) match {
-      case (Some(startingPriceValue), Some(currentPriceValue)) =>
+      case (Some(s), Some(c)) =>
         Some(
-          (
-            quotationToBigDecimal(currentPriceValue)
-              - quotationToBigDecimal(startingPriceValue)
-          )
-            / quotationToBigDecimal(startingPriceValue)
-            * 100
-            * (100 - appConfig.shares.incomeTaxPct) / 100
+          (quotationToBigDecimal(c) - quotationToBigDecimal(s))
+            / quotationToBigDecimal(s)
+            * 100 * (100 - appConfig.shares.incomeTaxPct) / 100
         )
       case _ => None
     }
@@ -45,19 +42,16 @@ case class ShareDTO private(figi: String,
 
   lazy val uptrendAbs: Option[BigDecimal] = {
     (uptrendPct, startingPrice) match {
-      case (Some(uptrendPctValue), Some(startingPriceValue)) =>
-        Some(uptrendPctValue * quotationToBigDecimal(startingPriceValue) * lot / 100)
+      case (Some(u), Some(s)) =>
+        Some(u * quotationToBigDecimal(s) * lot / 100)
       case _ => None
     }
   }
 
   lazy val roi: Option[BigDecimal] = {
     val roiNoTax = (purchasePrice, currentPrice) match {
-      case (Some(purchasePriceValue), Some(currentPriceValue)) =>
-        Some(
-          (quotationToBigDecimal(currentPriceValue) - quotationToBigDecimal(purchasePriceValue))
-            / quotationToBigDecimal(purchasePriceValue) * 100
-        )
+      case (Some(p), Some(c)) =>
+        Some((quotationToBigDecimal(c) - quotationToBigDecimal(p)) / quotationToBigDecimal(p) * 100)
       case _ => None
     }
 
@@ -69,9 +63,9 @@ case class ShareDTO private(figi: String,
   }
 
   lazy val profit: Option[BigDecimal] = {
-    (roi, purchasePrice) match {
-      case (Some(r), Some(p)) =>
-        Some(r * quotationToBigDecimal(p) * lot / 100)
+    (roi, purchasePrice, quantity) match {
+      case (Some(r), Some(p), Some(q)) =>
+        Some(r * quotationToBigDecimal(p) * lot * q / 100)
       case _ => None
     }
   }
@@ -87,7 +81,7 @@ case class ShareDTO private(figi: String,
       case _ => None
     },
     lot,
-    1, // TODO: quantity as param
+    quantity,
     typeCode.code.toShort,
     appConfig.testFlg,
     figi,
@@ -130,7 +124,9 @@ case class ShareDTO private(figi: String,
       .append(" rub.,\n\tProfit: ")
       .append(profit.getOrElse(BigDecimal(0))
         .setScale(appConfig.shares.priceScale, RoundingMode.HALF_UP))
-      .append(" rub.\n\tUpdate time: ")
+      .append(" rub.\n\tQuantity: ")
+      .append(quantity.getOrElse(0))
+      .append("\n\tUpdate time: ")
       .append(timestampToString(updateTime.getOrElse(Timestamp.newBuilder.build)))
       .toString
   }

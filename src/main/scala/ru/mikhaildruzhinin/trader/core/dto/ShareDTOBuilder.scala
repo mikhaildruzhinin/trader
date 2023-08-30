@@ -6,29 +6,32 @@ import ru.tinkoff.piapi.contract.v1.{Quotation, Share}
 import ru.tinkoff.piapi.core.utils.DateUtils.instantToTimestamp
 import ru.tinkoff.piapi.core.utils.MapperUtils.bigDecimalToQuotation
 
-sealed trait ShareWrapperBuilderState
-sealed trait Empty extends ShareWrapperBuilderState
-sealed trait Figi extends ShareWrapperBuilderState
-sealed trait Lot extends ShareWrapperBuilderState
-sealed trait Currency extends ShareWrapperBuilderState
-sealed trait Name extends ShareWrapperBuilderState
-sealed trait Exchange extends ShareWrapperBuilderState
+sealed trait ShareDTOBuilderState
+sealed trait Empty extends ShareDTOBuilderState
+sealed trait Figi extends ShareDTOBuilderState
+sealed trait Lot extends ShareDTOBuilderState
+//sealed trait Quantity extends ShareDTOBuilderState
+sealed trait Currency extends ShareDTOBuilderState
+sealed trait Name extends ShareDTOBuilderState
+sealed trait Exchange extends ShareDTOBuilderState
 
-class ShareDTOBuilder[State <: ShareWrapperBuilderState] private[dto](figi: String = "empty",
-                                                                      lot: Int = -1,
-                                                                      currency: String = "empty",
-                                                                      name: String = "empty",
-                                                                      exchange: String = "empty",
-                                                                      startingPrice: Option[Quotation] = None,
-                                                                      purchasePrice: Option[Quotation] = None,
-                                                                      currentPrice: Option[Quotation] = None,
-                                                                      updateTime: Option[Timestamp] = None)
-                                                                     (implicit appConfig: AppConfig) {
+class ShareDTOBuilder[State <: ShareDTOBuilderState] private[dto](figi: String = "empty",
+                                                                  lot: Int = -1,
+                                                                  quantity: Option[Int] = None,
+                                                                  currency: String = "empty",
+                                                                  name: String = "empty",
+                                                                  exchange: String = "empty",
+                                                                  startingPrice: Option[Quotation] = None,
+                                                                  purchasePrice: Option[Quotation] = None,
+                                                                  currentPrice: Option[Quotation] = None,
+                                                                  updateTime: Option[Timestamp] = None)
+                                                                 (implicit appConfig: AppConfig) {
 
-  private type FullShareWrapper = Empty with Figi with Lot with Currency with Name with Exchange
+  private type FullShareWrapper = Empty with Figi with Lot /*with Quantity*/ with Currency with Name with Exchange
 
   private def copy(figi: String = this.figi,
                    lot: Int = this.lot,
+                   quantity: Option[Int] = this.quantity,
                    currency: String = this.currency,
                    name: String = this.name,
                    exchange: String = this.exchange,
@@ -38,6 +41,7 @@ class ShareDTOBuilder[State <: ShareWrapperBuilderState] private[dto](figi: Stri
                    updateTime: Option[Timestamp] = this.updateTime): ShareDTOBuilder[State] = new ShareDTOBuilder(
     figi,
     lot,
+    quantity,
     currency,
     name,
     exchange,
@@ -47,22 +51,24 @@ class ShareDTOBuilder[State <: ShareWrapperBuilderState] private[dto](figi: Stri
     updateTime
   )
 
-  def fromWrapper(shareWrapper: ShareDTO): ShareDTOBuilder[Empty
+  def fromDTO(shareDTO: ShareDTO): ShareDTOBuilder[Empty
     with Figi
     with Lot
+//    with Quantity
     with Currency
     with Name
     with Exchange
   ] = new ShareDTOBuilder(
-    shareWrapper.figi,
-    shareWrapper.lot,
-    shareWrapper.currency,
-    shareWrapper.name,
-    shareWrapper.exchange,
-    shareWrapper.startingPrice,
-    shareWrapper.purchasePrice,
-    shareWrapper.currentPrice,
-    shareWrapper.updateTime
+    shareDTO.figi,
+    shareDTO.lot,
+    shareDTO.quantity,
+    shareDTO.currency,
+    shareDTO.name,
+    shareDTO.exchange,
+    shareDTO.startingPrice,
+    shareDTO.purchasePrice,
+    shareDTO.currentPrice,
+    shareDTO.updateTime
   )
 
   def fromShare(share: Share): ShareDTOBuilder[Empty
@@ -81,6 +87,7 @@ class ShareDTOBuilder[State <: ShareWrapperBuilderState] private[dto](figi: Stri
 
   def fromRowParams(figi: String,
                     lot: Int,
+                    quantity: Option[Int],
                     currency: String,
                     name: String,
                     exchange: String,
@@ -90,6 +97,7 @@ class ShareDTOBuilder[State <: ShareWrapperBuilderState] private[dto](figi: Stri
                     exchangeUpdateDttm: Option[java.sql.Timestamp]): ShareDTOBuilder[Empty
     with Figi
     with Lot
+//    with Quantity
     with Currency
     with Name
     with Exchange
@@ -114,6 +122,7 @@ class ShareDTOBuilder[State <: ShareWrapperBuilderState] private[dto](figi: Stri
     new ShareDTOBuilder(
       figi,
       lot,
+      quantity,
       currency,
       name,
       exchange,
@@ -140,9 +149,14 @@ class ShareDTOBuilder[State <: ShareWrapperBuilderState] private[dto](figi: Stri
     updateTime = updateTime
   )
 
+  def withQuantity(quantity: Option[Int]): ShareDTOBuilder[State] = copy(
+    quantity = quantity
+  )
+
   def build()(implicit ev: State =:= FullShareWrapper): ShareDTO = ShareDTO(
     figi,
     lot,
+    quantity,
     currency,
     name,
     exchange,

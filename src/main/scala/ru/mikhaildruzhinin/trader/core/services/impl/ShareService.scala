@@ -37,7 +37,7 @@ class ShareService(investApiClient: BaseInvestApiClient,
       .map(x => {
         ShareDTO
           .builder()
-          .fromWrapper(x._1)
+          .fromDTO(x._1)
           .withStartingPrice(x._2.open)
           .withUpdateTime(x._2.time)
           .build()
@@ -91,23 +91,37 @@ class ShareService(investApiClient: BaseInvestApiClient,
       .map(x =>
         ShareDTO
           .builder()
-          .fromWrapper(x._2)
+          .fromDTO(x._2)
           .withCurrentPrice(Some(x._1.price))
           .withUpdateTime(Some(x._1.updateTime))
           .build()
       )
   }
 
-  override def updatePurchasePrices(shares: Seq[ShareDTO],
-                                    prices: Seq[Option[Quotation]]): Future[Seq[ShareDTO]] = Future {
-    shares.zip(prices)
-      .map(
-      x => ShareDTO
-        .builder()
-        .fromWrapper(x._1)
-        .withPurchasePrice(x._2)
-        .build()
+  override def calculateQuantities(shares: Seq[ShareDTO]): Future[Seq[Option[Int]]] = Future {
+    shares.map(s =>
+      Some((
+        BigDecimal(10000 / shares.length)
+          / quotationToBigDecimal(s.currentPrice.getOrElse(Quotation.newBuilder.build()))
+          / s.lot
+        ).toInt)
     )
+  }
+
+  override def updatePurchasePrices(shares: Seq[ShareDTO],
+                                    prices: Seq[Option[Quotation]],
+                                    quantities: Seq[Option[Int]]): Future[Seq[ShareDTO]] = Future {
+    shares.zip(prices)
+      .zip(quantities)
+      .map { case ((s, p), q) => (s, p, q) }
+      .map(
+        x => ShareDTO
+          .builder()
+          .fromDTO(x._1)
+          .withPurchasePrice(x._2)
+          .withQuantity(x._3)
+          .build()
+      )
   }
 
   override def filterUptrend(shares: Seq[ShareDTO]): Future[Seq[ShareDTO]] = Future {

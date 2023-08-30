@@ -20,7 +20,11 @@ trait BaseShareService {
 
   def updateCurrentPrices(shares: Seq[ShareDTO], prices: Seq[PriceDTO]): Future[Seq[ShareDTO]]
 
-  def updatePurchasePrices(shares: Seq[ShareDTO], prices: Seq[Option[Quotation]]): Future[Seq[ShareDTO]]
+  def calculateQuantities(shares: Seq[ShareDTO]): Future[Seq[Option[Int]]]
+
+  def updatePurchasePrices(shares: Seq[ShareDTO],
+                           prices: Seq[Option[Quotation]],
+                           quantities: Seq[Option[Int]]): Future[Seq[ShareDTO]]
 
   def filterUptrend(shares: Seq[ShareDTO]): Future[Seq[ShareDTO]]
 
