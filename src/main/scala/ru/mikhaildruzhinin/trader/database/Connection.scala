@@ -22,7 +22,7 @@ object Connection {
   }
 }
 
-object DatabaseConnection extends Connection {
+object ConnectionImpl extends Connection {
   override lazy val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig
     .forConfig[JdbcProfile]("slick")
 }
