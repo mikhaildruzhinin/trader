@@ -1,6 +1,7 @@
 package ru.mikhaildruzhinin.trader
 
 import com.github.kagkarlsson.scheduler.Scheduler
+import org.flywaydb.core.Flyway
 import pureconfig.generic.ProductHint
 import pureconfig.generic.auto.exportReader
 import pureconfig.generic.semiauto.deriveEnumerationReader
@@ -38,4 +39,10 @@ trait Components {
   lazy val accountService: BaseAccountService = wire[AccountService]
   lazy val services: Services = wire[Services]
   lazy val scheduler: Scheduler = SchedulerFactory(services)
+
+  Flyway.configure()
+    .dataSource(appConfig.slick.db.properties.dataSource)
+    .schemas("trader")
+    .load()
+    .migrate()
 }
