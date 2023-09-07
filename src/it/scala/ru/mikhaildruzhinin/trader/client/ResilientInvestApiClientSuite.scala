@@ -43,8 +43,11 @@ class ResilientInvestApiClientSuite extends FixtureAnyFunSuite {
 
     val shareDAO: BaseShareDAO = new ShareDAO(connection)
 
-    val shareService: BaseShareService = new ShareService(investApiClient, connection, shareDAO)
     val historicCandleService: BaseHistoricCandleService = new HistoricCandleService(investApiClient)
+    val priceService: BasePriceService = new PriceService(investApiClient)
+    val accountService: BaseAccountService = new AccountService(investApiClient)
+    val shareService: BaseShareService = new ShareService(investApiClient, connection, shareDAO, historicCandleService, priceService, accountService)
+
 
     withFixture(test.toNoArgTest(FixtureParam(investApiClient)))
   }

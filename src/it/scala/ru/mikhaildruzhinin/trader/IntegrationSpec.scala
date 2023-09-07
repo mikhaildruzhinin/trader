@@ -1,7 +1,6 @@
 package ru.mikhaildruzhinin.trader
 
 import org.scalatest.GivenWhenThen
-import ru.mikhaildruzhinin.trader.core.{Monitor, Purchase, Sell}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
@@ -17,9 +16,9 @@ class IntegrationSpec extends BaseIntegrationSpec with GivenWhenThen {
         When("handlers are processing shares")
         val (purchasedSharesNum, stopLossSoldSharesNum, soldSharesNum) = Await.result(
           awaitable = for {
-            purchasedSharesNum <- Purchase(f.services)
-            stopLossSoldSharesNum <- Monitor(f.services)
-            soldSharesNum <- Sell(f.services)
+            purchasedSharesNum <- f.shareService.purchaseUptrendShares()
+            stopLossSoldSharesNum <- f.shareService.monitorPurchasedShares()
+            soldSharesNum <- f.shareService.sellShares()
           } yield (purchasedSharesNum, stopLossSoldSharesNum, soldSharesNum),
           atMost = Duration(30, TimeUnit.SECONDS)
         )

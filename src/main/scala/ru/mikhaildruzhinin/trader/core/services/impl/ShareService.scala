@@ -5,7 +5,7 @@ import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.core.TypeCode
 import ru.mikhaildruzhinin.trader.core.dto.{HistoricCandleDTO, PriceDTO, ShareDTO}
-import ru.mikhaildruzhinin.trader.core.services.base.BaseShareService
+import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.database.Connection
 import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO
 import ru.tinkoff.piapi.contract.v1.{Quotation, Share}
@@ -18,7 +18,10 @@ import scala.math.BigDecimal.javaBigDecimal2bigDecimal
 
 class ShareService(investApiClient: BaseInvestApiClient,
                    connection: Connection,
-                   shareDAO: BaseShareDAO)
+                   shareDAO: BaseShareDAO,
+                   historicCandleService: BaseHistoricCandleService,
+                   priceService: BasePriceService,
+                   accountService: BaseAccountService)
                   (implicit appConfig: AppConfig) extends BaseShareService {
 
   protected val log: Logger = Logger(getClass.getName)
@@ -29,9 +32,9 @@ class ShareService(investApiClient: BaseInvestApiClient,
    * @param shares sequence of shares
    * @return sequence of wrapped shares
    */
-  //noinspection ScalaWeakerAccess
-  protected def wrapShares(shares: Seq[ShareDTO],
-                           candles: Seq[HistoricCandleDTO]): Future[Seq[ShareDTO]] = Future {
+
+  protected def updateStartingPrices(shares: Seq[ShareDTO],
+                                     candles: Seq[HistoricCandleDTO]): Future[Seq[ShareDTO]] = Future {
     shares
       .zip(candles)
       .map(x => {
@@ -44,7 +47,6 @@ class ShareService(investApiClient: BaseInvestApiClient,
       })
   }
 
-  //noinspection ScalaWeakerAccess
   protected def filterShares(shares: Seq[Share]): Future[Seq[Share]] = Future {
     shares.filter(s => {
       val isAvailable: Boolean = appConfig
@@ -64,19 +66,14 @@ class ShareService(investApiClient: BaseInvestApiClient,
     })
   }
 
-  override def getAvailableShares: Future[Seq[ShareDTO]] = for {
+  override def getFilteredShares: Future[Seq[ShareDTO]] = for {
     shares <- investApiClient.getShares
     filteredShares <- filterShares(shares)
     wrappedShares <- Future { filteredShares.map(s => ShareDTO.builder().fromShare(s).build()) }
   } yield wrappedShares
 
-  override def getUpdatedShares(shares: Seq[ShareDTO],
-                                candles: Seq[HistoricCandleDTO]): Future[Seq[ShareDTO]] = for {
-    wrappedShares <- wrapShares(shares, candles)
-  } yield wrappedShares
-
-  override def persistNewShares(shares: Seq[ShareDTO],
-                                typeCode: TypeCode): Future[Option[Int]] = for {
+  protected def persistNewShares(shares: Seq[ShareDTO],
+                                 typeCode: TypeCode): Future[Option[Int]] = for {
     _ <- shareDAO.delete()
     insertedShares <- shareDAO.insert(shares, typeCode)
   } yield insertedShares
@@ -85,8 +82,8 @@ class ShareService(investApiClient: BaseInvestApiClient,
     shares <- shareDAO.filterByTypeCode(typeCode.code, appConfig.testFlg)
   } yield shares
 
-  override def updateCurrentPrices(shares: Seq[ShareDTO],
-                                   prices: Seq[PriceDTO]): Future[Seq[ShareDTO]] = Future {
+  protected def updateCurrentPrices(shares: Seq[ShareDTO],
+                                    prices: Seq[PriceDTO]): Future[Seq[ShareDTO]] = Future {
     prices.zip(shares)
       .map(x =>
         ShareDTO
@@ -98,7 +95,7 @@ class ShareService(investApiClient: BaseInvestApiClient,
       )
   }
 
-  override def calculateQuantities(shares: Seq[ShareDTO]): Future[Seq[Option[Int]]] = Future {
+  protected def calculateQuantities(shares: Seq[ShareDTO]): Future[Seq[Option[Int]]] = Future {
     shares.map(s =>
       Some((
         BigDecimal(10000 / shares.length)
@@ -108,9 +105,9 @@ class ShareService(investApiClient: BaseInvestApiClient,
     )
   }
 
-  override def updatePurchasePrices(shares: Seq[ShareDTO],
-                                    prices: Seq[Option[Quotation]],
-                                    quantities: Seq[Option[Int]]): Future[Seq[ShareDTO]] = Future {
+  protected def updatePurchasePrices(shares: Seq[ShareDTO],
+                                     prices: Seq[Option[Quotation]],
+                                     quantities: Seq[Option[Int]]): Future[Seq[ShareDTO]] = Future {
     shares.zip(prices)
       .zip(quantities)
       .map { case ((s, p), q) => (s, p, q) }
@@ -124,7 +121,7 @@ class ShareService(investApiClient: BaseInvestApiClient,
       )
   }
 
-  override def filterUptrend(shares: Seq[ShareDTO]): Future[Seq[ShareDTO]] = Future {
+  protected def filterUptrend(shares: Seq[ShareDTO]): Future[Seq[ShareDTO]] = Future {
 
     shares
       .filter(_.uptrendPct >= Some(appConfig.shares.uptrendThresholdPct))
@@ -138,18 +135,66 @@ class ShareService(investApiClient: BaseInvestApiClient,
       .take(appConfig.shares.numUptrendShares)
   }
 
-  override def persistUpdatedShares(shares: Seq[ShareDTO],
+  protected def persistUpdatedShares(shares: Seq[ShareDTO],
                                     typeCode: TypeCode): Future[Seq[Int]] = shareDAO.update(shares, typeCode)
 
-  override def enrichShares(shares: Seq[ShareDTO]): Future[Seq[EnrichedShareWrapper]] = Future {
-    shares.zip(shares.map(_.roi))
-  }
-
-  override def partitionEnrichedSharesShares(enrichedShares: Seq[EnrichedShareWrapper]): Future[(Seq[EnrichedShareWrapper], Seq[EnrichedShareWrapper])] = Future {
+  /*protected*/ def partitionEnrichedSharesShares(enrichedShares: Seq[EnrichedShareDTO]): Future[(Seq[EnrichedShareDTO], Seq[EnrichedShareDTO])] = Future {
     enrichedShares.partition(s =>
       (s._1.roi <= Some(BigDecimal(appConfig.shares.stopLossPct))
         && s._1.roi < s._2)
         || s._1.roi >= Some(BigDecimal(appConfig.shares.takeProfitPct))
     )
   }
+
+  // public or protected?
+  override def getAvailableShares: Future[Seq[ShareDTO]] = for {
+    shares <- getFilteredShares
+    candles <- historicCandleService.getWrappedCandles(shares)
+    availableShares <- updateStartingPrices(shares, candles)
+  } yield availableShares
+
+  protected def purchaseShares(shares: Seq[ShareDTO]): Future[Seq[ShareDTO]] = for {
+    account <- accountService.getAccount
+    mockPurchasePrices <- Future(shares.map(_.currentPrice))
+    quantities <- calculateQuantities(shares)
+    purchasedShares <- updatePurchasePrices(shares, mockPurchasePrices, quantities)
+  } yield purchasedShares
+
+  override def purchaseUptrendShares(): Future[Int] = for {
+    availableShares <- getAvailableShares
+    numAvailableShares <- persistNewShares(availableShares, TypeCode.Available)
+    _ <- Future(log.info(s"Available: ${numAvailableShares.getOrElse(0)}"))
+
+    currentPrices <- priceService.getCurrentPrices(availableShares)
+    updatedShares <- updateCurrentPrices(availableShares, currentPrices)
+    numUpdatedShares <- persistUpdatedShares(updatedShares, TypeCode.Available)
+    _ <- Future(log.info(s"Updated: ${numUpdatedShares.sum}"))
+
+    uptrendShares <- filterUptrend(updatedShares)
+    numUptrendShares <- persistUpdatedShares(uptrendShares, TypeCode.Uptrend)
+    _ <- Future(log.info(s"Best uptrend: ${numUptrendShares.sum}"))
+
+    purchasedShares <- purchaseShares(uptrendShares)
+    numPurchasedShares <- persistUpdatedShares(purchasedShares, TypeCode.Purchased)
+    _ <- Future(log.info(s"Purchased: ${numPurchasedShares.sum}"))
+  } yield purchasedShares.length
+
+  override def monitorPurchasedShares(): Future[Int] = for {
+    shares <- getPersistedShares(TypeCode.Purchased)
+    prices <- priceService.getCurrentPrices(shares)
+    updatedShares <- updateCurrentPrices(shares, prices)
+    enrichedShares <- Future(shares.zip(shares.map(_.roi)))
+    (sell, keep) <- partitionEnrichedSharesShares(enrichedShares)
+    soldSharesNum <- persistUpdatedShares(sell.map(_._1), TypeCode.Sold)
+    _ <- Future(log.info(s"Sold: ${soldSharesNum.sum}"))
+    _ <- Future(sell.foreach(s => log.info(s.toString)))
+    _ <- persistUpdatedShares(keep.map(_._1), TypeCode.Purchased)
+  } yield soldSharesNum.sum
+
+  override def sellShares(): Future[Int] = for {
+    shares <- getPersistedShares(TypeCode.Purchased)
+    soldSharesNum <- persistUpdatedShares(shares, TypeCode.Sold)
+    _ <- Future(log.info(s"Sold: ${soldSharesNum.sum}"))
+    _ <- Future(shares.foreach(s => log.info(s.toString)))
+  } yield soldSharesNum.sum
 }

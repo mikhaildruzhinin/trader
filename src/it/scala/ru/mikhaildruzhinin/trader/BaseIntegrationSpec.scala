@@ -15,7 +15,6 @@ import pureconfig.{CamelCase, ConfigFieldMapping, ConfigReader, ConfigSource}
 import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.client.impl.ResilientInvestApiClient
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
-import ru.mikhaildruzhinin.trader.core.services.Services
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
 import ru.mikhaildruzhinin.trader.database.Connection
@@ -27,8 +26,7 @@ abstract class BaseIntegrationSpec extends FixtureAnyFeatureSpec {
 
   val log: Logger = Logger(getClass.getName)
 
-  case class FixtureParam(appConfig: AppConfig,
-                          services: Services)
+  case class FixtureParam(shareService: BaseShareService)
 
   def updateConfig(port: String): Config = ConfigFactory
     .load()
@@ -64,11 +62,10 @@ abstract class BaseIntegrationSpec extends FixtureAnyFeatureSpec {
     lazy val config = updateConfig(port.toString)
     lazy val connection: Connection = Connection("slick", config)
     lazy val shareDAO: BaseShareDAO = wire[ShareDAO]
-    lazy val shareService: BaseShareService = wire[ShareService]
     lazy val historicCandleService: BaseHistoricCandleService = wire[HistoricCandleService]
     lazy val priceService: BasePriceService = wire[PriceService]
     lazy val accountService: BaseAccountService = wire[AccountService]
-    lazy val services: Services = wire[Services]
+    lazy val shareService: BaseShareService = wire[ShareService]
     lazy val fixtureParam: FixtureParam = wire[FixtureParam]
 
     val dataSource: PGSimpleDataSource = appConfig.slick.db.properties.dataSource

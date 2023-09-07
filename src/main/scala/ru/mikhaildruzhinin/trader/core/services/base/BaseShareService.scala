@@ -1,36 +1,22 @@
 package ru.mikhaildruzhinin.trader.core.services.base
 
 import ru.mikhaildruzhinin.trader.core.TypeCode
-import ru.mikhaildruzhinin.trader.core.dto.{HistoricCandleDTO, PriceDTO, ShareDTO}
-import ru.tinkoff.piapi.contract.v1.Quotation
+import ru.mikhaildruzhinin.trader.core.dto.ShareDTO
 
 import scala.concurrent.Future
 
 trait BaseShareService {
-  type EnrichedShareWrapper = (ShareDTO, Option[BigDecimal])
+  type EnrichedShareDTO = (ShareDTO, Option[BigDecimal])
 
-  def getAvailableShares: Future[Seq[ShareDTO]]
-
-  def getUpdatedShares(shares: Seq[ShareDTO],
-                       candles: Seq[HistoricCandleDTO]): Future[Seq[ShareDTO]]
-
-  def persistNewShares(shares: Seq[ShareDTO], typeCode: TypeCode): Future[Option[Int]]
+  def getFilteredShares: Future[Seq[ShareDTO]]
 
   def getPersistedShares(typeCode: TypeCode): Future[Seq[ShareDTO]]
 
-  def updateCurrentPrices(shares: Seq[ShareDTO], prices: Seq[PriceDTO]): Future[Seq[ShareDTO]]
+  def getAvailableShares: Future[Seq[ShareDTO]]
 
-  def calculateQuantities(shares: Seq[ShareDTO]): Future[Seq[Option[Int]]]
+  def purchaseUptrendShares(): Future[Int]
 
-  def updatePurchasePrices(shares: Seq[ShareDTO],
-                           prices: Seq[Option[Quotation]],
-                           quantities: Seq[Option[Int]]): Future[Seq[ShareDTO]]
+  def monitorPurchasedShares(): Future[Int]
 
-  def filterUptrend(shares: Seq[ShareDTO]): Future[Seq[ShareDTO]]
-
-  def persistUpdatedShares(shares: Seq[ShareDTO], typeCode: TypeCode): Future[Seq[Int]]
-
-  def enrichShares(shares: Seq[ShareDTO]): Future[Seq[EnrichedShareWrapper]]
-
-  def partitionEnrichedSharesShares(enrichedShares: Seq[EnrichedShareWrapper]): Future[(Seq[EnrichedShareWrapper], Seq[EnrichedShareWrapper])]
+  def sellShares(): Future[Int]
 }

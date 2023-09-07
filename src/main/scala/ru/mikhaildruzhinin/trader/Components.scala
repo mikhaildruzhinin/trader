@@ -9,7 +9,6 @@ import pureconfig.{CamelCase, ConfigFieldMapping, ConfigReader, ConfigSource}
 import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.client.impl.ResilientInvestApiClient
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
-import ru.mikhaildruzhinin.trader.core.services.Services
 import ru.mikhaildruzhinin.trader.core.services.base._
 import ru.mikhaildruzhinin.trader.core.services.impl._
 import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO
@@ -37,8 +36,7 @@ trait Components {
   lazy val historicCandleService: BaseHistoricCandleService = wire[HistoricCandleService]
   lazy val priceService: BasePriceService = wire[PriceService]
   lazy val accountService: BaseAccountService = wire[AccountService]
-  lazy val services: Services = wire[Services]
-  lazy val scheduler: Scheduler = SchedulerFactory(services)
+  lazy val scheduler: Scheduler = SchedulerFactory(shareService)
 
   Flyway.configure()
     .dataSource(appConfig.slick.db.properties.dataSource)

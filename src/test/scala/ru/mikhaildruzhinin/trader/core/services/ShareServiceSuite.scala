@@ -10,7 +10,8 @@ import pureconfig.{CamelCase, ConfigFieldMapping, ConfigReader, ConfigSource}
 import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
 import ru.mikhaildruzhinin.trader.core.dto.ShareDTO
-import ru.mikhaildruzhinin.trader.core.services.impl.ShareService
+import ru.mikhaildruzhinin.trader.core.services.base._
+import ru.mikhaildruzhinin.trader.core.services.impl._
 import ru.mikhaildruzhinin.trader.database.Connection
 import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO
 import ru.tinkoff.piapi.core.utils.MapperUtils.bigDecimalToQuotation
@@ -25,7 +26,10 @@ class ShareServiceSuite extends FixtureAnyFunSuite with MockFactory {
   case class FixtureParam(appConfig: AppConfig,
                           investApiClient: BaseInvestApiClient,
                           connection: Connection,
-                          shareDAO: BaseShareDAO)
+                          shareDAO: BaseShareDAO,
+                          historicCandleService: BaseHistoricCandleService,
+                          priceService: BasePriceService,
+                          accountService: BaseAccountService)
 
   override def withFixture(test: OneArgTest): Outcome = {
     import com.softwaremill.macwire.wire
@@ -38,6 +42,10 @@ class ShareServiceSuite extends FixtureAnyFunSuite with MockFactory {
     lazy val investApiClient: BaseInvestApiClient = mock[BaseInvestApiClient]
     lazy val connection: Connection = mock[Connection]
     lazy val shareDAO: BaseShareDAO = mock[BaseShareDAO]
+    lazy val historicCandleService: BaseHistoricCandleService = wire[HistoricCandleService]
+    lazy val priceService: BasePriceService = wire[PriceService]
+    lazy val accountService: BaseAccountService = wire[AccountService]
+    lazy val shareService: BaseShareService = wire[ShareService]
     lazy val fixtureParam: FixtureParam = wire[FixtureParam]
 
     withFixture(test.toNoArgTest(fixtureParam))
@@ -65,7 +73,14 @@ class ShareServiceSuite extends FixtureAnyFunSuite with MockFactory {
 
       implicit val appConfig: AppConfig = f.appConfig
 
-      val shareService = new ShareService(f.investApiClient, f.connection, f.shareDAO)
+      val shareService = new ShareService(
+        f.investApiClient,
+        f.connection,
+        f.shareDAO,
+        f.historicCandleService,
+        f.priceService,
+        f.accountService
+      )
 
       val shares: Seq[ShareDTO] = Seq(
         ("keep1", 18, 20),
