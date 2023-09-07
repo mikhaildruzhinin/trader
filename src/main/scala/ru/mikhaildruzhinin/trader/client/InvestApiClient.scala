@@ -1,4 +1,4 @@
-package ru.mikhaildruzhinin.trader.client.base
+package ru.mikhaildruzhinin.trader.client
 
 import ru.tinkoff.piapi.contract.v1._
 
@@ -6,7 +6,7 @@ import java.time.Instant
 import java.util.UUID
 import scala.concurrent.Future
 
-abstract class BaseInvestApiClient {
+abstract class InvestApiClient {
 
   def getCandles(figi: String,
                  from: Instant,

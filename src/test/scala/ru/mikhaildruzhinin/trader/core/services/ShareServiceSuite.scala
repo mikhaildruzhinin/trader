@@ -7,13 +7,13 @@ import pureconfig.generic.ProductHint
 import pureconfig.generic.auto.exportReader
 import pureconfig.generic.semiauto.deriveEnumerationReader
 import pureconfig.{CamelCase, ConfigFieldMapping, ConfigReader, ConfigSource}
-import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
+import ru.mikhaildruzhinin.trader.client.InvestApiClient
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
-import ru.mikhaildruzhinin.trader.core.dto.ShareDTO
-import ru.mikhaildruzhinin.trader.core.services.base._
-import ru.mikhaildruzhinin.trader.core.services.impl._
 import ru.mikhaildruzhinin.trader.database.Connection
-import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO
+import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
+import ru.mikhaildruzhinin.trader.models.ShareModel
+import ru.mikhaildruzhinin.trader.services._
+import ru.mikhaildruzhinin.trader.services.impl._
 import ru.tinkoff.piapi.core.utils.MapperUtils.bigDecimalToQuotation
 
 import java.util.concurrent.TimeUnit
@@ -24,12 +24,12 @@ import scala.util.Random
 class ShareServiceSuite extends FixtureAnyFunSuite with MockFactory {
 
   case class FixtureParam(appConfig: AppConfig,
-                          investApiClient: BaseInvestApiClient,
+                          investApiClient: InvestApiClient,
                           connection: Connection,
-                          shareDAO: BaseShareDAO,
-                          historicCandleService: BaseHistoricCandleService,
-                          priceService: BasePriceService,
-                          accountService: BaseAccountService)
+                          shareDAO: ShareDAO,
+                          historicCandleService: CandleService,
+                          priceService: PriceService,
+                          accountService: AccountService)
 
   override def withFixture(test: OneArgTest): Outcome = {
     import com.softwaremill.macwire.wire
@@ -39,22 +39,22 @@ class ShareServiceSuite extends FixtureAnyFunSuite with MockFactory {
     implicit lazy val investApiModeConvert: ConfigReader[InvestApiMode] = deriveEnumerationReader[InvestApiMode]
     implicit lazy val appConfig: AppConfig = ConfigSource.default.loadOrThrow[AppConfig]
 
-    lazy val investApiClient: BaseInvestApiClient = mock[BaseInvestApiClient]
+    lazy val investApiClient: InvestApiClient = mock[InvestApiClient]
     lazy val connection: Connection = mock[Connection]
-    lazy val shareDAO: BaseShareDAO = mock[BaseShareDAO]
-    lazy val historicCandleService: BaseHistoricCandleService = wire[HistoricCandleService]
-    lazy val priceService: BasePriceService = wire[PriceService]
-    lazy val accountService: BaseAccountService = wire[AccountService]
-    lazy val shareService: BaseShareService = wire[ShareService]
+    lazy val shareDAO: ShareDAO = mock[ShareDAO]
+    lazy val historicCandleService: CandleService = wire[CandleServiceImpl]
+    lazy val priceService: PriceService = wire[PriceServiceImpl]
+    lazy val accountService: AccountService = wire[AccountServiceImpl]
+    lazy val shareService: ShareService = wire[ShareServiceImpl]
     lazy val fixtureParam: FixtureParam = wire[FixtureParam]
 
     withFixture(test.toNoArgTest(fixtureParam))
   }
 
-  def generateFakeShareDTO(figi: String,
-                           purchasePrice: Int,
-                           currentPrice: Int)
-                          (implicit appConfig: AppConfig): ShareDTO = ShareDTO(
+  def generateFakeShareModel(figi: String,
+                             purchasePrice: Int,
+                             currentPrice: Int)
+                            (implicit appConfig: AppConfig): ShareModel = ShareModel(
 
     figi = figi,
     lot = 1,
@@ -73,7 +73,7 @@ class ShareServiceSuite extends FixtureAnyFunSuite with MockFactory {
 
       implicit val appConfig: AppConfig = f.appConfig
 
-      val shareService = new ShareService(
+      val shareService = new ShareServiceImpl(
         f.investApiClient,
         f.connection,
         f.shareDAO,
@@ -82,12 +82,12 @@ class ShareServiceSuite extends FixtureAnyFunSuite with MockFactory {
         f.accountService
       )
 
-      val shares: Seq[ShareDTO] = Seq(
+      val shares: Seq[ShareModel] = Seq(
         ("keep1", 18, 20),
         ("keep2", 20, 18),
         ("sell1", 20, 18),
         ("sell2", 10, 20)
-      ).map(s => generateFakeShareDTO(s._1, s._2, s._3))
+      ).map(s => generateFakeShareModel(s._1, s._2, s._3))
 
       val oldRois: Seq[Some[BigDecimal]] = Seq(5, -10, -5, 50)
         .map(r => Some(BigDecimal(r).bigDecimal))

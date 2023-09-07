@@ -1,4 +1,4 @@
-package ru.mikhaildruzhinin.trader.core
+package ru.mikhaildruzhinin.trader.config
 
 sealed abstract class TypeCode(val code: Int)
 

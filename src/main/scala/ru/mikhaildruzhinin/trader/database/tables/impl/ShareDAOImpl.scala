@@ -1,12 +1,11 @@
 package ru.mikhaildruzhinin.trader.database.tables.impl
 
-import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.core.TypeCode
-import ru.mikhaildruzhinin.trader.core.dto.ShareDTO
+import ru.mikhaildruzhinin.trader.config.{AppConfig, TypeCode}
+import ru.mikhaildruzhinin.trader.models.ShareModel
 import ru.mikhaildruzhinin.trader.database.Connection
-import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO
+import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.mikhaildruzhinin.trader.database.tables.codegen.{SharesTable, Tables}
-import ru.mikhaildruzhinin.trader.database.tables.impl.ShareDAO.ShareType
+import ru.mikhaildruzhinin.trader.database.tables.impl.ShareDAOImpl.InputShareRow
 import slick.jdbc.JdbcProfile
 
 import java.sql.Timestamp
@@ -15,9 +14,9 @@ import java.time.temporal.ChronoUnit
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-final class ShareDAO(val connection: Connection)
-                    (implicit appConfig: AppConfig)
-  extends BaseShareDAO with SharesTable with Tables {
+final class ShareDAOImpl(val connection: Connection)
+                        (implicit appConfig: AppConfig)
+  extends ShareDAO with SharesTable with Tables {
 
   override val profile: JdbcProfile = connection.databaseConfig.profile
 
@@ -45,7 +44,7 @@ final class ShareDAO(val connection: Connection)
 
   override def createIfNotExists: Future[Unit] = connection.run(table.schema.createIfNotExists)
 
-  override def insert(shares: Seq[ShareDTO],
+  override def insert(shares: Seq[ShareModel],
                       typeCode: TypeCode): Future[Option[Int]] = {
     connection.run(
       table.map(s => (
@@ -65,16 +64,16 @@ final class ShareDAO(val connection: Connection)
         s.uptrendAbs,
         s.roi,
         s.profit
-      )) ++= shares.map(_.toShareType(typeCode))
+      )) ++= shares.map(_.toInputShareRow(typeCode))
     )
   }
 
-  override def selectAll: Future[Seq[ShareDTO]] = connection
+  override def selectAll: Future[Seq[ShareModel]] = connection
     .run(table.result)
-    .map(f => f.map(s => toDTO(s)))
+    .map(f => f.map(s => toModel(s)))
 
   override def filterByTypeCode(typeCode: Int,
-                                testFlg: Boolean): Future[Seq[ShareDTO]] = {
+                                testFlg: Boolean): Future[Seq[ShareModel]] = {
 
     val (start: Timestamp, end: Timestamp) = getDayInterval
 
@@ -86,11 +85,11 @@ final class ShareDAO(val connection: Connection)
           s.typeCd === typeCode.toShort &&
           s.deletedFlg === false
       ).result
-    ).map(f => f.map(s => toDTO(s)))
+    ).map(f => f.map(s => toModel(s)))
   }
 
   private def updateRow(figi: String,
-                        share: ShareType,
+                        share: InputShareRow,
                         start: Timestamp,
                         end: Timestamp) = table
     .filter(s => {
@@ -117,8 +116,8 @@ final class ShareDAO(val connection: Connection)
       s.profit
     )).update(share)
 
-  override def update(shares: Seq[ShareDTO],
-             typeCode: TypeCode): Future[Seq[Int]] = {
+  override def update(shares: Seq[ShareModel],
+                      typeCode: TypeCode): Future[Seq[Int]] = {
 
     val (start: Timestamp, end: Timestamp) = getDayInterval
 
@@ -128,7 +127,7 @@ final class ShareDAO(val connection: Connection)
         .api
         .DBIO
         .sequence(
-          shares.map(s => updateRow(s.figi, s.toShareType(typeCode), start, end))
+          shares.map(s => updateRow(s.figi, s.toInputShareRow(typeCode), start, end))
         )
     )
   }
@@ -161,7 +160,7 @@ final class ShareDAO(val connection: Connection)
     )
   }
 
-  private def toDTO(sharesRow: SharesRow): ShareDTO = ShareDTO
+  private def toModel(sharesRow: SharesRow): ShareModel = ShareModel
     .builder()
     .fromRowParams(
       sharesRow.figi,
@@ -177,8 +176,8 @@ final class ShareDAO(val connection: Connection)
     ).build()
 }
 
-object ShareDAO {
-  type ShareType = (
+object ShareDAOImpl {
+  type InputShareRow = (
     Option[Timestamp],
       Int,
       Option[Int],

@@ -1,7 +1,7 @@
 package ru.mikhaildruzhinin.trader.client.impl
 
 import com.typesafe.scalalogging.Logger
-import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
+import ru.mikhaildruzhinin.trader.client.InvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.InvestApi
@@ -13,8 +13,8 @@ import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
 
-class InvestApiClient(investApi: InvestApi)
-                     (implicit appConfig: AppConfig) extends BaseInvestApiClient {
+class BasicInvestApiClientImpl(investApi: InvestApi)
+                              (implicit appConfig: AppConfig) extends InvestApiClient {
 
   val log: Logger = Logger(getClass.getName)
 

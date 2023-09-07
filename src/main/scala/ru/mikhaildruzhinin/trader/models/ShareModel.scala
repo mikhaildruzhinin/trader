@@ -1,26 +1,25 @@
-package ru.mikhaildruzhinin.trader.core.dto
+package ru.mikhaildruzhinin.trader.models
 
 import com.google.protobuf.Timestamp
-import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.core.TypeCode
-import ru.mikhaildruzhinin.trader.database.tables.impl.ShareDAO.ShareType
+import ru.mikhaildruzhinin.trader.config.{AppConfig, TypeCode}
+import ru.mikhaildruzhinin.trader.database.tables.impl.ShareDAOImpl.InputShareRow
 import ru.tinkoff.piapi.contract.v1.Quotation
 import ru.tinkoff.piapi.core.utils.DateUtils._
 import ru.tinkoff.piapi.core.utils.MapperUtils._
 
 import scala.math.BigDecimal.{RoundingMode, javaBigDecimal2bigDecimal}
 
-case class ShareDTO private(figi: String,
-                            lot: Int,
-                            quantity: Option[Int],
-                            currency: String,
-                            name: String,
-                            exchange: String,
-                            startingPrice: Option[Quotation] = None,
-                            purchasePrice: Option[Quotation] = None,
-                            currentPrice: Option[Quotation] = None,
-                            updateTime: Option[Timestamp] = None)
-                           (implicit appConfig: AppConfig) {
+case class ShareModel private(figi: String,
+                              lot: Int,
+                              quantity: Option[Int],
+                              currency: String,
+                              name: String,
+                              exchange: String,
+                              startingPrice: Option[Quotation] = None,
+                              purchasePrice: Option[Quotation] = None,
+                              currentPrice: Option[Quotation] = None,
+                              updateTime: Option[Timestamp] = None)
+                             (implicit appConfig: AppConfig) {
 
   lazy val uptrendPct: Option[BigDecimal] = {
     val uptrendPctNoTax: Option[BigDecimal] = (startingPrice, currentPrice) match {
@@ -74,7 +73,7 @@ case class ShareDTO private(figi: String,
     noTaxValue * (100 - appConfig.shares.incomeTaxPct) / 100
   }
 
-  def toShareType(typeCode: TypeCode): ShareType = (
+  def toInputShareRow(typeCode: TypeCode): InputShareRow = (
     updateTime match {
       case Some(t) =>
         Some(java.sql.Timestamp.from(timestampToInstant(t)))
@@ -132,6 +131,6 @@ case class ShareDTO private(figi: String,
   }
 }
 
-object ShareDTO {
-  def builder()(implicit appConfig: AppConfig): ShareDTOBuilder[Empty] = new ShareDTOBuilder()
+object ShareModel {
+  def builder()(implicit appConfig: AppConfig): ShareModelBuilder[Empty] = new ShareModelBuilder()
 }

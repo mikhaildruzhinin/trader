@@ -12,21 +12,21 @@ import pureconfig.generic.ProductHint
 import pureconfig.generic.auto.exportReader
 import pureconfig.generic.semiauto.deriveEnumerationReader
 import pureconfig.{CamelCase, ConfigFieldMapping, ConfigReader, ConfigSource}
-import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
-import ru.mikhaildruzhinin.trader.client.impl.ResilientInvestApiClient
+import ru.mikhaildruzhinin.trader.client.InvestApiClient
+import ru.mikhaildruzhinin.trader.client.impl.ResilientInvestApiClientImpl
 import ru.mikhaildruzhinin.trader.config.{AppConfig, InvestApiMode}
-import ru.mikhaildruzhinin.trader.core.services.base._
-import ru.mikhaildruzhinin.trader.core.services.impl._
 import ru.mikhaildruzhinin.trader.database.Connection
-import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO
-import ru.mikhaildruzhinin.trader.database.tables.impl.ShareDAO
+import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
+import ru.mikhaildruzhinin.trader.database.tables.impl.ShareDAOImpl
+import ru.mikhaildruzhinin.trader.services._
+import ru.mikhaildruzhinin.trader.services.impl._
 import ru.tinkoff.piapi.core.InvestApi
 
 abstract class BaseIntegrationSpec extends FixtureAnyFeatureSpec {
 
   val log: Logger = Logger(getClass.getName)
 
-  case class FixtureParam(shareService: BaseShareService)
+  case class FixtureParam(shareService: ShareService)
 
   def updateConfig(port: String): Config = ConfigFactory
     .load()
@@ -58,14 +58,14 @@ abstract class BaseIntegrationSpec extends FixtureAnyFeatureSpec {
       case InvestApiMode.Sandbox => InvestApi.createSandbox(appConfig.tinkoffInvestApi.token)
     }
 
-    lazy val investApiClient: BaseInvestApiClient = wire[ResilientInvestApiClient]
+    lazy val investApiClient: InvestApiClient = wire[ResilientInvestApiClientImpl]
     lazy val config = updateConfig(port.toString)
     lazy val connection: Connection = Connection("slick", config)
-    lazy val shareDAO: BaseShareDAO = wire[ShareDAO]
-    lazy val historicCandleService: BaseHistoricCandleService = wire[HistoricCandleService]
-    lazy val priceService: BasePriceService = wire[PriceService]
-    lazy val accountService: BaseAccountService = wire[AccountService]
-    lazy val shareService: BaseShareService = wire[ShareService]
+    lazy val shareDAO: ShareDAO = wire[ShareDAOImpl]
+    lazy val candleService: CandleService = wire[CandleServiceImpl]
+    lazy val priceService: PriceService = wire[PriceServiceImpl]
+    lazy val accountService: AccountService = wire[AccountServiceImpl]
+    lazy val shareService: ShareService = wire[ShareServiceImpl]
     lazy val fixtureParam: FixtureParam = wire[FixtureParam]
 
     val dataSource: PGSimpleDataSource = appConfig.slick.db.properties.dataSource

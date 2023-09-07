@@ -4,12 +4,12 @@ import com.github.kagkarlsson.scheduler.Scheduler
 import com.github.kagkarlsson.scheduler.task.helper.{RecurringTask, Tasks}
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.core.services.base.BaseShareService
+import ru.mikhaildruzhinin.trader.services.ShareService
 
 import java.time.ZoneId
 
 object SchedulerFactory {
-  def apply(shareService: BaseShareService)
+  def apply(shareService: ShareService)
            (implicit appConfig: AppConfig): Scheduler = {
 
     val purchaseTask: RecurringTask[Void] = Tasks

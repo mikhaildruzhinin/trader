@@ -13,13 +13,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class ResilientInvestApiClient private (investApi: InvestApi,
-                                        instrumentsRateLimiter: RateLimiter,
-                                        marketDataRateLimiter: RateLimiter,
-                                        ordersRateLimiter: RateLimiter,
-                                        usersRateLimiter: RateLimiter)
-                                       (implicit appConfig: AppConfig)
-  extends InvestApiClient(investApi) {
+class ResilientInvestApiClientImpl private(investApi: InvestApi,
+                                           instrumentsRateLimiter: RateLimiter,
+                                           marketDataRateLimiter: RateLimiter,
+                                           ordersRateLimiter: RateLimiter,
+                                           usersRateLimiter: RateLimiter)
+                                          (implicit appConfig: AppConfig)
+  extends BasicInvestApiClientImpl(investApi) {
 
   //noinspection ScalaWeakerAccess
   protected def limit[T](rateLimiter: RateLimiter,
@@ -94,7 +94,7 @@ class ResilientInvestApiClient private (investApi: InvestApi,
   ))
 }
 
-object ResilientInvestApiClient {
+object ResilientInvestApiClientImpl {
   private def getRateLimiterConfig(period: Int,
                                    timeUnit: ChronoUnit,
                                    limit: Int)
@@ -115,7 +115,7 @@ object ResilientInvestApiClient {
   ).rateLimiter(name)
 
   def apply(investApi: InvestApi)
-           (implicit appConfig: AppConfig): ResilientInvestApiClient = {
+           (implicit appConfig: AppConfig): ResilientInvestApiClientImpl = {
 
     lazy val instrumentsRateLimiter: RateLimiter = getRateLimiter(
       limit = appConfig.tinkoffInvestApi.limits.services.instruments,
@@ -137,7 +137,7 @@ object ResilientInvestApiClient {
       name = "usersRateLimiter"
     )
 
-    new ResilientInvestApiClient(
+    new ResilientInvestApiClientImpl(
       investApi,
       instrumentsRateLimiter,
       marketDataRateLimiter,

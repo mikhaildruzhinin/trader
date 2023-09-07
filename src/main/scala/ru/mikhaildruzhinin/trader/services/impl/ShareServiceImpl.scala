@@ -1,13 +1,12 @@
-package ru.mikhaildruzhinin.trader.core.services.impl
+package ru.mikhaildruzhinin.trader.services.impl
 
 import com.typesafe.scalalogging.Logger
-import ru.mikhaildruzhinin.trader.client.base.BaseInvestApiClient
-import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.mikhaildruzhinin.trader.core.TypeCode
-import ru.mikhaildruzhinin.trader.core.dto.{HistoricCandleDTO, PriceDTO, ShareDTO}
-import ru.mikhaildruzhinin.trader.core.services.base._
+import ru.mikhaildruzhinin.trader.client.InvestApiClient
+import ru.mikhaildruzhinin.trader.config.{AppConfig, TypeCode}
 import ru.mikhaildruzhinin.trader.database.Connection
-import ru.mikhaildruzhinin.trader.database.tables.base.BaseShareDAO
+import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
+import ru.mikhaildruzhinin.trader.models.{CandleModel, PriceModel, ShareModel}
+import ru.mikhaildruzhinin.trader.services._
 import ru.tinkoff.piapi.contract.v1.{Quotation, Share}
 import ru.tinkoff.piapi.core.utils.MapperUtils.quotationToBigDecimal
 
@@ -16,31 +15,24 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.math.BigDecimal.javaBigDecimal2bigDecimal
 
-class ShareService(investApiClient: BaseInvestApiClient,
-                   connection: Connection,
-                   shareDAO: BaseShareDAO,
-                   historicCandleService: BaseHistoricCandleService,
-                   priceService: BasePriceService,
-                   accountService: BaseAccountService)
-                  (implicit appConfig: AppConfig) extends BaseShareService {
+class ShareServiceImpl(investApiClient: InvestApiClient,
+                       connection: Connection,
+                       shareDAO: ShareDAO,
+                       candleService: CandleService,
+                       priceService: PriceService,
+                       accountService: AccountService)
+                      (implicit appConfig: AppConfig) extends ShareService {
 
   protected val log: Logger = Logger(getClass.getName)
 
-  /**
-   * Wraps each share in a sequence in an instance of ShareDTO class.
-   *
-   * @param shares sequence of shares
-   * @return sequence of wrapped shares
-   */
-
-  protected def updateStartingPrices(shares: Seq[ShareDTO],
-                                     candles: Seq[HistoricCandleDTO]): Future[Seq[ShareDTO]] = Future {
+  protected def updateStartingPrices(shares: Seq[ShareModel],
+                                     candles: Seq[CandleModel]): Future[Seq[ShareModel]] = Future {
     shares
       .zip(candles)
       .map(x => {
-        ShareDTO
+        ShareModel
           .builder()
-          .fromDTO(x._1)
+          .fromModel(x._1)
           .withStartingPrice(x._2.open)
           .withUpdateTime(x._2.time)
           .build()
@@ -66,36 +58,36 @@ class ShareService(investApiClient: BaseInvestApiClient,
     })
   }
 
-  override def getFilteredShares: Future[Seq[ShareDTO]] = for {
+  override def getFilteredShares: Future[Seq[ShareModel]] = for {
     shares <- investApiClient.getShares
     filteredShares <- filterShares(shares)
-    wrappedShares <- Future { filteredShares.map(s => ShareDTO.builder().fromShare(s).build()) }
+    wrappedShares <- Future { filteredShares.map(s => ShareModel.builder().fromShare(s).build()) }
   } yield wrappedShares
 
-  protected def persistNewShares(shares: Seq[ShareDTO],
+  protected def persistNewShares(shares: Seq[ShareModel],
                                  typeCode: TypeCode): Future[Option[Int]] = for {
     _ <- shareDAO.delete()
     insertedShares <- shareDAO.insert(shares, typeCode)
   } yield insertedShares
 
-  override def getPersistedShares(typeCode: TypeCode): Future[Seq[ShareDTO]] = for {
+  override def getPersistedShares(typeCode: TypeCode): Future[Seq[ShareModel]] = for {
     shares <- shareDAO.filterByTypeCode(typeCode.code, appConfig.testFlg)
   } yield shares
 
-  protected def updateCurrentPrices(shares: Seq[ShareDTO],
-                                    prices: Seq[PriceDTO]): Future[Seq[ShareDTO]] = Future {
+  protected def updateCurrentPrices(shares: Seq[ShareModel],
+                                    prices: Seq[PriceModel]): Future[Seq[ShareModel]] = Future {
     prices.zip(shares)
       .map(x =>
-        ShareDTO
+        ShareModel
           .builder()
-          .fromDTO(x._2)
+          .fromModel(x._2)
           .withCurrentPrice(Some(x._1.price))
           .withUpdateTime(Some(x._1.updateTime))
           .build()
       )
   }
 
-  protected def calculateQuantities(shares: Seq[ShareDTO]): Future[Seq[Option[Int]]] = Future {
+  protected def calculateQuantities(shares: Seq[ShareModel]): Future[Seq[Option[Int]]] = Future {
     shares.map(s =>
       Some((
         BigDecimal(10000 / shares.length)
@@ -105,23 +97,23 @@ class ShareService(investApiClient: BaseInvestApiClient,
     )
   }
 
-  protected def updatePurchasePrices(shares: Seq[ShareDTO],
+  protected def updatePurchasePrices(shares: Seq[ShareModel],
                                      prices: Seq[Option[Quotation]],
-                                     quantities: Seq[Option[Int]]): Future[Seq[ShareDTO]] = Future {
+                                     quantities: Seq[Option[Int]]): Future[Seq[ShareModel]] = Future {
     shares.zip(prices)
       .zip(quantities)
       .map { case ((s, p), q) => (s, p, q) }
       .map(
-        x => ShareDTO
+        x => ShareModel
           .builder()
-          .fromDTO(x._1)
+          .fromModel(x._1)
           .withPurchasePrice(x._2)
           .withQuantity(x._3)
           .build()
       )
   }
 
-  protected def filterUptrend(shares: Seq[ShareDTO]): Future[Seq[ShareDTO]] = Future {
+  protected def filterUptrend(shares: Seq[ShareModel]): Future[Seq[ShareModel]] = Future {
 
     shares
       .filter(_.uptrendPct >= Some(appConfig.shares.uptrendThresholdPct))
@@ -135,10 +127,10 @@ class ShareService(investApiClient: BaseInvestApiClient,
       .take(appConfig.shares.numUptrendShares)
   }
 
-  protected def persistUpdatedShares(shares: Seq[ShareDTO],
-                                    typeCode: TypeCode): Future[Seq[Int]] = shareDAO.update(shares, typeCode)
+  protected def persistUpdatedShares(shares: Seq[ShareModel],
+                                     typeCode: TypeCode): Future[Seq[Int]] = shareDAO.update(shares, typeCode)
 
-  /*protected*/ def partitionEnrichedSharesShares(enrichedShares: Seq[EnrichedShareDTO]): Future[(Seq[EnrichedShareDTO], Seq[EnrichedShareDTO])] = Future {
+  /*protected*/ def partitionEnrichedSharesShares(enrichedShares: Seq[EnrichedShareModel]): Future[(Seq[EnrichedShareModel], Seq[EnrichedShareModel])] = Future {
     enrichedShares.partition(s =>
       (s._1.roi <= Some(BigDecimal(appConfig.shares.stopLossPct))
         && s._1.roi < s._2)
@@ -147,13 +139,13 @@ class ShareService(investApiClient: BaseInvestApiClient,
   }
 
   // public or protected?
-  override def getAvailableShares: Future[Seq[ShareDTO]] = for {
+  override def getAvailableShares: Future[Seq[ShareModel]] = for {
     shares <- getFilteredShares
-    candles <- historicCandleService.getWrappedCandles(shares)
+    candles <- candleService.getWrappedCandles(shares)
     availableShares <- updateStartingPrices(shares, candles)
   } yield availableShares
 
-  protected def purchaseShares(shares: Seq[ShareDTO]): Future[Seq[ShareDTO]] = for {
+  protected def purchaseShares(shares: Seq[ShareModel]): Future[Seq[ShareModel]] = for {
     account <- accountService.getAccount
     mockPurchasePrices <- Future(shares.map(_.currentPrice))
     quantities <- calculateQuantities(shares)
