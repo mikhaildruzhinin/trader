@@ -160,15 +160,15 @@ class ShareServiceImpl(investApiClient: InvestApiClient,
 
     currentPrices <- priceService.getCurrentPrices(availableShares)
     updatedShares <- updateCurrentPrices(availableShares, currentPrices)
-    numUpdatedShares <- persistUpdatedShares(updatedShares, TypeCode.Available)
+    numUpdatedShares <- shareDAO.update(updatedShares, TypeCode.Available)
     _ <- Future(log.info(s"Updated: ${numUpdatedShares.sum}"))
 
     uptrendShares <- filterUptrend(updatedShares)
-    numUptrendShares <- persistUpdatedShares(uptrendShares, TypeCode.Uptrend)
+    numUptrendShares <- shareDAO.update(uptrendShares, TypeCode.Uptrend)
     _ <- Future(log.info(s"Best uptrend: ${numUptrendShares.sum}"))
 
     purchasedShares <- purchaseShares(uptrendShares)
-    numPurchasedShares <- persistUpdatedShares(purchasedShares, TypeCode.Purchased)
+    numPurchasedShares <- shareDAO.update(purchasedShares, TypeCode.Purchased)
     _ <- Future(log.info(s"Purchased: ${numPurchasedShares.sum}"))
   } yield purchasedShares.length
 
@@ -178,15 +178,15 @@ class ShareServiceImpl(investApiClient: InvestApiClient,
     updatedShares <- updateCurrentPrices(shares, prices)
     enrichedShares: Seq[EnrichedShareModel] <- Future(shares.zip(shares.map(_.roi)))
     (sell, keep) <- partitionEnrichedSharesShares(enrichedShares)
-    soldSharesNum <- persistUpdatedShares(sell.map(_._1), TypeCode.Sold)
+    soldSharesNum <- shareDAO.update(sell.map(_._1), TypeCode.Sold)
     _ <- Future(log.info(s"Sold: ${soldSharesNum.sum}"))
     _ <- Future(sell.foreach(s => log.info(s.toString)))
-    _ <- persistUpdatedShares(keep.map(_._1), TypeCode.Purchased)
+    _ <- shareDAO.update(keep.map(_._1), TypeCode.Purchased)
   } yield soldSharesNum.sum
 
   override def sellShares(): Future[Int] = for {
     shares <- getPersistedShares(TypeCode.Purchased)
-    soldSharesNum <- persistUpdatedShares(shares, TypeCode.Sold)
+    soldSharesNum <- shareDAO.update(shares, TypeCode.Sold)
     _ <- Future(log.info(s"Sold: ${soldSharesNum.sum}"))
     _ <- Future(shares.foreach(s => log.info(s.toString)))
   } yield soldSharesNum.sum

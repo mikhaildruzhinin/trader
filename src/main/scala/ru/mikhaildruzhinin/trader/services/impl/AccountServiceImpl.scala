@@ -11,8 +11,7 @@ import scala.concurrent.Future
 class AccountServiceImpl(investApiClient: InvestApiClient)
                         (implicit appConfig: AppConfig) extends AccountService {
 
-  override def getAccount: Future[AccountModel] = for {
-    account <- investApiClient.getAccount
-    wrappedAccount <- Future { AccountModel(account) }
-  } yield wrappedAccount
+  override def getAccount: Future[AccountModel] = investApiClient
+    .getAccounts
+    .map(_.head) // TODO: add error handling
 }

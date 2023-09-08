@@ -2,7 +2,8 @@ package ru.mikhaildruzhinin.trader.client.impl
 
 import io.github.resilience4j.ratelimiter.{RateLimiter, RateLimiterConfig, RateLimiterRegistry}
 import ru.mikhaildruzhinin.trader.config.AppConfig
-import ru.tinkoff.piapi.contract.v1.{Account, CandleInterval, HistoricCandle, LastPrice, OrderDirection, OrderType, PostOrderResponse, Quotation, Share}
+import ru.mikhaildruzhinin.trader.models.{AccountModel, PriceModel}
+import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.InvestApi
 
 import java.time.temporal.ChronoUnit
@@ -58,18 +59,18 @@ class ResilientInvestApiClientImpl private(investApi: InvestApi,
     callable = () => super.getShares
   ))
 
-  override def getLastPrices(figi: Seq[String]): Future[Seq[LastPrice]] = retry(
+  override def getLastPrices(figi: Seq[String]): Future[Seq[PriceModel]] = retry(
     appConfig.tinkoffInvestApi.retry.numAttempts
   )(limit(
     rateLimiter = marketDataRateLimiter,
     callable = () => super.getLastPrices(figi)
   ))
 
-  override def getAccount: Future[Account] = retry(
+  override def getAccounts: Future[Seq[AccountModel]] = retry(
     appConfig.tinkoffInvestApi.retry.numAttempts
   )(limit(
     rateLimiter = usersRateLimiter,
-    callable = () => super.getAccount
+    callable = () => super.getAccounts
   ))
 
   override def postOrder(figi: String,

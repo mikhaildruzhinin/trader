@@ -1,5 +1,6 @@
 package ru.mikhaildruzhinin.trader.client
 
+import ru.mikhaildruzhinin.trader.models.{AccountModel, PriceModel}
 import ru.tinkoff.piapi.contract.v1._
 
 import java.time.Instant
@@ -15,9 +16,9 @@ abstract class InvestApiClient {
 
   def getShares: Future[Seq[Share]]
 
-  def getLastPrices(figi: Seq[String]): Future[Seq[LastPrice]]
+  def getLastPrices(figi: Seq[String]): Future[Seq[PriceModel]]
 
-  def getAccount: Future[Account]
+  def getAccounts: Future[Seq[AccountModel]]
 
   def postOrder(figi: String,
                 quantity: Long,

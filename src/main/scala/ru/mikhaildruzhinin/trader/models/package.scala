@@ -23,6 +23,12 @@ package object models {
       )
       case None => CandleModel(None, None, None)
     }
+
+    def apply(historicCandle: HistoricCandle): CandleModel = new CandleModel(
+      Some(historicCandle.getOpen),
+      Some(historicCandle.getClose),
+      Some(historicCandle.getTime)
+    )
   }
 
   case class PriceModel(price: Quotation,

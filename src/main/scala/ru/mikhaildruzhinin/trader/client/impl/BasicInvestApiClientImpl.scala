@@ -3,6 +3,7 @@ package ru.mikhaildruzhinin.trader.client.impl
 import com.typesafe.scalalogging.Logger
 import ru.mikhaildruzhinin.trader.client.InvestApiClient
 import ru.mikhaildruzhinin.trader.config.AppConfig
+import ru.mikhaildruzhinin.trader.models.{AccountModel, PriceModel}
 import ru.tinkoff.piapi.contract.v1._
 import ru.tinkoff.piapi.core.InvestApi
 
@@ -33,17 +34,17 @@ class BasicInvestApiClientImpl(investApi: InvestApi)
     .asScala
     .map(_.asScala.toSeq)
 
-  override def getLastPrices(figi: Seq[String]): Future[Seq[LastPrice]] = investApi
+  override def getLastPrices(figi: Seq[String]): Future[Seq[PriceModel]] = investApi
     .getMarketDataService
     .getLastPrices(figi.asJava)
     .asScala
-    .map(_.asScala.toSeq)
+    .map(_.asScala.toSeq.map(p => PriceModel(p)))
 
-  override def getAccount: Future[Account] = investApi
+  override def getAccounts: Future[Seq[AccountModel]] = investApi
     .getUserService
     .getAccounts
     .asScala
-    .map(_.asScala.head)
+    .map(_.asScala.toSeq.map(a => AccountModel(a)))
 
   override def postOrder(figi: String,
                          quantity: Long,
