@@ -5,6 +5,7 @@ import ru.mikhaildruzhinin.trader.client.InvestApiClient
 import ru.mikhaildruzhinin.trader.config.{AppConfig, TypeCode}
 import ru.mikhaildruzhinin.trader.database.Connection
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
+import ru.mikhaildruzhinin.trader.models.ShareModel.EnrichedShareModel
 import ru.mikhaildruzhinin.trader.models.{CandleModel, PriceModel, ShareModel}
 import ru.mikhaildruzhinin.trader.services._
 import ru.tinkoff.piapi.contract.v1.{Quotation, Share}
@@ -175,7 +176,7 @@ class ShareServiceImpl(investApiClient: InvestApiClient,
     shares <- getPersistedShares(TypeCode.Purchased)
     prices <- priceService.getCurrentPrices(shares)
     updatedShares <- updateCurrentPrices(shares, prices)
-    enrichedShares <- Future(shares.zip(shares.map(_.roi)))
+    enrichedShares: Seq[EnrichedShareModel] <- Future(shares.zip(shares.map(_.roi)))
     (sell, keep) <- partitionEnrichedSharesShares(enrichedShares)
     soldSharesNum <- persistUpdatedShares(sell.map(_._1), TypeCode.Sold)
     _ <- Future(log.info(s"Sold: ${soldSharesNum.sum}"))

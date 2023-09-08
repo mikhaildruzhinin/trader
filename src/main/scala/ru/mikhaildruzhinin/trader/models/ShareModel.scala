@@ -132,5 +132,9 @@ case class ShareModel private(figi: String,
 }
 
 object ShareModel {
+  type Roi = Option[BigDecimal]
+
+  type EnrichedShareModel = (ShareModel, Roi)
+
   def builder()(implicit appConfig: AppConfig): ShareModelBuilder[Empty] = new ShareModelBuilder()
 }

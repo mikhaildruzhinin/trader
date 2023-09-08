@@ -19,8 +19,6 @@ package object services {
   }
 
   trait ShareService {
-    type EnrichedShareModel = (ShareModel, Option[BigDecimal])
-
     def getFilteredShares: Future[Seq[ShareModel]]
 
     def getPersistedShares(typeCode: TypeCode): Future[Seq[ShareModel]]
