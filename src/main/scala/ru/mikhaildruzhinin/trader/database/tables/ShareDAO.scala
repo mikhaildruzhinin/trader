@@ -1,6 +1,6 @@
 package ru.mikhaildruzhinin.trader.database.tables
 
-import ru.mikhaildruzhinin.trader.config.TypeCode
+import ru.mikhaildruzhinin.trader.TypeCode
 import ru.mikhaildruzhinin.trader.models.ShareModel
 
 import scala.concurrent.Future

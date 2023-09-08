@@ -1,16 +1,15 @@
 package ru.mikhaildruzhinin.trader.database.tables.impl
 
-import ru.mikhaildruzhinin.trader.config.{AppConfig, TypeCode}
-import ru.mikhaildruzhinin.trader.models.ShareModel
+import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.database.Connection
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.mikhaildruzhinin.trader.database.tables.codegen.{SharesTable, Tables}
 import ru.mikhaildruzhinin.trader.database.tables.impl.ShareDAOImpl.InputShareRow
+import ru.mikhaildruzhinin.trader.models.ShareModel
+import ru.mikhaildruzhinin.trader.{DayInterval, TypeCode}
 import slick.jdbc.JdbcProfile
 
 import java.sql.Timestamp
-import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -31,16 +30,6 @@ final class ShareDAOImpl(val connection: Connection)
   }
 
   private lazy val table = TableQuery[S]
-
-  private def getDayInterval: (Timestamp, Timestamp) = {
-    val start: Timestamp = Timestamp.valueOf(LocalDate.now.atStartOfDay)
-
-    val end: Timestamp = Timestamp.valueOf(
-      LocalDate.now.plus(1, ChronoUnit.DAYS).atStartOfDay
-    )
-
-    (start, end)
-  }
 
   override def createIfNotExists: Future[Unit] = connection.run(table.schema.createIfNotExists)
 
@@ -75,12 +64,12 @@ final class ShareDAOImpl(val connection: Connection)
   override def filterByTypeCode(typeCode: Int,
                                 testFlg: Boolean): Future[Seq[ShareModel]] = {
 
-    val (start: Timestamp, end: Timestamp) = getDayInterval
+    val dayInterval = DayInterval()
 
     connection.run(
       table.filter(s =>
-        s.loadDttm >= start &&
-          s.loadDttm < end &&
+        s.loadDttm >= dayInterval.start &&
+          s.loadDttm < dayInterval.end &&
           s.testFlg === testFlg &&
           s.typeCd === typeCode.toShort &&
           s.deletedFlg === false
@@ -119,7 +108,7 @@ final class ShareDAOImpl(val connection: Connection)
   override def update(shares: Seq[ShareModel],
                       typeCode: TypeCode): Future[Seq[Int]] = {
 
-    val (start: Timestamp, end: Timestamp) = getDayInterval
+    val dayInterval = DayInterval()
 
     connection.run(
       connection.databaseConfig
@@ -127,18 +116,20 @@ final class ShareDAOImpl(val connection: Connection)
         .api
         .DBIO
         .sequence(
-          shares.map(s => updateRow(s.figi, s.toInputShareRow(typeCode), start, end))
+          shares.map(s => updateRow(
+            s.figi, s.toInputShareRow(typeCode), dayInterval.start, dayInterval.end)
+          )
         )
     )
   }
 
   override def updateTypeCode(figis: Seq[String], typeCode: Int): Future[Int] = {
-    val (start: Timestamp, end: Timestamp) = getDayInterval
+    val dayInterval = DayInterval()
 
     connection.run(
       table.filter(s => {
-        s.loadDttm >= start &&
-          s.loadDttm < end &&
+        s.loadDttm >= dayInterval.start &&
+          s.loadDttm < dayInterval.end &&
           s.figi.inSet(figis) &&
           s.deletedFlg === false
       }).map(_.typeCd)
@@ -148,12 +139,12 @@ final class ShareDAOImpl(val connection: Connection)
   }
 
   override def delete(): Future[Int] = {
-    val (start: Timestamp, end: Timestamp) = getDayInterval
+    val dayInterval = DayInterval()
 
     connection.run(
       table.filter(s => {
-        s.loadDttm >= start &&
-          s.loadDttm < end &&
+        s.loadDttm >= dayInterval.start &&
+          s.loadDttm < dayInterval.end &&
           s.deletedFlg === false
       }).map(_.deletedFlg)
         .update(true)

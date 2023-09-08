@@ -1,8 +1,9 @@
 package ru.mikhaildruzhinin.trader.services.impl
 
 import com.typesafe.scalalogging.Logger
+import ru.mikhaildruzhinin.trader.TypeCode
 import ru.mikhaildruzhinin.trader.client.InvestApiClient
-import ru.mikhaildruzhinin.trader.config.{AppConfig, TypeCode}
+import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.database.Connection
 import ru.mikhaildruzhinin.trader.database.tables.ShareDAO
 import ru.mikhaildruzhinin.trader.models.ShareModel.EnrichedShareModel

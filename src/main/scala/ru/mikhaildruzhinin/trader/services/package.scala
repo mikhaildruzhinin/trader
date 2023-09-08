@@ -1,6 +1,5 @@
 package ru.mikhaildruzhinin.trader
 
-import ru.mikhaildruzhinin.trader.config.TypeCode
 import ru.mikhaildruzhinin.trader.models._
 
 import scala.concurrent.Future

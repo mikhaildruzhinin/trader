@@ -1,7 +1,8 @@
 package ru.mikhaildruzhinin.trader.models
 
 import com.google.protobuf.Timestamp
-import ru.mikhaildruzhinin.trader.config.{AppConfig, TypeCode}
+import ru.mikhaildruzhinin.trader.TypeCode
+import ru.mikhaildruzhinin.trader.config.AppConfig
 import ru.mikhaildruzhinin.trader.database.tables.impl.ShareDAOImpl.InputShareRow
 import ru.tinkoff.piapi.contract.v1.Quotation
 import ru.tinkoff.piapi.core.utils.DateUtils._
