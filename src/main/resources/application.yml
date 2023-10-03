@@ -1,0 +1,7 @@
+server:
+  port: 8081
+spring:
+  datasource:
+    url: "jdbc:postgresql://localhost:2345/trader"
+    username: postgres
+    password: postgres
