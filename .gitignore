@@ -61,3 +61,6 @@ HELP.md
 
 # Environment variables
 .env
+
+# Postgres volume
+pg/
