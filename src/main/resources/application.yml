@@ -1,3 +1,6 @@
+trader:
+  tinkoffInvestApi:
+    token: ${TINKOFF_TOKEN}
 server:
   port: 8081
 spring:

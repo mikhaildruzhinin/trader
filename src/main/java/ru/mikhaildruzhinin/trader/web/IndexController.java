@@ -1,15 +1,24 @@
 package ru.mikhaildruzhinin.trader.web;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import ru.mikhaildruzhinin.trader.service.CandleService;
+import ru.tinkoff.piapi.contract.v1.HistoricCandle;
+
+import java.util.List;
 
 @Slf4j
 @Controller
 @RequestMapping("/")
 public class IndexController {
+
+    @Autowired
+    private CandleService candleService;
 
     @GetMapping
     public String get() {
@@ -17,8 +26,10 @@ public class IndexController {
     }
 
     @PostMapping
-    public String post() {
-        log.info("hello world");
+    public String post(@RequestParam("figi") String figi) {
+        log.info(figi);
+
+        List<HistoricCandle> candles = candleService.getCandles(figi);
         return "index";
     }
 }
