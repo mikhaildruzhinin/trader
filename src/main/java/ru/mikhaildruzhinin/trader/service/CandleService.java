@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.mikhaildruzhinin.trader.client.InvestApiClient;
 import ru.mikhaildruzhinin.trader.model.Candle;
+import ru.mikhaildruzhinin.trader.repository.CandleRepository;
 import ru.tinkoff.piapi.contract.v1.CandleInterval;
 
 import java.time.Instant;
@@ -18,15 +19,17 @@ public class CandleService {
     @Autowired
     private InvestApiClient investApiClient;
 
+    @Autowired
+    private CandleRepository candleRepository;
+
     public List<Candle> getCandles(String figi) {
-        Instant from = Instant.now().minus(10, ChronoUnit.MINUTES);
+        Instant from = candleRepository.findMaxTime();
         Instant to = Instant.now();
         CandleInterval interval = CandleInterval.CANDLE_INTERVAL_5_MIN;
 
         List<Candle> candles = investApiClient.getCandles(figi, from, to, interval);
 
-
-//        candles.get(candles.size() - 1);
+        candleRepository.saveAll(candles);
 
         for (Candle candle: candles) {
             Instant time = candle.getTime();

@@ -10,3 +10,5 @@ spring:
     password: postgres
   flyway:
     schemas: trader
+    username: postgres
+    password: postgres
