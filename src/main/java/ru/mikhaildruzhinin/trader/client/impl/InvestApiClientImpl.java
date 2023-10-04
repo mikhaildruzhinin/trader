@@ -8,7 +8,6 @@ import ru.tinkoff.piapi.contract.v1.CandleInterval;
 import ru.tinkoff.piapi.contract.v1.HistoricCandle;
 import ru.tinkoff.piapi.core.InvestApi;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,13 +37,14 @@ public class InvestApiClientImpl implements InvestApiClient {
                 .toList();
 
         for (HistoricCandle historicCandle: historicCandles) {
-            BigDecimal open = quotationToBigDecimal(historicCandle.getOpen());
-            BigDecimal close = quotationToBigDecimal(historicCandle.getClose());
-            BigDecimal high = quotationToBigDecimal(historicCandle.getHigh());
-            BigDecimal low = quotationToBigDecimal(historicCandle.getLow());
-            Instant time = timestampToInstant(historicCandle.getTime());
-
-            Candle candle = new Candle(open, close, high, low, time);
+            Candle candle = Candle.builder()
+                    .figi(figi)
+                    .open(quotationToBigDecimal(historicCandle.getOpen()))
+                    .close(quotationToBigDecimal(historicCandle.getClose()))
+                    .high(quotationToBigDecimal(historicCandle.getHigh()))
+                    .low(quotationToBigDecimal(historicCandle.getLow()))
+                    .time(timestampToInstant(historicCandle.getTime()))
+                    .build();
 
             candles.add(candle);
         }

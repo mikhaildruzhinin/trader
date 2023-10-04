@@ -1,14 +1,18 @@
 package ru.mikhaildruzhinin.trader.model;
 
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
 @Data
-@AllArgsConstructor
+@Builder
 public class Candle {
+
+    private final Long id;
+
+    private String figi;
 
     private final BigDecimal open;
 
