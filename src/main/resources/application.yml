@@ -1,6 +1,6 @@
 trader:
   tinkoffInvestApi:
-    token: ${TINKOFF_TOKEN}
+    token: ${TINKOFF_TOKEN:token}
 server:
   port: 8081
 spring:
@@ -8,3 +8,5 @@ spring:
     url: "jdbc:postgresql://localhost:2345/trader"
     username: postgres
     password: postgres
+  flyway:
+    schemas: trader
