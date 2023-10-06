@@ -3,7 +3,7 @@ package ru.mikhaildruzhinin.trader.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.mikhaildruzhinin.trader.client.InvestApiClient;
+import ru.mikhaildruzhinin.trader.client.SyncInvestApiClient;
 import ru.mikhaildruzhinin.trader.model.Candle;
 import ru.mikhaildruzhinin.trader.repository.CandleRepository;
 import ru.tinkoff.piapi.contract.v1.CandleInterval;
@@ -18,7 +18,7 @@ import java.util.Optional;
 public class CandleService {
 
     @Autowired
-    private InvestApiClient investApiClient;
+    private SyncInvestApiClient investApiClient;
 
     @Autowired
     private CandleRepository candleRepository;
