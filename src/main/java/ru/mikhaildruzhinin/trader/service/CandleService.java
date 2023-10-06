@@ -11,6 +11,7 @@ import ru.tinkoff.piapi.contract.v1.CandleInterval;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -23,7 +24,8 @@ public class CandleService {
     private CandleRepository candleRepository;
 
     public List<Candle> getCandles(String figi) {
-        Instant from = candleRepository.findMaxTime();
+        Instant from = Optional.ofNullable(candleRepository.findMaxTime())
+                .orElse(Instant.now().minus(1, ChronoUnit.DAYS));
         Instant to = Instant.now();
         CandleInterval interval = CandleInterval.CANDLE_INTERVAL_5_MIN;
 

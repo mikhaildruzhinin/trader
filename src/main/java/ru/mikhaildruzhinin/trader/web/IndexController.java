@@ -7,10 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import ru.mikhaildruzhinin.trader.model.Candle;
 import ru.mikhaildruzhinin.trader.service.CandleService;
-
-import java.util.List;
 
 @Slf4j
 @Controller
@@ -29,7 +26,7 @@ public class IndexController {
     public String post(@RequestParam("figi") String figi) {
         log.info(figi);
 
-        List<Candle> candles = candleService.getCandles(figi);
+        candleService.getCandles(figi);
         return "index";
     }
 }
