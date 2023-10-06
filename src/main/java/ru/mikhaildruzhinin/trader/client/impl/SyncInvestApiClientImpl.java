@@ -59,6 +59,14 @@ public class SyncInvestApiClientImpl implements SyncInvestApiClient {
     private Share convertShare(ru.tinkoff.piapi.contract.v1.Share share) {
         return Share.builder()
                 .figi(share.getFigi())
+                .lot(share.getLot())
+                .currency(share.getCurrency())
+                .name(share.getName())
+                .exchange(share.getExchange())
+                .apiTradeAvailableFlag(share.getApiTradeAvailableFlag())
+                .buyAvailableFlag(share.getBuyAvailableFlag())
+                .sellAvailableFlag(share.getSellAvailableFlag())
+                .weekendFlag(share.getWeekendFlag())
                 .build();
     }
 }
