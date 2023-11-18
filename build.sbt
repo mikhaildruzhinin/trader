@@ -11,3 +11,12 @@ lazy val root = (project in file("."))
   .settings(
     name := "trader"
   )
+
+val scalatestVersion = "3.2.17"
+
+libraryDependencies ++= Seq(
+  "org.scalactic" %% "scalactic" % scalatestVersion,
+  "org.scalatest" %% "scalatest" % scalatestVersion % "test"
+)
+
+Test / fork := true
