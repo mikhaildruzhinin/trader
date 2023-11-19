@@ -1,7 +1,7 @@
 package ru.mikhaildruzhinin.trader
 
 import org.scalatest.funsuite.AnyFunSuite
-import org.ta4j.core.{Bar, BarSeries, BaseBarSeriesBuilder, BaseStrategy}
+import org.ta4j.core.BaseBarSeriesBuilder
 import pureconfig.ConfigReader.Result
 import pureconfig.error.ConfigReaderFailures
 import pureconfig.generic.ProductHint
@@ -12,7 +12,11 @@ import ru.tinkoff.piapi.core.InvestApi
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.{Duration, SECONDS}
+import scala.concurrent.{Await, Future}
 import scala.jdk.CollectionConverters._
+import scala.jdk.FutureConverters.CompletionStageOps
 
 class Tests extends AnyFunSuite {
 
@@ -69,35 +73,56 @@ class Tests extends AnyFunSuite {
     configResult.fold(
       configReaderFailures => handleConfigReaderFailures(configReaderFailures),
       appConfig => {
-        val figi = "BBG000QF1Q17"
-
-        val share: Share = Share(
-          InvestApi
-            .create(appConfig.tinkoffInvestApiToken)
-            .getInstrumentsService
-            .getShareByFigiSync(figi)
-        )
 
         val candleInterval = CandleInterval.CANDLE_INTERVAL_5_MIN
-        val bars: List[Bar] = InvestApi
-          .create(appConfig.tinkoffInvestApiToken)
-          .getMarketDataService
-          .getCandlesSync(
-            figi,
-            Instant.now().minus(1, ChronoUnit.DAYS),
-            Instant.now(),
-            candleInterval
-          )
-          .asScala
-          .toList
-          .flatMap(historicCandle => Candle(historicCandle, candleInterval).toBar)
 
-        val barSeries: BarSeries = new BaseBarSeriesBuilder()
-          .withName(share.name)
-          .withBars(bars.asJava)
-          .build()
+        val barSeries = for {
+          tinkoffShares <- InvestApi
+            .create(appConfig.tinkoffInvestApiToken)
+            .getInstrumentsService
+            .getShares(InstrumentStatus.INSTRUMENT_STATUS_BASE)
+            .asScala
+            .map(_.asScala.toList)
 
-        barSeries.getBarData.asScala.foreach(println)
+          shares <- Future {
+            tinkoffShares
+              .map(tinkoffShare => Share(tinkoffShare))
+              .filter(share => appConfig.exchanges.contains(share.exchange))
+          }
+
+          historicCandles <- Future.sequence {
+            Thread.sleep(5000L)
+
+            shares.map(share => {
+              InvestApi
+                .create(appConfig.tinkoffInvestApiToken)
+                .getMarketDataService
+                .getCandles(
+                  share.figi,
+                  Instant.now().minus(1, ChronoUnit.DAYS),
+                  Instant.now(),
+                  candleInterval
+                )
+                .asScala
+                .map(_.asScala.toList)
+            })
+          }
+
+          bars <- Future {
+            historicCandles
+              .map(_.flatMap(historicCandle => Candle(historicCandle, candleInterval).toBar))
+          }
+
+          barSeries <- Future {
+            bars.map(b => new BaseBarSeriesBuilder()
+              .withName("share_candles")
+              .withBars(b.asJava)
+              .build())
+          }
+        } yield barSeries
+
+        Await.result(barSeries, Duration(10L, SECONDS))
+          .map(_.getBarData.asScala.foreach(println))
       }
     )
   }
