@@ -22,7 +22,7 @@ class Tests extends AnyFunSuite {
 
   implicit def hint[A]: ProductHint[A] = ProductHint[A](ConfigFieldMapping(CamelCase, CamelCase))
 
-  private def handleConfigReaderFailures(configReaderFailures: ConfigReaderFailures): Unit = {
+  private def handleConfigReaderFailures(configReaderFailures: ConfigReaderFailures): Nothing = {
     println("Config is not valid. All errors:")
     configReaderFailures
       .toList
@@ -58,14 +58,14 @@ class Tests extends AnyFunSuite {
             })
           }
 
-          bars <- Future(candles.map(_.flatMap(_.toBar)))
-
           barSeries <- Future {
-            filteredShares.zip(bars)
-              .map(shareWithBars => new BaseBarSeriesBuilder()
-                .withName(shareWithBars._1.name)
-                .withBars(shareWithBars._2.asJava)
-                .build())
+            filteredShares
+              .zip(candles)
+              .map(shareWithCandles => new BaseBarSeriesBuilder()
+              .withName(shareWithCandles._1.name)
+              .withBars(shareWithCandles._2.flatMap(_.toBar).asJava)
+              .build()
+            )
           }
         } yield barSeries
 
