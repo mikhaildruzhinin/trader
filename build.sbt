@@ -16,7 +16,9 @@ val scalatestVersion = "3.2.17"
 
 libraryDependencies ++= Seq(
   "org.scalactic" %% "scalactic" % scalatestVersion,
-  "org.scalatest" %% "scalatest" % scalatestVersion % "test"
+  "org.scalatest" %% "scalatest" % scalatestVersion % "test",
+  "ru.tinkoff.piapi" % "java-sdk-core" % "1.6",
+  "com.github.pureconfig" %% "pureconfig" % "0.17.4"
 )
 
 Test / fork := true
