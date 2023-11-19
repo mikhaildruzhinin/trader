@@ -18,7 +18,8 @@ libraryDependencies ++= Seq(
   "org.scalactic" %% "scalactic" % scalatestVersion,
   "org.scalatest" %% "scalatest" % scalatestVersion % "test",
   "ru.tinkoff.piapi" % "java-sdk-core" % "1.6",
-  "com.github.pureconfig" %% "pureconfig" % "0.17.4"
+  "com.github.pureconfig" %% "pureconfig" % "0.17.4",
+  "org.ta4j" % "ta4j-core" % "0.15"
 )
 
 Test / fork := true

@@ -1,6 +1,7 @@
 package ru.mikhaildruzhinin.trader
 
 import org.scalatest.funsuite.AnyFunSuite
+import org.ta4j.core.{Bar, BarSeries, BaseBarSeriesBuilder, BaseStrategy}
 import pureconfig.ConfigReader.Result
 import pureconfig.error.ConfigReaderFailures
 import pureconfig.generic.ProductHint
@@ -43,6 +44,8 @@ class Tests extends AnyFunSuite {
   }
 
   test("test candles") {
+    val candleInterval = CandleInterval.CANDLE_INTERVAL_5_MIN
+
     configResult.fold(
       configReaderFailures => handleConfigReaderFailures(configReaderFailures),
       appConfig => assert(
@@ -52,13 +55,51 @@ class Tests extends AnyFunSuite {
             "BBG000QF1Q17",
             Instant.now().minus(1, ChronoUnit.DAYS),
             Instant.now(),
-            CandleInterval.CANDLE_INTERVAL_5_MIN
+            candleInterval
           )
           .asScala
           .toList
-          .map(historicCandle => Candle(historicCandle))
+          .map(historicCandle => Candle(historicCandle, candleInterval))
           .nonEmpty
       )
     )
   }
+
+  test("test bar series") {
+    configResult.fold(
+      configReaderFailures => handleConfigReaderFailures(configReaderFailures),
+      appConfig => {
+        val figi = "BBG000QF1Q17"
+
+        val share: Share = Share(
+          InvestApi
+            .create(appConfig.tinkoffInvestApiToken)
+            .getInstrumentsService
+            .getShareByFigiSync(figi)
+        )
+
+        val candleInterval = CandleInterval.CANDLE_INTERVAL_5_MIN
+        val bars: List[Bar] = InvestApi
+          .create(appConfig.tinkoffInvestApiToken)
+          .getMarketDataService
+          .getCandlesSync(
+            figi,
+            Instant.now().minus(1, ChronoUnit.DAYS),
+            Instant.now(),
+            candleInterval
+          )
+          .asScala
+          .toList
+          .flatMap(historicCandle => Candle(historicCandle, candleInterval).toBar)
+
+        val barSeries: BarSeries = new BaseBarSeriesBuilder()
+          .withName(share.name)
+          .withBars(bars.asJava)
+          .build()
+
+        barSeries.getBarData.asScala.foreach(println)
+      }
+    )
+  }
+
 }
