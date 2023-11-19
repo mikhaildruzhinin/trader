@@ -6,9 +6,11 @@ import pureconfig.error.ConfigReaderFailures
 import pureconfig.generic.ProductHint
 import pureconfig.generic.auto.exportReader
 import pureconfig.{CamelCase, ConfigFieldMapping, ConfigSource}
-import ru.tinkoff.piapi.contract.v1.InstrumentStatus
+import ru.tinkoff.piapi.contract.v1.{CandleInterval, InstrumentStatus}
 import ru.tinkoff.piapi.core.InvestApi
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import scala.jdk.CollectionConverters._
 
 class Tests extends AnyFunSuite {
@@ -34,7 +36,27 @@ class Tests extends AnyFunSuite {
           .getSharesSync(InstrumentStatus.INSTRUMENT_STATUS_BASE)
           .asScala
           .toList
-          .map(s => Share(s))
+          .map(tinkoffShare => Share(tinkoffShare))
+          .nonEmpty
+      )
+    )
+  }
+
+  test("test candles") {
+    configResult.fold(
+      configReaderFailures => handleConfigReaderFailures(configReaderFailures),
+      appConfig => assert(
+        InvestApi.create(appConfig.tinkoffInvestApiToken)
+          .getMarketDataService
+          .getCandlesSync(
+            "BBG000QF1Q17",
+            Instant.now().minus(1, ChronoUnit.DAYS),
+            Instant.now(),
+            CandleInterval.CANDLE_INTERVAL_5_MIN
+          )
+          .asScala
+          .toList
+          .map(historicCandle => Candle(historicCandle))
           .nonEmpty
       )
     )
