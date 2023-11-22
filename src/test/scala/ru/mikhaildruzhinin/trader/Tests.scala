@@ -1,7 +1,12 @@
 package ru.mikhaildruzhinin.trader
 
 import org.scalatest.funsuite.AnyFunSuite
-import org.ta4j.core.BaseBarSeriesBuilder
+import org.ta4j.core._
+import org.ta4j.core.criteria.pnl.GrossReturnCriterion
+import org.ta4j.core.indicators.EMAIndicator
+import org.ta4j.core.indicators.helpers.ClosePriceIndicator
+import org.ta4j.core.num.DecimalNum
+import org.ta4j.core.rules._
 import pureconfig.ConfigReader.Result
 import pureconfig.error.ConfigReaderFailures
 import pureconfig.generic.ProductHint
@@ -47,7 +52,7 @@ class Tests extends AnyFunSuite {
           }
 
           candles <- Future.sequence {
-            Thread.sleep(5000L)
+            Thread.sleep(1000L)
             filteredShares.map(share => {
               client.getCandles(
                 share = share,
@@ -69,8 +74,32 @@ class Tests extends AnyFunSuite {
           }
         } yield barSeries
 
-        Await.result(barSeries, Duration(10L, SECONDS))
-          .foreach(barSeries => println(barSeries.getName, barSeries.getBarCount))
+        val s = Await.result(barSeries, Duration(10L, SECONDS))
+
+        s.take(1).map(series => {
+          val closePriceIndicator = new ClosePriceIndicator(series)
+          val shortEma = new EMAIndicator(closePriceIndicator, 20)
+          val longEma = new EMAIndicator(closePriceIndicator, 50)
+
+          val entryRule = new CrossedUpIndicatorRule(shortEma, longEma)
+
+          val exitRule = new CrossedDownIndicatorRule(shortEma, longEma)
+            .or(new StopGainRule(closePriceIndicator, 2))
+            .or(new StopLossRule(closePriceIndicator, 3))
+
+          val strategy: Strategy = new BaseStrategy(entryRule, exitRule)
+
+          val seriesManager: BarSeriesManager = new BarSeriesManager(series)
+          val tradingRecord: TradingRecord = seriesManager.run(strategy)
+          println(tradingRecord)
+
+          val criterion = new GrossReturnCriterion()
+          val r = criterion.calculate(series, tradingRecord)
+
+          println(r.multipliedBy(DecimalNum.valueOf(100)))
+          println("=====")
+        })
+
       }
     )
   }
