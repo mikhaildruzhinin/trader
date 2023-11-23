@@ -5,7 +5,7 @@ import org.ta4j.core._
 import org.ta4j.core.criteria.pnl.GrossReturnCriterion
 import org.ta4j.core.indicators.EMAIndicator
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator
-import org.ta4j.core.num.DecimalNum
+import org.ta4j.core.num.{DecimalNum, Num}
 import org.ta4j.core.rules._
 import pureconfig.ConfigReader.Result
 import pureconfig.error.ConfigReaderFailures
@@ -44,7 +44,7 @@ class Tests extends AnyFunSuite {
 
         val candleInterval = CandleInterval.CANDLE_INTERVAL_5_MIN
 
-        val barSeries = for {
+        val result = for {
           shares <- client.getShares()
 
           filteredShares <- Future {
@@ -66,42 +66,54 @@ class Tests extends AnyFunSuite {
           barSeries <- Future {
             filteredShares
               .zip(candles)
-              .map(shareWithCandles => new BaseBarSeriesBuilder()
-              .withName(shareWithCandles._1.name)
-              .withBars(shareWithCandles._2.flatMap(_.toBar).asJava)
-              .build()
-            )
+              .map(shareWithCandles =>
+                new BaseBarSeriesBuilder()
+                  .withName(shareWithCandles._1.name)
+                  .withBars(shareWithCandles._2.flatMap(_.toBar).asJava)
+                  .build()
+              )
           }
-        } yield barSeries
 
-        val s = Await.result(barSeries, Duration(10L, SECONDS))
+          tradingStrategyResults <- Future.sequence(barSeries.map(bs => EmaCrossoverStrategy(bs)))
 
-        s.take(1).map(series => {
-          val closePriceIndicator = new ClosePriceIndicator(series)
-          val shortEma = new EMAIndicator(closePriceIndicator, 20)
-          val longEma = new EMAIndicator(closePriceIndicator, 50)
+          _ <- Future(tradingStrategyResults.foreach(r => println(r)))
+        } yield ()
 
-          val entryRule = new CrossedUpIndicatorRule(shortEma, longEma)
-
-          val exitRule = new CrossedDownIndicatorRule(shortEma, longEma)
-            .or(new StopGainRule(closePriceIndicator, 2))
-            .or(new StopLossRule(closePriceIndicator, 3))
-
-          val strategy: Strategy = new BaseStrategy(entryRule, exitRule)
-
-          val seriesManager: BarSeriesManager = new BarSeriesManager(series)
-          val tradingRecord: TradingRecord = seriesManager.run(strategy)
-          println(tradingRecord)
-
-          val criterion = new GrossReturnCriterion()
-          val r = criterion.calculate(series, tradingRecord)
-
-          println(r.multipliedBy(DecimalNum.valueOf(100)))
-          println("=====")
-        })
-
+        Await.result(result, Duration(10L, SECONDS))
       }
     )
   }
+}
 
+trait TradingStrategy {
+  def apply(barSeries: BarSeries): Future[TradingStrategyResult]
+}
+
+object EmaCrossoverStrategy extends TradingStrategy {
+  override def apply(barSeries: BarSeries): Future[TradingStrategyResult] = Future {
+    val closePriceIndicator = new ClosePriceIndicator(barSeries)
+    val shortEma = new EMAIndicator(closePriceIndicator, 20)
+    val longEma = new EMAIndicator(closePriceIndicator, 50)
+
+    val entryRule = new CrossedUpIndicatorRule(shortEma, longEma)
+
+    val exitRule = new CrossedDownIndicatorRule(shortEma, longEma)
+      .or(new StopGainRule(closePriceIndicator, 2))
+      .or(new StopLossRule(closePriceIndicator, 3))
+
+    val strategy: Strategy = new BaseStrategy(entryRule, exitRule)
+
+    val seriesManager = new BarSeriesManager(barSeries)
+    val tradingRecord: TradingRecord = seriesManager.run(strategy)
+
+    val criterion = new GrossReturnCriterion()
+    val criterionValue: Num = criterion.calculate(barSeries, tradingRecord)
+      .multipliedBy(DecimalNum.valueOf(100))
+    TradingStrategyResult(tradingRecord, criterionValue)
+  }
+}
+
+case class TradingStrategyResult(tradingRecord: TradingRecord,
+                                 criterionValue: Num) {
+  override def toString: String = super.toString // TODO: override
 }
