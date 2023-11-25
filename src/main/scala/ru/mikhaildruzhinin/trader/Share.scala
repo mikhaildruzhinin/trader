@@ -23,7 +23,13 @@ case class Share private (figi: String,
                           first1DayCandleDate: Timestamp,
                           candles: Option[List[Candle]] = None)
 
-object Share {
+trait ShareService {
+  def getShares(client: InvestApiClient,
+                appConfig: AppConfig,
+                candleInterval: CandleInterval): Future[List[Share]]
+}
+
+object Share extends ShareService {
   def apply(tinkoffShare: TinkoffShare): Share = Share(
     tinkoffShare.getFigi,
     ticker = tinkoffShare.getTicker,
@@ -40,9 +46,9 @@ object Share {
     first1DayCandleDate = tinkoffShare.getFirst1DayCandleDate
   )
 
-  def getShares(client: InvestApiClientImpl,
-                appConfig: AppConfig,
-                candleInterval: CandleInterval): Future[List[Share]] = for {
+  override def getShares(client: InvestApiClient,
+                         appConfig: AppConfig,
+                         candleInterval: CandleInterval): Future[List[Share]] = for {
 
     shares <- client.getShares()
 
