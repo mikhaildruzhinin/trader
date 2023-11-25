@@ -9,8 +9,6 @@ import pureconfig.generic.auto.exportReader
 import pureconfig.{CamelCase, ConfigFieldMapping, ConfigSource}
 import ru.tinkoff.piapi.contract.v1.CandleInterval
 
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{Await, Future}
@@ -30,43 +28,29 @@ class Tests extends AnyFunSuite {
     sys.exit(-1)
   }
 
-  test("test bar series") {
+  test("test trading strategy") {
     configResult.fold(
       configReaderFailures => handleConfigReaderFailures(configReaderFailures),
       appConfig => {
-
         val client = InvestApiClientImpl(appConfig)
-
         val candleInterval = CandleInterval.CANDLE_INTERVAL_5_MIN
 
         val result = for {
-          shares <- client.getShares()
-
-          filteredShares <- Future {
-            shares.filter(share => appConfig.exchanges.contains(share.exchange))
-          }
-
-          candles <- Future.sequence {
-            Thread.sleep(1000L)
-            filteredShares.map(share => {
-              client.getCandles(
-                share = share,
-                from = Instant.now().minus(1, ChronoUnit.DAYS),
-                to = Instant.now(),
-                candleInterval = candleInterval
-              )
-            })
-          }
+          shares <- Share.getShares(client, appConfig, candleInterval)
 
           barSeries <- Future {
-            filteredShares
-              .zip(candles)
-              .map(shareWithCandles =>
-                new BaseBarSeriesBuilder()
-                  .withName(shareWithCandles._1.name)
-                  .withBars(shareWithCandles._2.flatMap(_.toBar).asJava)
-                  .build()
-              )
+            shares.map(share =>
+              new BaseBarSeriesBuilder()
+                .withName(share.name)
+                .withBars(
+                  share
+                    .candles
+                    .getOrElse(List.empty[Candle])
+                    .flatMap(_.toBar)
+                    .asJava
+                )
+                .build()
+            )
           }
 
           tradingStrategyResults <- Future.sequence(barSeries.map(bs => EmaCrossoverStrategy(bs)))

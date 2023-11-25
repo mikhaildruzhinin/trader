@@ -11,14 +11,14 @@ import ru.tinkoff.piapi.core.utils.MapperUtils.quotationToBigDecimal
 import java.time.temporal.ChronoUnit
 import java.time.{Duration, ZoneId}
 
-case class Candle(open: Quotation,
-                  high: Quotation,
-                  low: Quotation,
-                  close: Quotation,
-                  volume: Long,
-                  time: Timestamp,
-                  isComplete: Boolean,
-                  candleInterval: CandleInterval) {
+case class Candle private (open: Quotation,
+                           high: Quotation,
+                           low: Quotation,
+                           close: Quotation,
+                           volume: Long,
+                           time: Timestamp,
+                           isComplete: Boolean,
+                           candleInterval: CandleInterval) {
 
   def toBar: Option[Bar] = candleIntervalToDuration(candleInterval) match {
     case Some(timePeriod) => Some(
@@ -37,7 +37,6 @@ case class Candle(open: Quotation,
 }
 
 object Candle {
-
   def apply(historicCandle: HistoricCandle,
             candleInterval: CandleInterval): Candle = Candle(
     open = historicCandle.getOpen,
