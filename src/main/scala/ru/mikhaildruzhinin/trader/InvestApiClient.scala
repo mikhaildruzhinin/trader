@@ -11,7 +11,7 @@ import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters.CompletionStageOps
 
 trait InvestApiClient {
-  def getShares(instrumentStatus: InstrumentStatus): Future[List[Share]]
+  def getShares(instrumentStatus: InstrumentStatus = InstrumentStatus.INSTRUMENT_STATUS_BASE): Future[List[Share]]
 
   def getCandles(share: Share,
                  from: Instant,
