@@ -69,7 +69,7 @@ object Share extends ShareService {
     }
 
     sharesWithCandles <- Future {
-      shares.zip(candles).map(sc => sc._1.copy(candles = Some(sc._2)))
+      filteredShares.zip(candles).map(sc => sc._1.copy(candles = Some(sc._2)))
     }
   } yield sharesWithCandles
 }
