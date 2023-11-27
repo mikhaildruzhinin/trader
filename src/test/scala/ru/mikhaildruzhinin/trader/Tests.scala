@@ -34,9 +34,10 @@ class Tests extends AnyFunSuite {
       appConfig => {
         val client = InvestApiClientImpl(appConfig)
         val candleInterval = CandleInterval.CANDLE_INTERVAL_5_MIN
+        val shareService: ShareService = ShareServiceImpl
 
         val result = for {
-          shares <- Share.getShares(client, appConfig, candleInterval)
+          shares <- shareService.getShares(client, appConfig, candleInterval)
 
           barSeries <- Future {
             shares.map(share =>
